@@ -14,7 +14,8 @@ export default function Header() {
             <p className="text-sm font-semibold leading-tight">
               कोल्हापूर जिल्हा नागरी बँक्स
             </p>
-            <p className="text-xs text-yellow-300">
+            <p className="text-xs text-[#fcd62e]
+">
               सहकारी असोसिएशन लि.
             </p>
           </div>
@@ -22,13 +23,14 @@ export default function Header() {
 
         {/* Navigation */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-          <Link href="/about" className="hover:text-yellow-300">About</Link>
-          <Link href="/services" className="hover:text-yellow-300">Services</Link>
-          <Link href="/gallery" className="hover:text-yellow-300">Gallery</Link>
-          <Link href="/contact" className="hover:text-yellow-300">Contact</Link>
+          <Link href="/about" className="hover:text-[#fcd62e]">About</Link>
+          <Link href="/services" className="hover:text-[#fcd62e]">Services</Link>
+          <Link href="/gallery" className="hover:text-[#fcd62e]">Gallery</Link>
+          <Link href="/contact" className="hover:text-[#fcd62e]">Contact</Link>
           <Link
             href="/recruitment"
-            className="ml-4 inline-flex items-center rounded-md bg-yellow-300 px-4 py-2 text-slate-800 hover:bg-yellow-400"
+            className="ml-4 inline-flex items-center rounded-md bg-[#fcd62e]
+ px-4 py-2 text-slate-800 hover:bg-yellow-400"
           >
             Recruitment
           </Link>

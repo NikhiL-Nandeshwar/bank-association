@@ -23,7 +23,7 @@ export default function Hero() {
           <h1 className="text-3xl md:text-4xl font-bold leading-snug text-white">
             ऑनलाइन अर्ज पोर्टल 2026-27 साठी
             <br />
-            <span className="text-yellow-300">
+            <span className="text-[#fcd62e]">
               भरती प्रक्रिया
             </span>
           </h1>
@@ -36,7 +36,7 @@ export default function Hero() {
           <div className="mt-8">
             <Link
               href="/recruitment"
-              className="inline-flex items-center rounded-md bg-yellow-300 px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-yellow-400"
+              className="inline-flex items-center rounded-md bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-yellow-400"
             >
               Register Now
             </Link>

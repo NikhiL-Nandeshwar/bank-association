@@ -38,7 +38,7 @@ export default function RecruitmentOverview() {
 
                     {/* Tabs */}
                     <div className="flex border-b">
-                        <button className="px-6 py-3 text-sm bg-blue-950 text-yellow-300 font-semibold border-b-2 border-yellow-400">
+                        <button className="px-6 py-3 text-sm bg-blue-950 text-[#fcd62e] font-semibold border-b-2 border-yellow-400">
                             Current Recruitments
                         </button>
                         <button className="px-6 py-3 text-sm text-slate-500">
@@ -78,7 +78,7 @@ export default function RecruitmentOverview() {
                                         <td className="px-4 py-3 text-center">
                                             <Link
                                                 href="/recruitment"
-                                                className="inline-block rounded-md bg-yellow-300 px-4 py-1.5 text-xs font-semibold text-gray-800 hover:bg-yellow-400"
+                                                className="inline-block rounded-md bg-[#fcd62e] px-4 py-1.5 text-xs font-semibold text-gray-800 hover:bg-yellow-400"
                                             >
                                                 Apply Now
                                             </Link>

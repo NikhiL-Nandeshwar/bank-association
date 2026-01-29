@@ -5,7 +5,7 @@ export default function Footer() {
         
         {/* Address */}
         <div>
-          <h4 className="text-yellow-400 hover:cursor-pointer hover:text-yellow-600 font-semibold mb-3">
+          <h4 className="text-[#fcd62e] hover:cursor-pointer hover:text-yellow-500 font-semibold mb-3">
             Association Office
           </h4>
           <p className="text-sm leading-relaxed">
@@ -19,7 +19,7 @@ export default function Footer() {
 
         {/* Quick Links */}
         <div>
-          <h4 className="text-yellow-400 hover:cursor-pointer hover:text-yellow-600 font-semibold mb-3">
+          <h4 className="text-[#fcd62e] hover:cursor-pointer hover:text-yellow-500 font-semibold mb-3">
             Quick Links
           </h4>
           <ul className="space-y-2 text-sm">
