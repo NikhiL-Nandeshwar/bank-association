@@ -5,7 +5,7 @@ export default function Footer() {
         
         {/* Address */}
         <div>
-          <h4 className="text-white font-semibold mb-3">
+          <h4 className="text-yellow-400 hover:cursor-pointer hover:text-yellow-600 font-semibold mb-3">
             Association Office
           </h4>
           <p className="text-sm leading-relaxed">
@@ -13,13 +13,13 @@ export default function Footer() {
             कोल्हापूर - 416012
           </p>
           <p className="mt-3 text-sm">
-            Phone: +91 98765 43210
+            Phone: 0231-2627307
           </p>
         </div>
 
         {/* Quick Links */}
         <div>
-          <h4 className="text-white font-semibold mb-3">
+          <h4 className="text-yellow-400 hover:cursor-pointer hover:text-yellow-600 font-semibold mb-3">
             Quick Links
           </h4>
           <ul className="space-y-2 text-sm">
