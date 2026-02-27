@@ -32,7 +32,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="flex items-end text-sm">
-          © {new Date().getFullYear()} Kolhapur District Urban Banks Association
+          © {new Date().getFullYear()} - Kolhapur District Urban Banks Association
         </div>
       </div>
     </footer>

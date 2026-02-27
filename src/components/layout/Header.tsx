@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default function Header() {
@@ -9,7 +10,14 @@ export default function Header() {
         
         {/* Logo + Name */}
         <Link href="/" className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-slate-200" />
+          <Image
+            src="/logo.png"
+            alt="KOP Bank Logo"
+            width={40}
+            height={40}
+            className="h-10 w-10 object-contain"
+            priority
+          />
           <div>
             <p className="text-sm font-semibold leading-tight">
               कोल्हापूर जिल्हा नागरी बँक्स
