@@ -24,7 +24,7 @@ const actions = [
 
 export default function QuickActions() {
   return (
-    <section className="-mt-12 relative z-20">
+    <section className="relative z-10 bg-slate-100 py-6 md:py-8">
       <div className="mx-auto max-w-7xl px-4">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
 
