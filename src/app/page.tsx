@@ -1,5 +1,6 @@
 // Components
 import AnnouncementMarquee from '@/components/home/AnnouncementMarquee';
+import AssociationCommitment from '@/components/home/AssociationCommitment';
 import Hero from '@/components/home/Hero';
 import LatestUpdates from '@/components/home/LatestUpdates';
 import PortalHighlights from '@/components/home/PortalHighlights';
@@ -11,8 +12,12 @@ export default function Home() {
     <>
       <Hero />
       <AnnouncementMarquee />
+      {/* <AssociationCommitment /> */}
       <QuickActions />
+      <AssociationCommitment />
+
       <PortalHighlights />
+
       <RecruitmentOverview />
       <LatestUpdates />
     </>
