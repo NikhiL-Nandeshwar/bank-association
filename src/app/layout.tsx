@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="mr">
+    <html lang="en">
       <body className="min-h-screen bg-surface-muted text-text-primary antialiased">
         <TopBar />
         <Header />
@@ -29,3 +29,4 @@ export default function RootLayout({
     </html>
   );
 }
+
