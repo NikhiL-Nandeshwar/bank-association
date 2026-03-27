@@ -35,7 +35,7 @@ export default function RecruitmentPage() {
     <section className="bg-[radial-gradient(circle_at_top,_rgba(252,214,46,0.18),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#e2e8f0_100%)] py-12 md:py-16">
       <div className="mx-auto max-w-7xl space-y-8 px-4">
         <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.12)]">
-          <div className="bg-slate-800 px-6 py-10 text-white md:px-10">
+          <div className="bg-slate-700 px-6 py-10 text-white md:px-10">
             <span className="inline-flex rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-amber-200">
               Recruitment updates
             </span>
@@ -66,7 +66,7 @@ export default function RecruitmentPage() {
                 <div className="mt-4 space-y-4">
                   {processSteps.map((step, index) => (
                     <div key={step} className="flex gap-4">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-800 text-sm font-semibold text-amber-300">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-700 text-sm font-semibold text-amber-300">
                         {index + 1}
                       </div>
                       <p className="text-sm leading-7 text-slate-700">{step}</p>
