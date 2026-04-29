@@ -5,7 +5,7 @@ import { usePortalLanguage } from '@/lib/usePortalLanguage';
 const copy = {
   en: {
     label: 'Notice',
-    message: 'Welcome to the Kolhapur District Urban Banks Association portal. Check the latest announcements and recruitment updates here.',
+    message : 'Welcome to the Kolhapur District Urban Banks Association portal. Check the latest announcements and recruitment updates here.',
   },
   mr: {
     label: '\u0938\u0942\u091a\u0928\u093e',

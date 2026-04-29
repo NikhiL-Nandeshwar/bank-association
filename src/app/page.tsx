@@ -10,6 +10,7 @@ import RecruitmentOverview from '@/components/home/RecruitmentOverview';
 export default function Home() {
   return (
     <>
+    
       <Hero />
       <AnnouncementMarquee />
       {/* <AssociationCommitment /> */}

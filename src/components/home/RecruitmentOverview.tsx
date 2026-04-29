@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { usePortalLanguage } from '@/lib/usePortalLanguage';
 
 const currentRecruitments = [
@@ -9,24 +10,52 @@ const currentRecruitments = [
     name: '\u0936\u093f\u0935\u093e\u091c\u0940 \u0938\u0939\u0915\u093e\u0930\u0940 \u092c\u0901\u0915 \u0932\u093f., \u0915\u094b\u0932\u094d\u0939\u093e\u092a\u0942\u0930',
     date: '16-10-2025',
     time: '10:00 AM',
+    status: 'Open',
   },
   {
     code: 'KM-015',
     name: '\u092a\u0941\u0923\u0947 \u0938\u0939\u0915\u093e\u0930\u0940 \u092c\u0901\u0915 \u0932\u093f., \u092a\u0941\u0923\u0947',
     date: '09-01-2026',
     time: '10:00 AM',
+    status: 'Open',
   },
   {
     code: 'KM-014',
     name: '\u092a\u0941\u0923\u0947 \u092e\u0930\u094d\u091a\u0902\u091f\u094d\u0938 \u0915\u094b-\u0911\u092a \u092c\u0901\u0915 \u0932\u093f., \u092a\u0941\u0923\u0947',
     date: '02-01-2026',
     time: '10:00 AM',
+    status: 'Open',
   },
   {
     code: 'KM-013',
     name: '\u0936\u093f\u0935\u093e\u092c\u093e\u0938\u0935\u0928\u094d\u0928\u093e \u091c\u0928\u0924\u093e \u0915\u094b-\u0911\u092a \u092c\u0901\u0915 \u0932\u093f., \u0915\u094b\u0932\u094d\u0939\u093e\u092a\u0942\u0930',
     date: '31-12-2025',
     time: '10:00 AM',
+    status: 'Open',
+  },
+];
+
+const previousRecruitments = [
+  {
+    code: 'KM-012',
+    name: '\u0928\u093e\u0936\u093f\u0915 \u091c\u093f\u0932\u094d\u0939\u093e \u0938\u0939\u0915\u093e\u0930\u0940 \u092c\u0901\u0915 \u0932\u093f., \u0928\u093e\u0936\u093f\u0915',
+    date: '18-08-2025',
+    time: '10:00 AM',
+    status: 'Closed',
+  },
+  {
+    code: 'KM-011',
+    name: '\u0938\u093e\u0924\u093e\u0930\u093e \u092e\u0930\u094d\u091a\u0902\u091f\u094d\u0938 \u0915\u094b-\u0911\u092a \u092c\u0901\u0915 \u0932\u093f., \u0938\u093e\u0924\u093e\u0930\u093e',
+    date: '21-06-2025',
+    time: '10:00 AM',
+    status: 'Result published',
+  },
+  {
+    code: 'KM-010',
+    name: '\u0938\u093e\u0902\u0917\u0932\u0940 \u0936\u0939\u0930 \u0938\u0939\u0915\u093e\u0930\u0940 \u092c\u0901\u0915 \u0932\u093f., \u0938\u093e\u0902\u0917\u0932\u0940',
+    date: '14-04-2025',
+    time: '10:00 AM',
+    status: 'Closed',
   },
 ];
 
@@ -39,6 +68,7 @@ const copy = {
     start: 'Start Date / Time',
     status: 'Status',
     apply: 'Apply Now',
+    viewArchive: 'View Details',
     note: 'All recruitment processes are conducted through the respective cooperative banks.',
     acts: 'Banking Regulation Acts',
     quickLinks: 'Quick Links',
@@ -53,6 +83,7 @@ const copy = {
     start: '\u0938\u0941\u0930\u0941\u0935\u093e\u0924\u0940\u091a\u0940 \u0924\u093e\u0930\u0940\u0916 / \u0935\u0947\u0933',
     status: '\u0938\u094d\u0925\u093f\u0924\u0940',
     apply: '\u0905\u0930\u094d\u091c \u0915\u0930\u093e',
+    viewArchive: '\u0924\u092a\u0936\u0940\u0932 \u092a\u0939\u093e',
     note: '\u0938\u0930\u094d\u0935 \u092a\u0926 \u092d\u0930\u0924\u0940 \u092a\u094d\u0930\u0915\u094d\u0930\u093f\u092f\u093e \u0938\u0939\u0915\u093e\u0930\u0940 \u092c\u0901\u0915\u093e\u0902\u0926\u094d\u0935\u093e\u0930\u0947 \u0930\u093e\u092c\u0935\u093f\u0923\u094d\u092f\u093e\u0924 \u092f\u0947\u0924\u0947.',
     acts: '\u092c\u0945\u0902\u0915\u093f\u0902\u0917 \u0930\u0947\u0917\u094d\u092f\u0941\u0932\u0947\u0936\u0928 \u0915\u093e\u092f\u0926\u0947',
     quickLinks: '\u0926\u094d\u0930\u0941\u0924 \u0926\u0941\u0935\u0947',
@@ -63,17 +94,37 @@ const copy = {
 
 export default function RecruitmentOverview() {
   const { language } = usePortalLanguage();
+  const [activeTab, setActiveTab] = useState<'current' | 'previous'>('current');
   const content = copy[language];
+  const visibleRecruitments = activeTab === 'current' ? currentRecruitments : previousRecruitments;
 
   return (
     <section id="recruitments" className="bg-slate-100 py-14">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 md:grid-cols-4">
         <div className="rounded-xl bg-white shadow-sm md:col-span-3">
           <div className="flex border-b">
-            <button className="border-b-2 border-yellow-400 bg-blue-950 px-6 py-3 text-sm font-semibold text-[#fcd62e]">
+            <button
+              type="button"
+              onClick={() => setActiveTab('current')}
+              className={`border-b-2 px-6 py-3 text-sm font-semibold transition ${
+                activeTab === 'current'
+                  ? 'border-yellow-400 bg-blue-950 text-[#fcd62e]'
+                  : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
               {content.current}
             </button>
-            <button className="px-6 py-3 text-sm text-slate-500">{content.previous}</button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('previous')}
+              className={`border-b-2 px-6 py-3 text-sm font-semibold transition ${
+                activeTab === 'previous'
+                  ? 'border-yellow-400 bg-blue-950 text-[#fcd62e]'
+                  : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              {content.previous}
+            </button>
           </div>
 
           <div className="overflow-x-auto">
@@ -87,7 +138,7 @@ export default function RecruitmentOverview() {
                 </tr>
               </thead>
               <tbody>
-                {currentRecruitments.map((item) => (
+                {visibleRecruitments.map((item) => (
                   <tr key={item.code} className="border-t hover:bg-slate-50">
                     <td className="px-4 py-3 font-medium">{item.code}</td>
                     <td className="px-4 py-3">{item.name}</td>
@@ -96,18 +147,32 @@ export default function RecruitmentOverview() {
                       <span className="text-xs text-slate-500">{item.time}</span>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <Link
-                        href={{
-                          pathname: '/recruitment/apply',
-                          query: {
-                            code: item.code,
-                            name: item.name,
-                          },
-                        }}
-                        className="inline-block rounded-md bg-[#fcd62e] px-4 py-1.5 text-xs font-semibold text-gray-800 hover:bg-yellow-400"
-                      >
-                        {content.apply}
-                      </Link>
+                      {activeTab === 'current' ? (
+                        <Link
+                          href={{
+                            pathname: '/recruitment/apply',
+                            query: {
+                              code: item.code,
+                              name: item.name,
+                            },
+                          }}
+                          className="inline-block rounded-md bg-[#fcd62e] px-4 py-1.5 text-xs font-semibold text-gray-800 hover:bg-yellow-400"
+                        >
+                          {content.apply}
+                        </Link>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                            {item.status}
+                          </span>
+                          <button
+                            type="button"
+                            className="rounded-md border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+                          >
+                            {content.viewArchive}
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
