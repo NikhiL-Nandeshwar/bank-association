@@ -1,25 +1,13 @@
 'use client';
 
-// React
-import type { ReactNode } from 'react';
-
 // Framework
 import Link from 'next/link';
 
 // Constants
-import { ROUTES } from '@/constants/routes.constants';
+import { QUICK_ACTIONS_COPY } from '@/constants/home.constants';
 
 // Utils/lib
 import { usePortalLanguage } from '@/lib/usePortalLanguage';
-
-type ActionItem = {
-  title: string;
-  description: string;
-  href: string;
-  icon: ReactNode;
-  iconClassName: string;
-  iconWrapClassName: string;
-};
 
 function RecruitmentIcon() {
   return (
@@ -51,68 +39,15 @@ function LoginIcon() {
   );
 }
 
-const copy = {
-  en: {
-    actions: [
-      {
-        title: 'Active Recruitments',
-        description: '4 Open Positions',
-        href: ROUTES.recruitment,
-        icon: <RecruitmentIcon />,
-        iconClassName: 'text-blue-700',
-        iconWrapClassName: 'bg-blue-50 ring-1 ring-blue-100',
-      },
-      {
-        title: 'Notices & Circulars',
-        description: 'Latest updates & instructions',
-        href: ROUTES.recruitment,
-        icon: <NoticeIcon />,
-        iconClassName: 'text-amber-700',
-        iconWrapClassName: 'bg-amber-50 ring-1 ring-amber-100',
-      },
-      {
-        title: 'Member Login',
-        description: 'Login to member portal',
-        href: ROUTES.login,
-        icon: <LoginIcon />,
-        iconClassName: 'text-emerald-700',
-        iconWrapClassName: 'bg-emerald-50 ring-1 ring-emerald-100',
-      },
-    ] as ActionItem[],
-  },
-  mr: {
-    actions: [
-      {
-        title: '\u0938\u0915\u094d\u0930\u093f\u092f \u092d\u0930\u0924\u0940',
-        description: '4 \u0916\u0941\u0932\u0940 \u092a\u0926\u0947',
-        href: ROUTES.recruitment,
-        icon: <RecruitmentIcon />,
-        iconClassName: 'text-blue-700',
-        iconWrapClassName: 'bg-blue-50 ring-1 ring-blue-100',
-      },
-      {
-        title: '\u0938\u0942\u091a\u0928\u093e \u0935 \u092a\u0930\u093f\u092a\u0924\u094d\u0930\u0915\u0947',
-        description: '\u0928\u0935\u0940\u0928\u0924\u092e \u0905\u0926\u094d\u092f\u0924\u0928\u0947 \u0935 \u0938\u0942\u091a\u0928\u093e',
-        href: ROUTES.recruitment,
-        icon: <NoticeIcon />,
-        iconClassName: 'text-amber-700',
-        iconWrapClassName: 'bg-amber-50 ring-1 ring-amber-100',
-      },
-      {
-        title: '\u0938\u0926\u0938\u094d\u092f \u0932\u0949\u0917\u093f\u0928',
-        description: '\u0938\u0926\u0938\u094d\u092f \u092a\u094b\u0930\u094d\u091f\u0932\u092e\u0927\u094d\u092f\u0947 \u0932\u0949\u0917\u093f\u0928 \u0915\u0930\u093e',
-        href: ROUTES.login,
-        icon: <LoginIcon />,
-        iconClassName: 'text-emerald-700',
-        iconWrapClassName: 'bg-emerald-50 ring-1 ring-emerald-100',
-      },
-    ] as ActionItem[],
-  },
+const ACTION_ICONS = {
+  recruitment: <RecruitmentIcon />,
+  notice: <NoticeIcon />,
+  login: <LoginIcon />,
 } as const;
 
 export default function QuickActions() {
   const { language } = usePortalLanguage();
-  const actions = copy[language].actions;
+  const actions = QUICK_ACTIONS_COPY[language].actions;
 
   return (
     <section className="relative z-10 bg-slate-100 py-6 md:py-8">
@@ -128,7 +63,7 @@ export default function QuickActions() {
                 <div
                   className={`flex h-12 w-12 items-center justify-center rounded-lg ${action.iconWrapClassName}`}
                 >
-                  <div className={action.iconClassName}>{action.icon}</div>
+                  <div className={action.iconClassName}>{ACTION_ICONS[action.iconKey]}</div>
                 </div>
 
                 <div>

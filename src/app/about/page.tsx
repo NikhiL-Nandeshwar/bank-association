@@ -1,10 +1,6 @@
+import { ABOUT_HIGHLIGHTS } from '@/constants/page.constants';
+import { ROUTES } from '@/constants/routes.constants';
 import Link from 'next/link';
-
-const highlights = [
-  'Coordinates recruitment support for member cooperative banks.',
-  'Improves communication around notices, timelines, and applicant readiness.',
-  'Helps make the recruitment journey more structured and transparent.',
-];
 
 export default function AboutPage() {
   return (
@@ -24,13 +20,13 @@ export default function AboutPage() {
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
-                  href="/recruitment"
+                  href={ROUTES.recruitment}
                   className="inline-flex items-center rounded-full bg-slate-700 hover:bg-slate-600 px-5 py-3 text-sm font-semibold text-white"
                 >
                   Recruitment Updates
                 </Link>
                 <Link
-                  href="/#recruitments"
+                  href={`${ROUTES.home}#recruitments`}
                   className="inline-flex items-center rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:border-slate-900 hover:text-slate-900"
                 >
                   Current Openings
@@ -41,7 +37,7 @@ export default function AboutPage() {
             <div className="rounded-[1.75rem] bg-slate-700 p-6 text-white">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">What this portal focuses on</p>
               <div className="mt-5 space-y-4">
-                {highlights.map((item, index) => (
+                {ABOUT_HIGHLIGHTS.map((item, index) => (
                   <div key={item} className="flex gap-4">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-sm font-semibold text-amber-300">
                       0{index + 1}
@@ -57,4 +53,3 @@ export default function AboutPage() {
     </section>
   );
 }
-

@@ -1,5 +1,19 @@
 'use client';
 
+import {
+  APPLICATION_INPUT_CLASS_NAME,
+  APPLICATION_STEPS,
+  EDUCATION_TEMPLATE,
+  EMPTY_LANGUAGE_SKILLS,
+  LANGUAGE_ABILITIES,
+  LANGUAGE_NAMES,
+  SUMMARY_TONE_CLASS_NAMES,
+  type EducationEntry,
+  type LanguageAbility,
+  type LanguageName,
+  type LanguageSkills,
+  type SummaryTone,
+} from '@/constants/application-wizard.constants';
 import { useMemo, useState } from 'react';
 
 type ApplicationWizardProps = {
@@ -7,22 +21,6 @@ type ApplicationWizardProps = {
     code: string;
     name: string;
   };
-};
-
-type LanguageName = 'marathi' | 'hindi' | 'english';
-type LanguageAbility = 'read' | 'write' | 'speak';
-
-type LanguageSkills = Record<LanguageName, Record<LanguageAbility, boolean>>;
-
-type EducationEntry = {
-  level: string;
-  completed: string;
-  institute: string;
-  board: string;
-  specialization: string;
-  score: string;
-  className: string;
-  passedMonthYear: string;
 };
 
 type ExperienceEntry = {
@@ -83,34 +81,6 @@ type FormState = {
   paymentDate: string;
 };
 
-const steps = [
-  { id: '01', title: 'Role', description: 'Confirm the recruitment and bank details.' },
-  { id: '02', title: 'Profile', description: 'Tell us who you are.' },
-  { id: '03', title: 'Contact', description: 'Add your address and communication details.' },
-  { id: '04', title: 'Education', description: 'Share detailed academic background.' },
-  { id: '05', title: 'Experience', description: 'Highlight your work readiness.' },
-  { id: '06', title: 'Documents', description: 'Provide IDs, links, and preferences.' },
-  { id: '07', title: 'Review', description: 'Verify everything before payment.' },
-  { id: '08', title: 'Payment', description: 'Complete the demo application payment.' },
-] as const;
-
-const inputClassName =
-  'mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-amber-100';
-
-const educationTemplate: EducationEntry[] = [
-  { level: 'SSC / 10th', completed: '', institute: '', board: '', specialization: '', score: '', className: '', passedMonthYear: '' },
-  { level: 'HSC / 12th', completed: '', institute: '', board: '', specialization: '', score: '', className: '', passedMonthYear: '' },
-  { level: 'Graduation', completed: '', institute: '', board: '', specialization: '', score: '', className: '', passedMonthYear: '' },
-  { level: 'Post Graduation', completed: '', institute: '', board: '', specialization: '', score: '', className: '', passedMonthYear: '' },
-  { level: 'Computer Certification', completed: '', institute: '', board: '', specialization: '', score: '', className: '', passedMonthYear: '' },
-];
-
-const emptyLanguageSkills: LanguageSkills = {
-  marathi: { read: false, write: false, speak: false },
-  hindi: { read: false, write: false, speak: false },
-  english: { read: false, write: false, speak: false },
-};
-
 function generateApplicationId(recruitment: ApplicationWizardProps['initialRecruitment']) {
   const code = recruitment.code.replace(/[^a-z0-9]/gi, '').toUpperCase() || 'REC';
   return `APP-${code}-2026`;
@@ -148,8 +118,8 @@ const initialState = (recruitment: ApplicationWizardProps['initialRecruitment'])
   city: '',
   state: '',
   pincode: '',
-  languageSkills: structuredClone(emptyLanguageSkills),
-  educationEntries: structuredClone(educationTemplate),
+  languageSkills: structuredClone(EMPTY_LANGUAGE_SKILLS),
+  educationEntries: structuredClone(EDUCATION_TEMPLATE),
   experienceLevel: '',
   experienceEntries: [{ organization: '', designation: '', location: '', totalService: '' }],
   keySkills: '',
@@ -303,7 +273,7 @@ function normalizeFormState(
       english: { ...defaults.languageSkills.english, ...languageSkills.english },
     },
     educationEntries: educationEntries.map((entry, index) => ({
-      ...(defaults.educationEntries[index] ?? educationTemplate[0]),
+      ...(defaults.educationEntries[index] ?? EDUCATION_TEMPLATE[0]),
       ...entry,
     })),
     experienceEntries: experienceEntries.map((entry) => ({
@@ -327,7 +297,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   );
 
   const progress = useMemo(
-    () => `${Math.round(((currentStep + 1) / steps.length) * 100)}%`,
+    () => `${Math.round(((currentStep + 1) / APPLICATION_STEPS.length) * 100)}%`,
     [currentStep],
   );
 
@@ -387,7 +357,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     }
 
     setErrors({});
-    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+    setCurrentStep((prev) => Math.min(prev + 1, APPLICATION_STEPS.length - 1));
   };
 
   const goBack = () => {
@@ -407,7 +377,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     setSubmitted(true);
   };
 
-  const step = steps[currentStep];
+  const step = APPLICATION_STEPS[currentStep];
 
   if (submitted) {
     return (
@@ -460,7 +430,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
           </div>
 
           <div className="mt-8 space-y-3">
-            {steps.map((item, index) => {
+            {APPLICATION_STEPS.map((item, index) => {
               const isActive = index === currentStep;
               const isDone = index < currentStep;
 
@@ -502,7 +472,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
           <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                Step {currentStep + 1} of {steps.length}
+                Step {currentStep + 1} of {APPLICATION_STEPS.length}
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-900">{step.title}</h2>
               <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">{step.description}</p>
@@ -521,28 +491,28 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   <input
                     value={form.applicationId}
                     disabled
-                    className={`${inputClassName} cursor-not-allowed bg-slate-100 text-slate-500`}
+                    className={`${APPLICATION_INPUT_CLASS_NAME} cursor-not-allowed bg-slate-100 text-slate-500`}
                     placeholder="Generated automatically"
                   />
                 </FormField>
                 <FormField label="Recruitment code" error={errors.recruitmentCode}>
-                  <input value={form.recruitmentCode} onChange={(event) => updateField('recruitmentCode', event.target.value)} className={inputClassName} placeholder="KM-016" />
+                  <input value={form.recruitmentCode} onChange={(event) => updateField('recruitmentCode', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="KM-016" />
                 </FormField>
                 <FormField label="Bank name" error={errors.bankName}>
-                  <input value={form.bankName} onChange={(event) => updateField('bankName', event.target.value)} className={inputClassName} />
+                  <input value={form.bankName} onChange={(event) => updateField('bankName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Post name" error={errors.postName}>
-                  <input value={form.postName} onChange={(event) => updateField('postName', event.target.value)} className={inputClassName} placeholder="Clerk / Officer / Assistant" />
+                  <input value={form.postName} onChange={(event) => updateField('postName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Clerk / Officer / Assistant" />
                 </FormField>
                 <FormField label="Employment type">
-                  <select value={form.employmentType} onChange={(event) => updateField('employmentType', event.target.value)} className={inputClassName}>
+                  <select value={form.employmentType} onChange={(event) => updateField('employmentType', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
                     <option value="full-time">Full-time</option>
                     <option value="contract">Contract</option>
                     <option value="trainee">Trainee</option>
                   </select>
                 </FormField>
                 <FormField label="Recruitment title" error={errors.recruitmentName}>
-                  <textarea value={form.recruitmentName} onChange={(event) => updateField('recruitmentName', event.target.value)} className={`${inputClassName} min-h-32`} placeholder="Name of the recruitment" />
+                  <textarea value={form.recruitmentName} onChange={(event) => updateField('recruitmentName', event.target.value)} className={`${APPLICATION_INPUT_CLASS_NAME} min-h-32`} placeholder="Name of the recruitment" />
                 </FormField>
               </div>
             )}
@@ -550,19 +520,19 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
             {currentStep === 1 && (
               <div className="grid gap-6 md:grid-cols-2">
                 <FormField label="First name" error={errors.firstName}>
-                  <input value={form.firstName} onChange={(event) => updateField('firstName', event.target.value)} className={inputClassName} />
+                  <input value={form.firstName} onChange={(event) => updateField('firstName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Last name" error={errors.lastName}>
-                  <input value={form.lastName} onChange={(event) => updateField('lastName', event.target.value)} className={inputClassName} />
+                  <input value={form.lastName} onChange={(event) => updateField('lastName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Date of birth" error={errors.dateOfBirth}>
-                  <input type="date" value={form.dateOfBirth} onChange={(event) => updateField('dateOfBirth', event.target.value)} className={inputClassName} />
+                  <input type="date" value={form.dateOfBirth} onChange={(event) => updateField('dateOfBirth', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Age as on" error={errors.ageAsOn}>
-                  <input value={form.ageAsOn} onChange={(event) => updateField('ageAsOn', event.target.value)} className={inputClassName} placeholder="28 years, 4 months, 11 days" />
+                  <input value={form.ageAsOn} onChange={(event) => updateField('ageAsOn', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="28 years, 4 months, 11 days" />
                 </FormField>
                 <FormField label="Gender" error={errors.gender}>
-                  <select value={form.gender} onChange={(event) => updateField('gender', event.target.value)} className={inputClassName}>
+                  <select value={form.gender} onChange={(event) => updateField('gender', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
                     <option value="">Select gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -570,7 +540,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   </select>
                 </FormField>
                 <FormField label="Category" error={errors.category}>
-                  <select value={form.category} onChange={(event) => updateField('category', event.target.value)} className={inputClassName}>
+                  <select value={form.category} onChange={(event) => updateField('category', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
                     <option value="">Select category</option>
                     <option value="General">General</option>
                     <option value="OBC">OBC</option>
@@ -580,10 +550,10 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   </select>
                 </FormField>
                 <FormField label="Caste" error={errors.caste}>
-                  <input value={form.caste} onChange={(event) => updateField('caste', event.target.value)} className={inputClassName} />
+                  <input value={form.caste} onChange={(event) => updateField('caste', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Religion" error={errors.religion}>
-                  <input value={form.religion} onChange={(event) => updateField('religion', event.target.value)} className={inputClassName} />
+                  <input value={form.religion} onChange={(event) => updateField('religion', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Maharashtra domiciled?" error={errors.maharashtraDomiciled}>
                   <YesNoButtons value={form.maharashtraDomiciled} onChange={(value) => updateField('maharashtraDomiciled', value)} />
@@ -592,7 +562,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   <YesNoButtons value={form.nonCreamyLayer} onChange={(value) => updateField('nonCreamyLayer', value)} />
                 </FormField>
                 <FormField label="Marital status" error={errors.maritalStatus}>
-                  <select value={form.maritalStatus} onChange={(event) => updateField('maritalStatus', event.target.value)} className={inputClassName}>
+                  <select value={form.maritalStatus} onChange={(event) => updateField('maritalStatus', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
                     <option value="">Select marital status</option>
                     <option value="Single">Single</option>
                     <option value="Married">Married</option>
@@ -603,10 +573,10 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   <YesNoButtons value={form.nationalityIndian} onChange={(value) => updateField('nationalityIndian', value)} />
                 </FormField>
                 <FormField label="Father's / Husband's name" error={errors.fatherHusbandName}>
-                  <input value={form.fatherHusbandName} onChange={(event) => updateField('fatherHusbandName', event.target.value)} className={inputClassName} />
+                  <input value={form.fatherHusbandName} onChange={(event) => updateField('fatherHusbandName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Mother's name" error={errors.motherName}>
-                  <input value={form.motherName} onChange={(event) => updateField('motherName', event.target.value)} className={inputClassName} />
+                  <input value={form.motherName} onChange={(event) => updateField('motherName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
               </div>
             )}
@@ -615,37 +585,37 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               <div className="space-y-8">
                 <div className="grid gap-6 md:grid-cols-2">
                   <FormField label="Email address" error={errors.email}>
-                    <input type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} className={inputClassName} />
+                    <input type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                   <FormField label="Mobile number" error={errors.phone}>
-                    <input value={form.phone} onChange={(event) => updateField('phone', event.target.value.replace(/\D/g, '').slice(0, 10))} className={inputClassName} placeholder="10-digit number" />
+                    <input value={form.phone} onChange={(event) => updateField('phone', event.target.value.replace(/\D/g, '').slice(0, 10))} className={APPLICATION_INPUT_CLASS_NAME} placeholder="10-digit number" />
                   </FormField>
                   <FormField label="Alternate phone" error={errors.alternatePhone}>
-                    <input value={form.alternatePhone} onChange={(event) => updateField('alternatePhone', event.target.value.replace(/\D/g, '').slice(0, 10))} className={inputClassName} placeholder="Optional" />
+                    <input value={form.alternatePhone} onChange={(event) => updateField('alternatePhone', event.target.value.replace(/\D/g, '').slice(0, 10))} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Optional" />
                   </FormField>
                   <FormField label="Pincode" error={errors.pincode}>
-                    <input value={form.pincode} onChange={(event) => updateField('pincode', event.target.value.replace(/\D/g, '').slice(0, 6))} className={inputClassName} />
+                    <input value={form.pincode} onChange={(event) => updateField('pincode', event.target.value.replace(/\D/g, '').slice(0, 6))} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                   <FormField label="Address line 1" error={errors.addressLine1}>
-                    <input value={form.addressLine1} onChange={(event) => updateField('addressLine1', event.target.value)} className={inputClassName} />
+                    <input value={form.addressLine1} onChange={(event) => updateField('addressLine1', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                   <FormField label="Address line 2">
-                    <input value={form.addressLine2} onChange={(event) => updateField('addressLine2', event.target.value)} className={inputClassName} />
+                    <input value={form.addressLine2} onChange={(event) => updateField('addressLine2', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                   <FormField label="Address line 3">
-                    <input value={form.addressLine3} onChange={(event) => updateField('addressLine3', event.target.value)} className={inputClassName} />
+                    <input value={form.addressLine3} onChange={(event) => updateField('addressLine3', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                   <FormField label="Taluka" error={errors.taluka}>
-                    <input value={form.taluka} onChange={(event) => updateField('taluka', event.target.value)} className={inputClassName} />
+                    <input value={form.taluka} onChange={(event) => updateField('taluka', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                   <FormField label="District" error={errors.district}>
-                    <input value={form.district} onChange={(event) => updateField('district', event.target.value)} className={inputClassName} />
+                    <input value={form.district} onChange={(event) => updateField('district', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                   <FormField label="City" error={errors.city}>
-                    <input value={form.city} onChange={(event) => updateField('city', event.target.value)} className={inputClassName} />
+                    <input value={form.city} onChange={(event) => updateField('city', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                   <FormField label="State" error={errors.state}>
-                    <input value={form.state} onChange={(event) => updateField('state', event.target.value)} className={inputClassName} />
+                    <input value={form.state} onChange={(event) => updateField('state', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                 </div>
 
@@ -658,10 +628,10 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                       <span>Write</span>
                       <span>Speak</span>
                     </div>
-                    {(['marathi', 'hindi', 'english'] as LanguageName[]).map((language) => (
+                    {LANGUAGE_NAMES.map((language) => (
                       <div key={language} className="grid grid-cols-4 items-center border-t border-slate-100 px-4 py-3 text-sm text-slate-700">
                         <span className="font-semibold capitalize">{language}</span>
-                        {(['read', 'write', 'speak'] as LanguageAbility[]).map((ability) => (
+                        {LANGUAGE_ABILITIES.map((ability) => (
                           <label key={ability} className="flex items-center">
                             <input
                               type="checkbox"
@@ -692,12 +662,12 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                       </select>
                     </div>
                     <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      <input value={entry.institute} onChange={(event) => updateEducation(index, 'institute', event.target.value)} className={inputClassName} placeholder="School / University / Institute" />
-                      <input value={entry.board} onChange={(event) => updateEducation(index, 'board', event.target.value)} className={inputClassName} placeholder="Board / University" />
-                      <input value={entry.specialization} onChange={(event) => updateEducation(index, 'specialization', event.target.value)} className={inputClassName} placeholder="Specialization" />
-                      <input value={entry.score} onChange={(event) => updateEducation(index, 'score', event.target.value)} className={inputClassName} placeholder="Percentage / CGPA" />
-                      <input value={entry.className} onChange={(event) => updateEducation(index, 'className', event.target.value)} className={inputClassName} placeholder="Class / Grade" />
-                      <input value={entry.passedMonthYear} onChange={(event) => updateEducation(index, 'passedMonthYear', event.target.value)} className={inputClassName} placeholder="Passed month & year" />
+                      <input value={entry.institute} onChange={(event) => updateEducation(index, 'institute', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="School / University / Institute" />
+                      <input value={entry.board} onChange={(event) => updateEducation(index, 'board', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Board / University" />
+                      <input value={entry.specialization} onChange={(event) => updateEducation(index, 'specialization', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Specialization" />
+                      <input value={entry.score} onChange={(event) => updateEducation(index, 'score', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Percentage / CGPA" />
+                      <input value={entry.className} onChange={(event) => updateEducation(index, 'className', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Class / Grade" />
+                      <input value={entry.passedMonthYear} onChange={(event) => updateEducation(index, 'passedMonthYear', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Passed month & year" />
                     </div>
                   </div>
                 ))}
@@ -709,7 +679,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               <div className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   <FormField label="Experience level" error={errors.experienceLevel}>
-                    <select value={form.experienceLevel} onChange={(event) => updateField('experienceLevel', event.target.value)} className={inputClassName}>
+                    <select value={form.experienceLevel} onChange={(event) => updateField('experienceLevel', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
                       <option value="">Select experience level</option>
                       <option value="fresher">Fresher</option>
                       <option value="junior">0-2 years</option>
@@ -718,7 +688,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                     </select>
                   </FormField>
                   <FormField label="Key banking or operational skills" error={errors.keySkills}>
-                    <textarea value={form.keySkills} onChange={(event) => updateField('keySkills', event.target.value)} className={`${inputClassName} min-h-32`} placeholder="Core banking, audit support, branch operations, MIS, customer handling..." />
+                    <textarea value={form.keySkills} onChange={(event) => updateField('keySkills', event.target.value)} className={`${APPLICATION_INPUT_CLASS_NAME} min-h-32`} placeholder="Core banking, audit support, branch operations, MIS, customer handling..." />
                   </FormField>
                 </div>
 
@@ -731,10 +701,10 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   </div>
                   {form.experienceEntries.map((entry, index) => (
                     <div key={index} className="grid gap-4 rounded-[1.5rem] border border-slate-200 p-5 md:grid-cols-2">
-                      <input value={entry.organization} onChange={(event) => updateExperience(index, 'organization', event.target.value)} className={inputClassName} placeholder="Organization name" />
-                      <input value={entry.designation} onChange={(event) => updateExperience(index, 'designation', event.target.value)} className={inputClassName} placeholder="Designation" />
-                      <input value={entry.location} onChange={(event) => updateExperience(index, 'location', event.target.value)} className={inputClassName} placeholder="Location" />
-                      <input value={entry.totalService} onChange={(event) => updateExperience(index, 'totalService', event.target.value)} className={inputClassName} placeholder="Total service" />
+                      <input value={entry.organization} onChange={(event) => updateExperience(index, 'organization', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Organization name" />
+                      <input value={entry.designation} onChange={(event) => updateExperience(index, 'designation', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Designation" />
+                      <input value={entry.location} onChange={(event) => updateExperience(index, 'location', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Location" />
+                      <input value={entry.totalService} onChange={(event) => updateExperience(index, 'totalService', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Total service" />
                     </div>
                   ))}
                   {errors.experienceEntries ? <p className="text-sm text-rose-600">{errors.experienceEntries}</p> : null}
@@ -745,22 +715,22 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
             {currentStep === 5 && (
               <div className="grid gap-6 md:grid-cols-2">
                 <FormField label="Aadhaar number" error={errors.aadhaarNumber}>
-                  <input value={form.aadhaarNumber} onChange={(event) => updateField('aadhaarNumber', event.target.value.replace(/\D/g, '').slice(0, 12))} className={inputClassName} />
+                  <input value={form.aadhaarNumber} onChange={(event) => updateField('aadhaarNumber', event.target.value.replace(/\D/g, '').slice(0, 12))} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="PAN number" error={errors.panNumber}>
-                  <input value={form.panNumber} onChange={(event) => updateField('panNumber', event.target.value.toUpperCase().slice(0, 10))} className={inputClassName} />
+                  <input value={form.panNumber} onChange={(event) => updateField('panNumber', event.target.value.toUpperCase().slice(0, 10))} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Resume link" error={errors.resumeLink}>
-                  <input value={form.resumeLink} onChange={(event) => updateField('resumeLink', event.target.value)} className={inputClassName} placeholder="https://..." />
+                  <input value={form.resumeLink} onChange={(event) => updateField('resumeLink', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="https://..." />
                 </FormField>
                 <FormField label="Portfolio / LinkedIn link" error={errors.portfolioLink}>
-                  <input value={form.portfolioLink} onChange={(event) => updateField('portfolioLink', event.target.value)} className={inputClassName} placeholder="Optional" />
+                  <input value={form.portfolioLink} onChange={(event) => updateField('portfolioLink', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Optional" />
                 </FormField>
                 <FormField label="Preferred location" error={errors.preferredLocation}>
-                  <input value={form.preferredLocation} onChange={(event) => updateField('preferredLocation', event.target.value)} className={inputClassName} />
+                  <input value={form.preferredLocation} onChange={(event) => updateField('preferredLocation', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Notice period" error={errors.noticePeriod}>
-                  <input value={form.noticePeriod} onChange={(event) => updateField('noticePeriod', event.target.value)} className={inputClassName} placeholder="Immediate / 30 days / 60 days" />
+                  <input value={form.noticePeriod} onChange={(event) => updateField('noticePeriod', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Immediate / 30 days / 60 days" />
                 </FormField>
                 <FormField label="Willing to relocate?" error={errors.relocate}>
                   <ChoiceButtons choices={['Yes', 'No', 'Open to discussion']} value={form.relocate} onChange={(value) => updateField('relocate', value)} />
@@ -820,7 +790,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   </p>
                   <label className="mt-6 block">
                     <span className="text-sm font-semibold text-slate-100">Payment method</span>
-                    <select value={form.paymentMethod} onChange={(event) => updateField('paymentMethod', event.target.value)} className={`${inputClassName} border-white/10 bg-white/10 text-white focus:border-amber-200 focus:ring-amber-300/20`}>
+                    <select value={form.paymentMethod} onChange={(event) => updateField('paymentMethod', event.target.value)} className={`${APPLICATION_INPUT_CLASS_NAME} border-white/10 bg-white/10 text-white focus:border-amber-200 focus:ring-amber-300/20`}>
                       <option className="text-slate-900" value="UPI">UPI</option>
                       <option className="text-slate-900" value="Debit card">Debit card</option>
                       <option className="text-slate-900" value="Net banking">Net banking</option>
@@ -839,7 +809,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               Previous step
             </button>
 
-            {currentStep < steps.length - 1 ? (
+            {currentStep < APPLICATION_STEPS.length - 1 ? (
               <button type="button" onClick={goNext} className="inline-flex items-center justify-center rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400">
                 {currentStep === 6 ? 'Continue to payment' : 'Continue to next step'}
               </button>
@@ -918,13 +888,9 @@ function SummaryCard({
   label: string;
   value: string;
   detail: string;
-  tone: 'slate' | 'amber' | 'emerald';
+  tone: SummaryTone;
 }) {
-  const toneClassName = {
-    slate: 'bg-slate-50 text-slate-500',
-    amber: 'bg-amber-50 text-amber-700',
-    emerald: 'bg-emerald-50 text-emerald-700',
-  }[tone];
+  const toneClassName = SUMMARY_TONE_CLASS_NAMES[tone];
 
   return (
     <div className={`rounded-3xl p-6 ${toneClassName}`}>
