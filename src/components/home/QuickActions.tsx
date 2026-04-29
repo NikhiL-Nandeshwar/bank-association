@@ -1,7 +1,15 @@
 'use client';
 
+// React
 import type { ReactNode } from 'react';
+
+// Framework
 import Link from 'next/link';
+
+// Constants
+import { ROUTES } from '@/constants/routes.constants';
+
+// Utils/lib
 import { usePortalLanguage } from '@/lib/usePortalLanguage';
 
 type ActionItem = {
@@ -49,7 +57,7 @@ const copy = {
       {
         title: 'Active Recruitments',
         description: '4 Open Positions',
-        href: '/recruitment',
+        href: ROUTES.recruitment,
         icon: <RecruitmentIcon />,
         iconClassName: 'text-blue-700',
         iconWrapClassName: 'bg-blue-50 ring-1 ring-blue-100',
@@ -57,7 +65,7 @@ const copy = {
       {
         title: 'Notices & Circulars',
         description: 'Latest updates & instructions',
-        href: '/recruitment',
+        href: ROUTES.recruitment,
         icon: <NoticeIcon />,
         iconClassName: 'text-amber-700',
         iconWrapClassName: 'bg-amber-50 ring-1 ring-amber-100',
@@ -65,7 +73,7 @@ const copy = {
       {
         title: 'Member Login',
         description: 'Login to member portal',
-        href: '/auth/login',
+        href: ROUTES.login,
         icon: <LoginIcon />,
         iconClassName: 'text-emerald-700',
         iconWrapClassName: 'bg-emerald-50 ring-1 ring-emerald-100',
@@ -77,7 +85,7 @@ const copy = {
       {
         title: '\u0938\u0915\u094d\u0930\u093f\u092f \u092d\u0930\u0924\u0940',
         description: '4 \u0916\u0941\u0932\u0940 \u092a\u0926\u0947',
-        href: '/recruitment',
+        href: ROUTES.recruitment,
         icon: <RecruitmentIcon />,
         iconClassName: 'text-blue-700',
         iconWrapClassName: 'bg-blue-50 ring-1 ring-blue-100',
@@ -85,7 +93,7 @@ const copy = {
       {
         title: '\u0938\u0942\u091a\u0928\u093e \u0935 \u092a\u0930\u093f\u092a\u0924\u094d\u0930\u0915\u0947',
         description: '\u0928\u0935\u0940\u0928\u0924\u092e \u0905\u0926\u094d\u092f\u0924\u0928\u0947 \u0935 \u0938\u0942\u091a\u0928\u093e',
-        href: '/recruitment',
+        href: ROUTES.recruitment,
         icon: <NoticeIcon />,
         iconClassName: 'text-amber-700',
         iconWrapClassName: 'bg-amber-50 ring-1 ring-amber-100',
@@ -93,7 +101,7 @@ const copy = {
       {
         title: '\u0938\u0926\u0938\u094d\u092f \u0932\u0949\u0917\u093f\u0928',
         description: '\u0938\u0926\u0938\u094d\u092f \u092a\u094b\u0930\u094d\u091f\u0932\u092e\u0927\u094d\u092f\u0947 \u0932\u0949\u0917\u093f\u0928 \u0915\u0930\u093e',
-        href: '/auth/login',
+        href: ROUTES.login,
         icon: <LoginIcon />,
         iconClassName: 'text-emerald-700',
         iconWrapClassName: 'bg-emerald-50 ring-1 ring-emerald-100',

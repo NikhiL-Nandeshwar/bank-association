@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from 'react';
 
+import { STORAGE_KEYS } from '@/constants/storage.constants';
+
 export type PortalLanguage = 'en' | 'mr';
 
-const STORAGE_KEY = 'portal-language';
 const EVENT_NAME = 'portal-language-change';
 
 function getStoredLanguage(): PortalLanguage {
   if (typeof window === 'undefined') return 'en';
 
-  const stored = window.localStorage.getItem(STORAGE_KEY);
+  const stored = window.localStorage.getItem(STORAGE_KEYS.portalLanguage);
   return stored === 'mr' || stored === 'en' ? stored : 'en';
 }
 
@@ -26,7 +27,7 @@ export function usePortalLanguage() {
     applyLanguage(getStoredLanguage());
 
     const handleStorage = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEY) {
+      if (event.key === STORAGE_KEYS.portalLanguage) {
         applyLanguage(getStoredLanguage());
       }
     };
@@ -47,7 +48,7 @@ export function usePortalLanguage() {
 
   const setLanguage = (nextLanguage: PortalLanguage) => {
     setLanguageState(nextLanguage);
-    window.localStorage.setItem(STORAGE_KEY, nextLanguage);
+    window.localStorage.setItem(STORAGE_KEYS.portalLanguage, nextLanguage);
     document.documentElement.lang = nextLanguage;
     window.dispatchEvent(new CustomEvent<PortalLanguage>(EVENT_NAME, { detail: nextLanguage }));
   };

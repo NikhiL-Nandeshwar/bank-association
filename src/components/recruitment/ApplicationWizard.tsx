@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 type ApplicationWizardProps = {
   initialRecruitment: {
@@ -325,10 +325,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     () => normalizeFormState(initialRecruitment, formState),
     [formState, initialRecruitment],
   );
-
-  useEffect(() => {
-    setForm((prev) => normalizeFormState(initialRecruitment, prev));
-  }, [initialRecruitment]);
 
   const progress = useMemo(
     () => `${Math.round(((currentStep + 1) / steps.length) * 100)}%`,

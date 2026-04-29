@@ -1,9 +1,18 @@
 'use client';
 
+// React
 import { useState } from 'react';
+
+// Framework
 import Image from 'next/image';
 import Link from 'next/link';
+
+// Constants
+import { ROUTES } from '@/constants/routes.constants';
+
+// Utils/lib
 import { usePortalLanguage } from '@/lib/usePortalLanguage';
+import { cn } from '@/utils/classnames';
 
 const copy = {
   en: {
@@ -35,9 +44,9 @@ export default function Header() {
   const { language, setLanguage } = usePortalLanguage();
 
   const navLinks = [
-    { href: '/', label: copy[language].home },
-    { href: '/about', label: copy[language].about },
-    { href: '/recruitment', label: copy[language].recruitment },
+    { href: ROUTES.home, label: copy[language].home },
+    { href: ROUTES.about, label: copy[language].about },
+    { href: ROUTES.recruitment, label: copy[language].recruitment },
   ];
 
   const closeMenu = () => setIsMenuOpen(false);
@@ -45,7 +54,7 @@ export default function Header() {
   return (
     <header className="bg-slate-800 text-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-        <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3" onClick={closeMenu}>
+        <Link href={ROUTES.home} className="flex min-w-0 items-center gap-2 sm:gap-3" onClick={closeMenu}>
           <Image src="/logo.png" alt="KOP Bank Logo" width={40} height={40} className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" priority />
           <div className="min-w-0">
             <p className="max-w-[150px] truncate text-[11px] font-semibold leading-tight sm:max-w-none sm:text-sm">{copy[language].logoLineOne}</p>
@@ -55,10 +64,10 @@ export default function Header() {
 
         <div className="flex shrink-0 items-center gap-2 md:hidden">
           <div className="flex items-center rounded-full border border-slate-600 bg-slate-700/60 p-0.5 text-[10px] font-semibold">
-            <button type="button" onClick={() => setLanguage('mr')} className={`rounded-full px-2 py-1 transition ${language === 'mr' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200'}`}>
-              मराठी
+            <button type="button" onClick={() => setLanguage('mr')} className={cn('rounded-full px-2 py-1 transition', language === 'mr' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
+              {copy[language].marathi}
             </button>
-            <button type="button" onClick={() => setLanguage('en')} className={`rounded-full px-2 py-1 transition ${language === 'en' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200'}`}>
+            <button type="button" onClick={() => setLanguage('en')} className={cn('rounded-full px-2 py-1 transition', language === 'en' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
               EN
             </button>
           </div>
@@ -86,16 +95,16 @@ export default function Header() {
           <div className="ml-2 flex items-center gap-3 rounded-full border border-slate-600 bg-slate-700/60 px-3 py-1.5 text-xs">
             <span className="text-slate-300">{copy[language].languageLabel}</span>
             <div className="flex items-center rounded-full bg-slate-800/80 p-1 font-semibold">
-              <button type="button" onClick={() => setLanguage('mr')} className={`rounded-full px-3 py-1 transition ${language === 'mr' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200'}`}>
+              <button type="button" onClick={() => setLanguage('mr')} className={cn('rounded-full px-3 py-1 transition', language === 'mr' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
                 {copy[language].marathi}
               </button>
-              <button type="button" onClick={() => setLanguage('en')} className={`rounded-full px-3 py-1 transition ${language === 'en' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200'}`}>
+              <button type="button" onClick={() => setLanguage('en')} className={cn('rounded-full px-3 py-1 transition', language === 'en' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
                 {copy[language].english}
               </button>
             </div>
           </div>
 
-          <Link href="/login" className="inline-flex items-center rounded-md bg-[#fcd62e] px-4 py-2 text-slate-800 hover:bg-yellow-400">
+          <Link href={ROUTES.login} className="inline-flex items-center rounded-md bg-[#fcd62e] px-4 py-2 text-slate-800 hover:bg-yellow-400">
             {copy[language].login}
           </Link>
         </nav>
@@ -105,11 +114,11 @@ export default function Header() {
         <nav className="border-t border-slate-700 bg-slate-800 md:hidden">
           <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 text-sm font-medium">
             {navLinks.map((item) => (
-              <Link key={item.href} href={item.href} onClick={closeMenu} className={`rounded-md px-3 py-2 ${item.href === '/recruitment' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-100 hover:bg-slate-700'}`}>
+              <Link key={item.href} href={item.href} onClick={closeMenu} className={cn('rounded-md px-3 py-2', item.href === ROUTES.recruitment ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-100 hover:bg-slate-700')}>
                 {item.label}
               </Link>
             ))}
-            <Link href="/login" onClick={closeMenu} className="mt-2 rounded-md bg-[#fcd62e] px-3 py-2 text-center font-semibold text-slate-900 hover:bg-yellow-400">
+            <Link href={ROUTES.login} onClick={closeMenu} className="mt-2 rounded-md bg-[#fcd62e] px-3 py-2 text-center font-semibold text-slate-900 hover:bg-yellow-400">
               {copy[language].login}
             </Link>
           </div>
