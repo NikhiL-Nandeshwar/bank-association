@@ -255,6 +255,33 @@ function generateTransactionNumber() {
   return `DEMO${Date.now().toString().slice(-10)}`;
 }
 
+function calculateAgeAsOn(dateOfBirth: string) {
+  if (!dateOfBirth) return '';
+
+  const birthDate = new Date(dateOfBirth);
+  if (Number.isNaN(birthDate.getTime())) return '';
+
+  const today = new Date();
+  let years = today.getFullYear() - birthDate.getFullYear();
+  let months = today.getMonth() - birthDate.getMonth();
+  let days = today.getDate() - birthDate.getDate();
+
+  if (days < 0) {
+    const previousMonthLastDate = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+    days += previousMonthLastDate;
+    months -= 1;
+  }
+
+  if (months < 0) {
+    months += 12;
+    years -= 1;
+  }
+
+  if (years < 0) return '';
+
+  return `${years} years, ${months} months, ${days} days`;
+}
+
 function normalizeFormState(
   recruitment: ApplicationWizardProps['initialRecruitment'],
   form: Partial<FormState>,
@@ -290,6 +317,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [formState, setForm] = useState<FormState>(() => initialState(initialRecruitment));
   const [errors, setErrors] = useState<ErrorMap>({});
   const [submitted, setSubmitted] = useState(false);
+  const [showHallTicket, setShowHallTicket] = useState(false);
 
   const form = useMemo(
     () => normalizeFormState(initialRecruitment, formState),
@@ -306,6 +334,15 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const updateField = <K extends keyof FormState>(field: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const updateDateOfBirth = (dateOfBirth: string) => {
+    setForm((prev) => ({
+      ...prev,
+      dateOfBirth,
+      ageAsOn: calculateAgeAsOn(dateOfBirth),
+    }));
+    setErrors((prev) => ({ ...prev, dateOfBirth: undefined, ageAsOn: undefined }));
   };
 
   const updateEducation = <K extends keyof EducationEntry>(index: number, field: K, value: EducationEntry[K]) => {
@@ -381,8 +418,8 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
 
   if (submitted) {
     return (
-      <section className="bg-[radial-gradient(circle_at_top,_rgba(252,214,46,0.2),_transparent_32%),linear-gradient(180deg,#f8fafc_0%,#e2e8f0_100%)] py-16">
-        <div className="mx-auto max-w-4xl px-4">
+      <section className="bg-slate-50 py-16">
+        <div className="mx-auto max-w-5xl px-4">
           <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.14)]">
             <div className="bg-slate-800 px-8 py-10 text-white">
               <span className="inline-flex rounded-full border border-amber-300/40 bg-amber-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-amber-200">
@@ -398,7 +435,18 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               <SummaryCard label="Primary contact" value={fullName || 'Applicant'} detail={`${form.email} | ${form.phone}`} tone="amber" />
               <SummaryCard label="Payment" value={form.paymentStatus || 'Payment successful'} detail={form.transactionNumber} tone="emerald" />
             </div>
+            <div className="border-t border-slate-100 px-8 pb-8">
+              <button
+                type="button"
+                onClick={() => setShowHallTicket((prev) => !prev)}
+                className="inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
+              >
+                {showHallTicket ? 'Hide hall ticket' : 'View hall ticket'}
+              </button>
+            </div>
           </div>
+
+          {showHallTicket ? <HallTicketPreview form={form} fullName={fullName || 'Applicant'} /> : null}
         </div>
       </section>
     );
@@ -526,10 +574,15 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   <input value={form.lastName} onChange={(event) => updateField('lastName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Date of birth" error={errors.dateOfBirth}>
-                  <input type="date" value={form.dateOfBirth} onChange={(event) => updateField('dateOfBirth', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                  <input type="date" value={form.dateOfBirth} onChange={(event) => updateDateOfBirth(event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
-                <FormField label="Age as on" error={errors.ageAsOn}>
-                  <input value={form.ageAsOn} onChange={(event) => updateField('ageAsOn', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="28 years, 4 months, 11 days" />
+                <FormField label="Age as on today" error={errors.ageAsOn}>
+                  <input
+                    value={form.ageAsOn}
+                    disabled
+                    className={`${APPLICATION_INPUT_CLASS_NAME} cursor-not-allowed bg-slate-100 text-slate-500`}
+                    placeholder="Calculated after date of birth"
+                  />
                 </FormField>
                 <FormField label="Gender" error={errors.gender}>
                   <select value={form.gender} onChange={(event) => updateField('gender', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
@@ -572,7 +625,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                 <FormField label="Nationality / Citizenship Indian?" error={errors.nationalityIndian}>
                   <YesNoButtons value={form.nationalityIndian} onChange={(value) => updateField('nationalityIndian', value)} />
                 </FormField>
-                <FormField label="Father's / Husband's name" error={errors.fatherHusbandName}>
+                <FormField label="Father's / Spouse's name" error={errors.fatherHusbandName}>
                   <input value={form.fatherHusbandName} onChange={(event) => updateField('fatherHusbandName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Mother's name" error={errors.motherName}>
@@ -875,6 +928,84 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
     <div className="border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
       <p className="mt-2 text-sm leading-7 text-slate-700">{value}</p>
+    </div>
+  );
+}
+
+function HallTicketPreview({ form, fullName }: { form: FormState; fullName: string }) {
+  const examDate = '18 May 2026';
+  const examTime = '10:30 AM to 12:30 PM';
+  const reportingTime = '09:30 AM';
+  const venue = form.preferredLocation
+    ? `District Cooperative Training Centre, ${form.preferredLocation}`
+    : 'District Cooperative Training Centre, Kolhapur';
+
+  return (
+    <div className="mt-8 overflow-hidden rounded-[1.5rem] border border-amber-300 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+      <div className="flex flex-col gap-4 border-b border-amber-200 bg-white px-6 py-5 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-700">Hall ticket preview</p>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-900">Recruitment Examination Hall Ticket</h2>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-right">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Hall Ticket No.</p>
+          <p className="mt-1 text-sm font-semibold text-slate-900">HT-{form.applicationId.replace('APP-', '')}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_190px]">
+        <div className="p-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TicketDetail label="Candidate name" value={fullName} />
+            <TicketDetail label="Application ID" value={form.applicationId} />
+            <TicketDetail label="Recruitment code" value={form.recruitmentCode} />
+            <TicketDetail label="Post applied" value={form.postName || 'Bank recruitment post'} />
+            <TicketDetail label="Bank name" value={form.bankName} />
+            <TicketDetail label="Category" value={form.category || 'General'} />
+          </div>
+
+          <div className="mt-6 grid gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:grid-cols-3">
+            <TicketDetail label="Exam date" value={examDate} />
+            <TicketDetail label="Exam time" value={examTime} />
+            <TicketDetail label="Reporting" value={reportingTime} />
+          </div>
+
+          <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+            <TicketDetail label="Exam venue" value={venue} />
+            <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-6 text-slate-500">
+              Carry a printed hall ticket, original photo ID, and one passport-size photograph. Entry closes 15 minutes before exam time.
+            </p>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-200 bg-slate-50 p-6 md:border-l md:border-t-0">
+          <div className="flex h-32 items-center justify-center overflow-hidden rounded-xl border border-slate-300 bg-white">
+            <img src="/hallticket/Display_Pic.jpg" alt="Candidate photograph" className="h-full w-full object-cover" />
+          </div>
+          <div className="mt-6 flex h-16 items-center justify-center overflow-hidden rounded-xl border border-slate-300 bg-white px-3 py-2">
+            <img src="/hallticket/SIGN.png" alt="Candidate signature" className="max-h-full max-w-full object-contain" />
+          </div>
+          <p className="mt-2 text-center text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Signature</p>
+          <div className="mt-6 rounded-xl bg-slate-900 px-4 py-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-white">
+            Verified
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 text-xs text-slate-600 sm:grid-cols-3">
+        <span>Payment ref: {form.transactionNumber}</span>
+        <span>Issued on: {form.paymentDate || '30/04/2026'}</span>
+        <span>Status: Provisional admission</span>
+      </div>
+    </div>
+  );
+}
+
+function TicketDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
+      <p className="mt-1 text-sm font-semibold leading-6 text-slate-900">{value}</p>
     </div>
   );
 }

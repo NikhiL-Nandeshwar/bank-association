@@ -9,12 +9,17 @@ import { ROUTES } from '@/constants/routes.constants';
 import Link from 'next/link';
 import { useState } from 'react';
 import { usePortalLanguage } from '@/lib/usePortalLanguage';
+import { cn } from '@/utils/classnames';
 
 export default function RecruitmentOverview() {
   const { language } = usePortalLanguage();
   const [activeTab, setActiveTab] = useState<'current' | 'previous'>('current');
+  const [selectedResultCode, setSelectedResultCode] = useState<string | null>(null);
   const content = RECRUITMENT_OVERVIEW_COPY[language];
   const visibleRecruitments = activeTab === 'current' ? CURRENT_RECRUITMENTS : PREVIOUS_RECRUITMENTS;
+  const selectedResult = selectedResultCode
+    ? PREVIOUS_RECRUITMENTS.find((item) => item.code === selectedResultCode)
+    : null;
 
   return (
     <section id="recruitments" className="bg-slate-100 py-14">
@@ -85,9 +90,16 @@ export default function RecruitmentOverview() {
                           </span>
                           <button
                             type="button"
-                            className="rounded-md border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+                            aria-expanded={selectedResultCode === item.code}
+                            onClick={() => setSelectedResultCode((currentCode) => (currentCode === item.code ? null : item.code))}
+                            className={cn(
+                              'rounded-md border px-3 py-1 text-xs font-semibold transition',
+                              selectedResultCode === item.code
+                                ? 'border-blue-900 bg-blue-950 text-[#fcd62e]'
+                                : 'bg-slate-200 border-slate-300 text-slate-600 hover:border-slate-400 hover:text-slate-900',
+                            )}
                           >
-                            {content.viewArchive}
+                            {selectedResultCode === item.code ? content.hideDetails : content.viewArchive}
                           </button>
                         </div>
                       )}
@@ -97,6 +109,69 @@ export default function RecruitmentOverview() {
               </tbody>
             </table>
           </div>
+
+          {activeTab === 'previous' && selectedResultCode && selectedResult ? (
+            <div className="border-t bg-white p-4 sm:p-6">
+              <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                <div className="bg-blue-950 px-5 py-5 text-white">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#fcd62e]">{content.resultAnnouncement}</p>
+                  <h3 className="mt-2 text-xl font-semibold leading-snug">{selectedResult.name}</h3>
+                  <div className="mt-4 grid gap-3 text-sm text-slate-100 sm:grid-cols-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-slate-300">{content.code}</p>
+                      <p className="mt-1 font-semibold">{selectedResult.code}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-slate-300">{content.resultPublished}</p>
+                      <p className="mt-1 font-semibold">{selectedResult.resultDate}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-slate-300">{content.totalSelected}</p>
+                      <p className="mt-1 font-semibold">{selectedResult.totalSelected}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 p-5 lg:grid-cols-[240px_1fr]">
+                  <div className="rounded-lg border border-slate-200 bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{content.post}</p>
+                    <p className="mt-2 text-lg font-semibold text-slate-900">{selectedResult.position}</p>
+                    <p className="mt-4 text-sm leading-6 text-slate-600">{content.resultNote}</p>
+                  </div>
+
+                  <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-slate-100 text-slate-600">
+                          <tr>
+                            <th className="px-4 py-3 text-left">{content.rollNo}</th>
+                            <th className="px-4 py-3 text-left">{content.candidateName}</th>
+                            <th className="px-4 py-3 text-left">{content.category}</th>
+                            <th className="px-4 py-3 text-right">{content.marks}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedResult.candidates.map((candidate, index) => (
+                            <tr key={candidate.rollNo} className="border-t">
+                              <td className="px-4 py-3 font-medium text-slate-900">{candidate.rollNo}</td>
+                              <td className="px-4 py-3 text-slate-700">
+                                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-yellow-100 text-xs font-bold text-slate-900">
+                                  {index + 1}
+                                </span>
+                                {candidate.name}
+                              </td>
+                              <td className="px-4 py-3 text-slate-600">{candidate.category}</td>
+                              <td className="px-4 py-3 text-right font-semibold text-slate-900">{candidate.marks}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div className="px-4 py-3 text-xs text-slate-500">{content.note}</div>
         </div>
