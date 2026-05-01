@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
   account: {
     me: 'Account/Me',
     changePassword: 'Account/ChangePassword',
+    logout: 'Account/Logout',
   },
   bank: {
     create: 'Bank/Create',
@@ -20,5 +21,11 @@ export const API_ENDPOINTS = {
     getById: (bankId: number) => `Bank/GetbyId/${bankId}`,
     getDropdown: 'Bank/GetDrowpdown',
     toggleActive: (bankId: number) => `Bank/ToggleActive/${bankId}`,
+  },
+  vacancy: {
+    create: 'vacancy/create',
+    getAll: 'vacancy/getall',
+    update: 'Vacancy/Update',
+    publish: 'Vacancy/Publish',
   },
 } as const;

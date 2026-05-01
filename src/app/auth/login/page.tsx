@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 // UI components
 import FormError from '@/components/ui/FormError';
@@ -22,11 +23,13 @@ import { loginSchema, type LoginRequest } from '@/schemas/auth.schema';
 // Utils
 import { getErrorMessage } from '@/utils/api-error';
 import { getZodFieldErrors } from '@/utils/validation';
+import { useAuth } from '@/lib/useAuth';
 
 type LoginFieldErrors = Partial<Record<keyof LoginRequest, string>>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login: authLogin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,6 +45,7 @@ export default function LoginPage() {
 
     if (!loginPayload.success) {
       setFieldErrors(getZodFieldErrors<keyof LoginRequest>(loginPayload.error));
+      toast.error('Please fix the highlighted login fields.');
       return;
     }
 
@@ -49,10 +53,21 @@ export default function LoginPage() {
       setIsSubmitting(true);
       const response = await login(loginPayload.data);
       storeAuthToken(response.data.token);
-      router.push(ROUTES.recruitment);
+      const userData = {
+        userId: response.data.userId ?? 0,
+        candidateId: response.data.candidateId ?? null,
+        email: response.data.email ?? '',
+        role: response.data.role ?? '',
+      };
+      authLogin(userData);
+      const userRole = response.data.role?.toLowerCase() ?? '';
+      toast.success('Login successful.');
+      router.push(userRole.includes('admin') ? ROUTES.adminDashboard : ROUTES.recruitment);
       router.refresh();
     } catch (caughtError) {
-      setError(getErrorMessage(caughtError, 'Unable to login right now. Please try again.'));
+      const errorMessage = getErrorMessage(caughtError, 'Unable to login right now. Please try again.');
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -105,7 +120,7 @@ export default function LoginPage() {
 
           <FormError message={error} />
 
-          <SubmitButton disabled={isSubmitting}>
+          <SubmitButton className='hover:cursor-pointer' disabled={isSubmitting}>
             {isSubmitting ? 'Logging in...' : 'Login'}
           </SubmitButton>
 

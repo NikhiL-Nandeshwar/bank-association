@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 // UI components
 import FormError from '@/components/ui/FormError';
@@ -62,6 +63,7 @@ export default function ForgotPasswordPage() {
 
     if (!parsedPayload.success) {
       setFieldErrors(getZodFieldErrors<keyof OtpRequest>(parsedPayload.error));
+      toast.error('Please enter a valid registered email address.');
       return;
     }
 
@@ -70,8 +72,11 @@ export default function ForgotPasswordPage() {
       await forgotPassword(parsedPayload.data);
       setStep('otp');
       setNotice('OTP has been sent to your registered email address.');
+      toast.success('OTP has been sent to your registered email address.');
     } catch (caughtError) {
-      setError(getErrorMessage(caughtError, 'Unable to send OTP right now. Please try again.'));
+      const errorMessage = getErrorMessage(caughtError, 'Unable to send OTP right now. Please try again.');
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -87,6 +92,7 @@ export default function ForgotPasswordPage() {
 
     if (!parsedPayload.success) {
       setFieldErrors(getZodFieldErrors<keyof VerifyOtpRequest>(parsedPayload.error));
+      toast.error('Please enter a valid OTP.');
       return;
     }
 
@@ -95,8 +101,11 @@ export default function ForgotPasswordPage() {
       await verifyOtp(parsedPayload.data);
       setStep('password');
       setNotice('OTP verified. You can now create a new password.');
+      toast.success('OTP verified. You can now create a new password.');
     } catch (caughtError) {
-      setError(getErrorMessage(caughtError, 'Unable to verify OTP. Please check the code and try again.'));
+      const errorMessage = getErrorMessage(caughtError, 'Unable to verify OTP. Please check the code and try again.');
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -117,6 +126,7 @@ export default function ForgotPasswordPage() {
 
     if (!parsedPayload.success) {
       setFieldErrors(getZodFieldErrors<keyof ResetPasswordRequest>(parsedPayload.error));
+      toast.error('Please fix the highlighted password fields.');
       return;
     }
 
@@ -125,8 +135,11 @@ export default function ForgotPasswordPage() {
       await resetPassword(parsedPayload.data);
       setStep('success');
       setNotice('');
+      toast.success(PASSWORD_RECOVERY_COPY.successMessage);
     } catch (caughtError) {
-      setError(getErrorMessage(caughtError, 'Unable to reset password right now. Please try again.'));
+      const errorMessage = getErrorMessage(caughtError, 'Unable to reset password right now. Please try again.');
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

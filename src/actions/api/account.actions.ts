@@ -25,3 +25,14 @@ export function changePassword(payload: ChangePasswordRequest) {
     body: payload,
   });
 }
+
+export type LogoutRequest = {
+  userId?: number;
+};
+
+export function logout(payload?: LogoutRequest) {
+  return apiRequest<unknown>(API_ENDPOINTS.account.logout, {
+    method: 'POST',
+    body: payload,
+  });
+}

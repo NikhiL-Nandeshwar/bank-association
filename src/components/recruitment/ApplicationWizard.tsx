@@ -20,6 +20,7 @@ type ApplicationWizardProps = {
   initialRecruitment: {
     code: string;
     name: string;
+    postName?: string;
   };
 };
 
@@ -48,7 +49,7 @@ type FormState = {
   maharashtraDomiciled: string;
   nonCreamyLayer: string;
   maritalStatus: string;
-  fatherHusbandName: string;
+  spouseName: string;
   motherName: string;
   nationalityIndian: string;
   email: string;
@@ -91,7 +92,7 @@ const initialState = (recruitment: ApplicationWizardProps['initialRecruitment'])
   recruitmentName: recruitment.name,
   applicationId: generateApplicationId(recruitment),
   bankName: 'The Malegaon Merchants Co-op. Bank Ltd.',
-  postName: '',
+  postName: recruitment.postName ?? '',
   employmentType: 'full-time',
   firstName: '',
   lastName: '',
@@ -104,7 +105,7 @@ const initialState = (recruitment: ApplicationWizardProps['initialRecruitment'])
   maharashtraDomiciled: '',
   nonCreamyLayer: '',
   maritalStatus: '',
-  fatherHusbandName: '',
+  spouseName: '',
   motherName: '',
   nationalityIndian: 'Yes',
   email: '',
@@ -191,7 +192,7 @@ function validateStep(step: number, form: FormState): ErrorMap {
     if (!form.maharashtraDomiciled) errors.maharashtraDomiciled = 'Please select domicile status.';
     if (!form.nonCreamyLayer) errors.nonCreamyLayer = 'Please select non-creamy layer status.';
     if (!form.maritalStatus) errors.maritalStatus = 'Please select marital status.';
-    if (!fieldValue(form.fatherHusbandName).trim()) errors.fatherHusbandName = "Father's / husband's name is required.";
+    if (!fieldValue(form.spouseName).trim()) errors.spouseName = 'Spouse name is required.';
     if (!fieldValue(form.motherName).trim()) errors.motherName = "Mother's name is required.";
     if (!form.nationalityIndian) errors.nationalityIndian = 'Please confirm citizenship.';
   }
@@ -625,8 +626,8 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                 <FormField label="Nationality / Citizenship Indian?" error={errors.nationalityIndian}>
                   <YesNoButtons value={form.nationalityIndian} onChange={(value) => updateField('nationalityIndian', value)} />
                 </FormField>
-                <FormField label="Father's / Spouse's name" error={errors.fatherHusbandName}>
-                  <input value={form.fatherHusbandName} onChange={(event) => updateField('fatherHusbandName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                <FormField label="Spouse name" error={errors.spouseName}>
+                  <input value={form.spouseName} onChange={(event) => updateField('spouseName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Mother's name" error={errors.motherName}>
                   <input value={form.motherName} onChange={(event) => updateField('motherName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
@@ -798,7 +799,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   <ReviewRow label="Recruitment" value={`${form.recruitmentCode} - ${form.recruitmentName}`} />
                   <ReviewRow label="Applicant" value={fullName} />
                   <ReviewRow label="Birth details" value={`${form.dateOfBirth} | ${form.ageAsOn} | ${form.gender} | ${form.category} | ${form.caste}`} />
-                  <ReviewRow label="Family details" value={`${form.fatherHusbandName} | Mother: ${form.motherName} | ${form.maritalStatus}`} />
+                  <ReviewRow label="Family details" value={`Spouse: ${form.spouseName} | Mother: ${form.motherName} | ${form.maritalStatus}`} />
                   <ReviewRow label="Contact" value={`${form.email} | ${form.phone} | Alt: ${form.alternatePhone || 'NA'}`} />
                   <ReviewRow label="Address" value={`${form.addressLine1}, ${form.addressLine2}, ${form.addressLine3}, ${form.taluka}, ${form.district}, ${form.city}, ${form.state} - ${form.pincode}`} />
                   <ReviewRow label="Education" value={form.educationEntries.filter((entry) => entry.completed === 'Yes').map((entry) => `${entry.level}: ${entry.score} (${entry.passedMonthYear})`).join(' | ') || 'NA'} />

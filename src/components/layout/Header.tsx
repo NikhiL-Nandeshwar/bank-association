@@ -6,6 +6,10 @@ import { useState } from 'react';
 // Framework
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+// UI components
+import ChangePasswordModal from '@/components/ui/ChangePasswordModal';
 
 // Constants
 import { HEADER_COPY, HEADER_NAV_ITEMS } from '@/constants/layout.constants';
@@ -13,11 +17,16 @@ import { ROUTES } from '@/constants/routes.constants';
 
 // Utils/lib
 import { usePortalLanguage } from '@/lib/usePortalLanguage';
+import { useAuth } from '@/lib/useAuth';
 import { cn } from '@/utils/classnames';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const router = useRouter();
   const { language, setLanguage } = usePortalLanguage();
+  const { user, logout, isLoading } = useAuth();
   const content = HEADER_COPY[language];
 
   const navLinks = HEADER_NAV_ITEMS.map((item) => ({
@@ -26,6 +35,18 @@ export default function Header() {
   }));
 
   const closeMenu = () => setIsMenuOpen(false);
+
+  const handleLogout = async () => {
+    setIsUserMenuOpen(false);
+
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      router.replace(ROUTES.login);
+    }
+  };
 
   return (
     <header className="bg-slate-800 text-white">
@@ -80,9 +101,49 @@ export default function Header() {
             </div>
           </div>
 
-          <Link href={ROUTES.login} className="inline-flex items-center rounded-md bg-[#fcd62e] px-4 py-2 text-slate-800 hover:bg-yellow-400">
-            {content.login}
-          </Link>
+          {isLoading ? null : user ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-slate-700"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fcd62e] text-slate-900">
+                  <span className="text-xs font-semibold">A</span>
+                </div>
+                <span>Admin</span>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {isUserMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-48 rounded-md border border-slate-600 bg-slate-800 py-1 shadow-lg">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      setIsChangePasswordModalOpen(true);
+                    }}
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-200 hover:bg-slate-700"
+                  >
+                    Change Password
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-200 hover:bg-slate-700"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link href={ROUTES.login} className="inline-flex items-center rounded-md bg-[#fcd62e] px-4 py-2 text-slate-800 hover:bg-yellow-400">
+              {content.login}
+            </Link>
+          )}
         </nav>
       </div>
 
@@ -94,12 +155,47 @@ export default function Header() {
                 {item.label}
               </Link>
             ))}
-            <Link href={ROUTES.login} onClick={closeMenu} className="mt-2 rounded-md bg-[#fcd62e] px-3 py-2 text-center font-semibold text-slate-900 hover:bg-yellow-400">
-              {content.login}
-            </Link>
+            {isLoading ? null : user ? (
+              <>
+                <div className="flex items-center gap-2 rounded-md px-3 py-2 text-slate-100">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fcd62e] text-slate-900">
+                    <span className="text-xs font-semibold">A</span>
+                  </div>
+                  <span>Admin</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    setIsChangePasswordModalOpen(true);
+                  }}
+                  className="rounded-md px-3 py-2 text-left text-slate-100 hover:bg-slate-700"
+                >
+                  Change Password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    void handleLogout();
+                  }}
+                  className="rounded-md px-3 py-2 text-left text-slate-100 hover:bg-slate-700"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link href={ROUTES.login} onClick={closeMenu} className="mt-2 rounded-md bg-[#fcd62e] px-3 py-2 text-center font-semibold text-slate-900 hover:bg-yellow-400">
+                {content.login}
+              </Link>
+            )}
           </div>
         </nav>
       )}
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => setIsChangePasswordModalOpen(false)}
+      />
     </header>
   );
 }
