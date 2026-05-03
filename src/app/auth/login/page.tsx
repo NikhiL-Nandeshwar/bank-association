@@ -12,10 +12,11 @@ import FormInput from '@/components/ui/FormInput';
 import SubmitButton from '@/components/ui/SubmitButton';
 
 // Actions
-import { login, storeAuthToken } from '@/actions/api';
+import { login, storeAuthToken, storeAuthUser } from '@/actions/api';
 
 // Constants
 import { ROUTES } from '@/constants/routes.constants';
+import { Eye, EyeOff } from 'lucide-react';
 
 // Schemas
 import { loginSchema, type LoginRequest } from '@/schemas/auth.schema';
@@ -35,6 +36,7 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({});
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,6 +62,7 @@ export default function LoginPage() {
         role: response.data.role ?? '',
       };
       authLogin(userData);
+      storeAuthUser(userData);
       const userRole = response.data.role?.toLowerCase() ?? '';
       toast.success('Login successful.');
       router.push(userRole.includes('admin') ? ROUTES.adminDashboard : ROUTES.recruitment);
@@ -108,13 +111,15 @@ export default function LoginPage() {
 
             <FormInput
               id="password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               label="Password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
               error={fieldErrors.password}
               placeholder="Enter password"
+              rightIcon={showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              onRightIconClick={() => setShowPassword((prev) => !prev)}
             />
           </div>
 

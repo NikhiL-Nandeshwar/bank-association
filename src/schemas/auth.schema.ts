@@ -23,7 +23,7 @@ export const verifyOtpSchema = z.object({
 export const resetPasswordSchema = z
   .object({
     email: emailSchema,
-    otpCode: z.string().trim().min(1, 'OTP is required.'),
+    // otpCode: z.string().trim().min(1, 'OTP is required.'),
     newPassword: z.string().min(8, 'Password must be at least 8 characters.'),
     confirmPassword: z.string().min(1, 'Confirm password is required.'),
   })

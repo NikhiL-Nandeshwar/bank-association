@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 // Actions
 import { getCurrentUser, changePassword, logout as logoutApi, type ChangePasswordRequest } from '@/actions/api';
-import { clearAuthToken } from '@/actions/api/client';
+import { clearAuthToken, readStoredToken, readStoredUser, storeAuthUser } from '@/actions/api/client';
 
 // Types
 import type { CurrentUser } from '@/types/api.types';
@@ -22,7 +22,13 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [user, setUser] = useState<CurrentUser | null>(() => {
+    if (typeof window !== 'undefined') {
+      return readStoredUser();
+    }
+
+    return null;
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -31,9 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (userData: CurrentUser) => {
     setUser(userData);
+    storeAuthUser(userData);
   };
 
   const logout = async () => {
+    setIsLoading(true);
     try {
       const payload = user ? { userId: user.userId } : undefined;
       await logoutApi(payload);
@@ -42,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       clearAuthToken();
       setUser(null);
+      setIsLoading(false);
       toast.success('Logged out successfully.');
     }
   };
@@ -52,12 +61,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshUser = async () => {
+    const storedUser = readStoredUser();
+    const storedToken = readStoredToken();
+
     try {
       const response = await getCurrentUser();
       setUser(response.data);
+      storeAuthUser(response.data);
     } catch {
-      // If token is invalid, user is not logged in
-      setUser(null);
+      if (storedUser && storedToken) {
+        setUser(storedUser);
+      } else {
+        setUser(null);
+      }
     } finally {
       setIsLoading(false);
     }

@@ -1,7 +1,7 @@
 'use client';
 
 // React
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // Framework
 import Image from 'next/image';
@@ -27,12 +27,20 @@ export default function Header() {
   const router = useRouter();
   const { language, setLanguage } = usePortalLanguage();
   const { user, logout, isLoading } = useAuth();
+  const [isMounted, setIsMounted] = useState(false);
   const content = HEADER_COPY[language];
 
-  const navLinks = HEADER_NAV_ITEMS.map((item) => ({
-    href: item.href,
-    label: content[item.labelKey],
-  }));
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const isAdmin = isMounted && user?.role?.toLowerCase().includes('admin');
+  const navLinks = !isMounted || isAdmin
+    ? []
+    : HEADER_NAV_ITEMS.map((item) => ({
+        href: item.href,
+        label: content[item.labelKey],
+      }));
 
   const closeMenu = () => setIsMenuOpen(false);
 
@@ -41,21 +49,23 @@ export default function Header() {
 
     try {
       await logout();
+      router.replace(ROUTES.login);
+      router.refresh();
     } catch (error) {
       console.error('Logout error:', error);
-    } finally {
       router.replace(ROUTES.login);
+      router.refresh();
     }
   };
 
   return (
     <header className="bg-slate-800 text-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-        <Link href={ROUTES.home} className="flex min-w-0 items-center gap-2 sm:gap-3" onClick={closeMenu}>
+        <Link href={isMounted && isAdmin ? ROUTES.adminDashboard : ROUTES.home} className="flex min-w-0 items-center gap-2 sm:gap-3" onClick={closeMenu}>
           <Image src="/logo.png" alt="KOP Bank Logo" width={40} height={40} className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" priority />
           <div className="min-w-0">
-            <p className="max-w-[150px] truncate text-[11px] font-semibold leading-tight sm:max-w-none sm:text-sm">{content.logoLineOne}</p>
-            <p className="max-w-[150px] truncate text-[10px] text-[#fcd62e] sm:max-w-none sm:text-xs">{content.logoLineTwo}</p>
+            <p className="max-w-37.5 truncate text-[11px] font-semibold leading-tight sm:max-w-none sm:text-sm">{content.logoLineOne}</p>
+            <p className="max-w-37.5 truncate text-[10px] text-[#fcd62e] sm:max-w-none sm:text-xs">{content.logoLineTwo}</p>
           </div>
         </Link>
 
@@ -89,17 +99,19 @@ export default function Header() {
             </Link>
           ))}
 
-          <div className="ml-2 flex items-center gap-3 rounded-full border border-slate-600 bg-slate-700/60 px-3 py-1.5 text-xs">
-            <span className="text-slate-300">{content.languageLabel}</span>
-            <div className="flex items-center rounded-full bg-slate-800/80 p-1 font-semibold">
-              <button type="button" onClick={() => setLanguage('mr')} className={cn('rounded-full px-3 py-1 transition', language === 'mr' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
-                {content.marathi}
-              </button>
-              <button type="button" onClick={() => setLanguage('en')} className={cn('rounded-full px-3 py-1 transition', language === 'en' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
-                {content.english}
-              </button>
+          {!isAdmin && (
+            <div className="ml-2 flex items-center gap-3 rounded-full border border-slate-600 bg-slate-700/60 px-3 py-1.5 text-xs">
+              <span className="text-slate-300">{content.languageLabel}</span>
+              <div className="flex items-center rounded-full bg-slate-800/80 p-1 font-semibold">
+                <button type="button" onClick={() => setLanguage('mr')} className={cn('rounded-full px-3 py-1 transition', language === 'mr' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
+                  {content.marathi}
+                </button>
+                <button type="button" onClick={() => setLanguage('en')} className={cn('rounded-full px-3 py-1 transition', language === 'en' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
+                  {content.english}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {isLoading ? null : user ? (
             <div className="relative">
@@ -155,6 +167,19 @@ export default function Header() {
                 {item.label}
               </Link>
             ))}
+            {!isAdmin && (
+              <div className="flex items-center gap-3 rounded-full border border-slate-600 bg-slate-700/60 px-3 py-1.5 text-xs">
+                <span className="text-slate-300">{content.languageLabel}</span>
+                <div className="flex items-center rounded-full bg-slate-800/80 p-1 font-semibold">
+                  <button type="button" onClick={() => setLanguage('mr')} className={cn('rounded-full px-3 py-1 transition', language === 'mr' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
+                    {content.marathi}
+                  </button>
+                  <button type="button" onClick={() => setLanguage('en')} className={cn('rounded-full px-3 py-1 transition', language === 'en' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
+                    {content.english}
+                  </button>
+                </div>
+              </div>
+            )}
             {isLoading ? null : user ? (
               <>
                 <div className="flex items-center gap-2 rounded-md px-3 py-2 text-slate-100">

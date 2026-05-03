@@ -1,6 +1,6 @@
 'use client';
 
-import { createBank, createVacancy, getVacancies, publishVacancy, updateVacancy } from '@/actions/api';
+import { createBank, createVacancy, getVacancies, publishVacancy, updateVacancy, uploadNoticePdf } from '@/actions/api';
 import { STORAGE_KEYS } from '@/constants/storage.constants';
 import { createBankSchema } from '@/schemas/bank.schema';
 import { useAuth } from '@/lib/useAuth';
@@ -196,6 +196,10 @@ export default function AdminDashboardPage() {
   const [isSavingRecruitment, setIsSavingRecruitment] = useState(false);
   const [editingRecruitmentId, setEditingRecruitmentId] = useState<number | null>(null);
   const [publishingRecruitmentId, setPublishingRecruitmentId] = useState<number | null>(null);
+  const [uploadModalRecruitmentId, setUploadModalRecruitmentId] = useState<number | null>(null);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   const editingRecruitment = useMemo(
     () => recruitments.find((item) => item.id === editingRecruitmentId) ?? null,
@@ -203,26 +207,35 @@ export default function AdminDashboardPage() {
   );
 
   const { user, isLoading } = useAuth();
+  const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
   const isAdmin = user?.role?.toLowerCase().includes('admin');
 
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
   // Redirect non-admin users to login page after auth state is determined
   useEffect(() => {
-    if (!isLoading && (!user || !isAdmin)) {
+    if (!hasMounted || isLoading) {
+      return;
+    }
+
+    if (!user || !isAdmin) {
       router.replace(ROUTES.login);
     }
-  }, [isLoading, user, isAdmin, router]);
+  }, [hasMounted, isLoading, user, isAdmin, router]);
 
   useEffect(() => {
-    if (isLoading || !user || !isAdmin) {
+    if (!hasMounted || isLoading || !user || !isAdmin) {
       return;
     }
 
     setBanks(readStoredList<AdminBank>(STORAGE_KEYS.adminBanks));
     void loadRecruitments();
-  }, [isLoading, user, isAdmin]);
+  }, [hasMounted, isLoading, user, isAdmin]);
 
-  if (isLoading || !user || !isAdmin) {
+  if (!hasMounted || isLoading || !user || !isAdmin) {
     return null;
   }
 
@@ -415,6 +428,54 @@ export default function AdminDashboardPage() {
     }
   }
 
+  function openUploadModal(item: AdminRecruitment) {
+    setUploadModalRecruitmentId(item.id);
+    setUploadFile(null);
+    setUploadError('');
+  }
+
+  function closeUploadModal() {
+    setUploadModalRecruitmentId(null);
+    setUploadFile(null);
+    setUploadError('');
+  }
+
+  const uploadModalRecruitment = uploadModalRecruitmentId ? recruitments.find((item) => item.id === uploadModalRecruitmentId) ?? null : null;
+
+  async function handleUploadPdf(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setUploadError('');
+
+    if (!uploadModalRecruitment) {
+      setUploadError('No recruitment selected for upload.');
+      return;
+    }
+
+    if (!uploadFile) {
+      setUploadError('Please select a PDF file before uploading.');
+      return;
+    }
+
+    setIsUploadingPdf(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('VacancyId', String(uploadModalRecruitment.id));
+      formData.append('File', uploadFile);
+
+      await uploadNoticePdf(formData);
+      await loadRecruitments();
+      closeUploadModal();
+      toast.success('Notice PDF uploaded successfully.');
+    } catch (caughtError) {
+      const errorMessage = getErrorMessage(caughtError, 'Upload failed. Please try again.');
+      setUploadError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsUploadingPdf(false);
+    }
+  }
+
   return (
     <section className="bg-slate-100 px-4 py-8">
       <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
@@ -448,7 +509,13 @@ export default function AdminDashboardPage() {
           {activeSection === 'overview' ? (
             <div className="grid gap-6 xl:grid-cols-2">
               <RecentlyAddedBanks banks={banks} />
-              <RecentlyAddedRecruitments recruitments={recruitments} onEdit={handleEditRecruitment} onPublish={handlePublishRecruitment} publishingRecruitmentId={publishingRecruitmentId} />
+              <RecentlyAddedRecruitments
+                recruitments={recruitments}
+                onEdit={handleEditRecruitment}
+                onUpload={openUploadModal}
+                onPublish={handlePublishRecruitment}
+                publishingRecruitmentId={publishingRecruitmentId}
+              />
             </div>
           ) : null}
 
@@ -498,7 +565,7 @@ export default function AdminDashboardPage() {
                         <option value={editingRecruitment.bankId}>{editingRecruitment.bankName}</option>
                       ) : null}
                       {banks.map((bank) => (
-                        <option key={bank.bankId} value={bank.bankId}>{bank.bankName}</option>
+                        <option key={`${bank.bankId}-${bank.contactEmail ?? bank.bankName}`} value={bank.bankId}>{bank.bankName}</option>
                       ))}
                     </select>
                     {recruitmentErrors.bankId ? <p className="mt-2 text-sm text-rose-600">{recruitmentErrors.bankId}</p> : null}
@@ -530,11 +597,60 @@ export default function AdminDashboardPage() {
                 </button>
               </form>
 
-              <RecentlyAddedRecruitments recruitments={recruitments} onEdit={handleEditRecruitment} onPublish={handlePublishRecruitment} publishingRecruitmentId={publishingRecruitmentId} />
+              <RecentlyAddedRecruitments
+                recruitments={recruitments}
+                onEdit={handleEditRecruitment}
+                onUpload={openUploadModal}
+                onPublish={handlePublishRecruitment}
+                publishingRecruitmentId={publishingRecruitmentId}
+              />
             </div>
           ) : null}
         </div>
       </div>
+
+      {uploadModalRecruitment ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-8">
+          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-semibold text-slate-950">Upload vacancy notice PDF</h3>
+                <p className="mt-2 text-sm text-slate-600">Add the PDF before publishing this recruitment.</p>
+              </div>
+              <button type="button" onClick={closeUploadModal} className="rounded-full border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200">
+                Close
+              </button>
+            </div>
+
+            <form onSubmit={handleUploadPdf} className="mt-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-800">Notice PDF file</label>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)}
+                  className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                />
+              </div>
+
+              {uploadError ? <p className="text-sm text-rose-600">{uploadError}</p> : null}
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={isUploadingPdf}
+                  className="rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isUploadingPdf ? 'Uploading...' : 'Upload PDF'}
+                </button>
+                <button type="button" onClick={closeUploadModal} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -589,8 +705,8 @@ function RecentlyAddedBanks({ banks }: { banks: AdminBank[] }) {
             </tr>
           </thead>
           <tbody>
-            {banks.map((bank) => (
-              <tr key={bank.bankId} className="border-t">
+            {banks.map((bank, index) => (
+              <tr key={`${bank.bankId}-${bank.contactEmail}-${index}`} className="border-t">
                 <td className="px-3 py-3 font-semibold text-slate-900">
                   <div className="flex items-center gap-3">
                     {bank.logoUrl ? <img src={bank.logoUrl} alt="" className="h-9 w-9 rounded-md border border-slate-200 object-contain" /> : <span className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-100 text-xs font-bold text-slate-600">{bank.bankName.slice(0, 2).toUpperCase()}</span>}
@@ -617,11 +733,13 @@ function RecentlyAddedBanks({ banks }: { banks: AdminBank[] }) {
 function RecentlyAddedRecruitments({
   recruitments,
   onEdit,
+  onUpload,
   onPublish,
   publishingRecruitmentId,
 }: {
   recruitments: AdminRecruitment[];
   onEdit: (item: AdminRecruitment) => void;
+  onUpload: (item: AdminRecruitment) => void;
   onPublish: (item: AdminRecruitment) => void;
   publishingRecruitmentId: number | null;
 }) {
@@ -631,6 +749,7 @@ function RecentlyAddedRecruitments({
         <h2 className="text-xl font-semibold text-slate-900">Recently added recruitments</h2>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{recruitments.length} total</span>
       </div>
+      <p className="mt-3 text-sm text-slate-500">Upload a vacancy notice PDF before you publish each recruitment listing.</p>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-slate-600">
@@ -659,18 +778,21 @@ function RecentlyAddedRecruitments({
                 </td>
                 <td className="px-3 py-3">
                   <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => onEdit(item)} className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                      Edit
+                    <button type="button" onClick={() => onUpload(item)} className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                      {item.noticePdfUrl ? 'Replace PDF' : 'Upload PDF'}
                     </button>
                     <button
                       type="button"
                       onClick={() => onPublish(item)}
-                      disabled={item.isPublished || publishingRecruitmentId === item.id}
-                      className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                      disabled={item.isPublished || publishingRecruitmentId === item.id || !item.noticePdfUrl}
+                      className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:opacity-60"
                     >
                       {publishingRecruitmentId === item.id ? 'Publishing...' : item.isPublished ? 'Published' : 'Publish'}
                     </button>
                   </div>
+                  {!item.noticePdfUrl && !item.isPublished ? (
+                    <p className="mt-2 text-xs text-slate-500">Upload the notice PDF before publishing.</p>
+                  ) : null}
                 </td>
               </tr>
             ))}

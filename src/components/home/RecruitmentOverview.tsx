@@ -1,9 +1,10 @@
 'use client';
 
-import { getVacancies } from '@/actions/api';
+import { getPublicList } from '@/actions/api';
 import { RECRUITMENT_OVERVIEW_COPY } from '@/constants/home.constants';
 import { ROUTES } from '@/constants/routes.constants';
 import type { ApiPagedResult, Vacancy } from '@/types/api.types';
+import { fixPdfUrl } from '@/lib/utils';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePortalLanguage } from '@/lib/usePortalLanguage';
@@ -139,15 +140,13 @@ export default function RecruitmentOverview() {
 
     async function loadRecruitments() {
       try {
-        const response = await getVacancies();
+        const response = await getPublicList();
         const vacancies = getVacancyItems(response.data);
 
         if (!isMounted) return;
 
-        const publishedVacancies = vacancies.filter(isPublishedVacancy);
-
-        setCurrentRecruitments(publishedVacancies.filter(isCurrentVacancy).map(mapVacancyToRecruitment));
-        setPreviousRecruitments(publishedVacancies.filter((item) => !isCurrentVacancy(item)).map(mapVacancyToRecruitment));
+        setCurrentRecruitments(vacancies.filter(isCurrentVacancy).map(mapVacancyToRecruitment));
+        setPreviousRecruitments(vacancies.filter((item) => !isCurrentVacancy(item)).map(mapVacancyToRecruitment));
       } catch {
         if (!isMounted) return;
 
@@ -232,7 +231,7 @@ export default function RecruitmentOverview() {
                           </Link>
                           {'noticePdfUrl' in item && item.noticePdfUrl ? (
                             <a
-                              href={item.noticePdfUrl}
+                              href={fixPdfUrl(item.noticePdfUrl)}
                               target="_blank"
                               rel="noreferrer"
                               className="text-xs font-semibold text-blue-800 underline-offset-2 hover:underline"

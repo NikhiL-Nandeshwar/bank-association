@@ -1,3 +1,5 @@
+import { getPublicList } from "@/actions/api";
+
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://kopbnkasso.runasp.net/restapi/v1.0';
 
@@ -5,7 +7,7 @@ export const API_ENDPOINTS = {
   auth: {
     login: 'Auth/Login',
     sendOtp: 'Auth/SendOtp',
-    verifyOtp: 'Auth/VerifyOtp',
+    verifyOtp: 'Auth/VerifyForgotPasswordOtp',
     forgotPassword: 'Auth/ForgotPassword',
     resetPassword: 'Auth/ResetPassword',
   },
@@ -27,5 +29,7 @@ export const API_ENDPOINTS = {
     getAll: 'vacancy/getall',
     update: 'Vacancy/Update',
     publish: 'Vacancy/Publish',
+    uploadNoticePdf: 'Vacancy/UploadNoticePdf',
+    getPublicList: 'Vacancy/GetPublicList',
   },
 } as const;

@@ -16,16 +16,28 @@ export function getVacancies() {
   });
 }
 
+export function getPublicList() {
+  return apiRequest<ApiPagedResult<Vacancy> | Vacancy[]>(API_ENDPOINTS.vacancy.getPublicList, {
+    method: 'GET',
+  });
+}
+
 export function updateVacancy(payload: UpdateVacancyRequest) {
   return apiRequest<unknown>(API_ENDPOINTS.vacancy.update, {
-    method: 'POST',
+    method: 'PUT',
     body: payload,
   });
 }
 
 export function publishVacancy(vacancyId: number) {
-  return apiRequest<unknown>(API_ENDPOINTS.vacancy.publish, {
+  return apiRequest<unknown>(`${API_ENDPOINTS.vacancy.publish}?vacancyId=${vacancyId}`, {
+    method: 'PUT',
+  });
+}
+
+export function uploadNoticePdf(payload: FormData) {
+  return apiRequest<unknown>(API_ENDPOINTS.vacancy.uploadNoticePdf, {
     method: 'POST',
-    body: { vacancyId },
+    body: payload,
   });
 }
