@@ -34,7 +34,7 @@ import { cn } from '@/utils/classnames';
 import { getZodFieldErrors } from '@/utils/validation';
 
 type RecoveryStep = 'email' | 'otp' | 'password' | 'success';
-type RecoveryFieldErrors = Partial<Record<keyof ResetPasswordRequest, string>>;
+type RecoveryFieldErrors = Partial<Record<'email' | 'otpCode' | 'newPassword' | 'confirmPassword', string>>;
 
 /**
  * Page component for handling the forgot password flow, which includes 
