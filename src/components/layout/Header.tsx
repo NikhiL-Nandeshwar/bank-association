@@ -28,7 +28,6 @@ export default function Header() {
   const { language, setLanguage } = usePortalLanguage();
   const { user, logout, status } = useAuth();
   const content = HEADER_COPY[language];
-
   const isAdmin =
     user?.role?.toLowerCase?.().includes('admin') ?? false;
 
@@ -120,11 +119,11 @@ export default function Header() {
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fcd62e] text-slate-900">
                   <span className="text-xs font-semibold">
-                    {user?.fullName?.charAt(0).toUpperCase()}
+                    {user?.userName?.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <span>
-                  {user?.fullName ?? 'User'}
+                  {user?.userName ?? 'User'}
                 </span>
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -187,10 +186,10 @@ export default function Header() {
                 <div className="flex items-center gap-2 rounded-md px-3 py-2 text-slate-100">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fcd62e] text-slate-900">
                     <span className="text-xs font-semibold">
-                      {user?.fullName?.charAt(0).toUpperCase()}
+                      {user?.userName?.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span>{user?.fullName ?? 'User'}</span>
+                  <span>{user?.userName ?? 'User'}</span>
                 </div>
                 <button
                   type="button"

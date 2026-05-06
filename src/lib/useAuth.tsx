@@ -36,7 +36,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = async () => {
     try {
       const response = await getCurrentUser();
-
       setUser(response.data);
       setStatus('authenticated');
     } catch {
@@ -73,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setUser(null);
       setStatus('unauthenticated');
-      toast.success('Logged out successfully.');
+      // toast.success('Logged out successfully.');
     }
   };
 
