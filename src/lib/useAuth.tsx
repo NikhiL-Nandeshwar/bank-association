@@ -3,17 +3,18 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
-// Actions
+// API
 import { getCurrentUser, changePassword, logout as logoutApi, type ChangePasswordRequest } from '@/actions/api';
-import { clearAuthToken, readStoredToken, readStoredUser, storeAuthUser } from '@/actions/api/client';
 
 // Types
 import type { CurrentUser } from '@/types/api.types';
 
+type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
+
 type AuthContextType = {
   user: CurrentUser | null;
-  isLoading: boolean;
-  login: (user: CurrentUser) => void;
+  status: AuthStatus;
+  login: () => Promise<void>; // note: no user param now
   logout: () => Promise<void>;
   changePassword: (payload: ChangePasswordRequest) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -21,69 +22,67 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Authentication provider component that manages user state and authentication status.
+ * Provides login, logout, change password, and user refresh functions to the context.
+ * @param param0 
+ * @returns 
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<CurrentUser | null>(() => {
-    if (typeof window !== 'undefined') {
-      return readStoredUser();
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [status, setStatus] = useState<AuthStatus>('loading');
+
+  // Function to refresh current user data and update auth status
+  const refreshUser = async () => {
+    try {
+      const response = await getCurrentUser();
+
+      setUser(response.data);
+      setStatus('authenticated');
+    } catch {
+      setUser(null);
+      setStatus('unauthenticated');
     }
-
-    return null;
-  });
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    refreshUser();
-  }, []);
-
-  const login = (userData: CurrentUser) => {
-    setUser(userData);
-    storeAuthUser(userData);
   };
 
+  // On mount, check if user is authenticated by calling refreshUser
+  useEffect(() => {
+    void refreshUser();
+  }, []);
+
+  // LOGIN
+  const login = async () => {
+    // Backend should set HttpOnly cookie on login
+    await refreshUser();
+    toast.success('Logged in successfully.');
+  };
+
+  // LOGOUT
   const logout = async () => {
-    setIsLoading(true);
+    setStatus('loading');
+
     try {
-      const payload = user ? { userId: user.userId } : undefined;
-      await logoutApi(payload);
+      await logoutApi(); // backend clears cookie
     } catch {
-      // Continue with client-side logout even if API call fails.
+      // ignore
     } finally {
-      clearAuthToken();
       setUser(null);
-      setIsLoading(false);
+      setStatus('unauthenticated');
       toast.success('Logged out successfully.');
     }
   };
 
+  // change password handler that calls API and shows toast
   const handleChangePassword = async (payload: ChangePasswordRequest) => {
     await changePassword(payload);
     toast.success('Password changed successfully.');
-  };
-
-  const refreshUser = async () => {
-    const storedUser = readStoredUser();
-    const storedToken = readStoredToken();
-
-    try {
-      const response = await getCurrentUser();
-      setUser(response.data);
-      storeAuthUser(response.data);
-    } catch {
-      if (storedUser && storedToken) {
-        setUser(storedUser);
-      } else {
-        setUser(null);
-      }
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isLoading,
+        status,
         login,
         logout,
         changePassword: handleChangePassword,
@@ -95,10 +94,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Custom hook to access authentication context
+ * @throws Will throw an error if used outside of AuthProvider
+ * @returns 
+ */
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
   }
+
   return context;
 }

@@ -32,6 +32,7 @@ export type CurrentUser = {
   candidateId: number | null;
   email: string;
   role: string;
+  fullName?: string | null;
 };
 
 export type Bank = {

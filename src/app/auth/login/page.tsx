@@ -12,7 +12,7 @@ import FormInput from '@/components/ui/FormInput';
 import SubmitButton from '@/components/ui/SubmitButton';
 
 // Actions
-import { login, storeAuthToken, storeAuthUser } from '@/actions/api';
+import { login } from '@/actions/api';
 
 // Constants
 import { ROUTES } from '@/constants/routes.constants';
@@ -54,20 +54,21 @@ export default function LoginPage() {
     try {
       setIsSubmitting(true);
       const response = await login(loginPayload.data);
-      storeAuthToken(response.data.token);
-      const userData = {
-        userId: response.data.userId ?? 0,
-        candidateId: response.data.candidateId ?? null,
-        email: response.data.email ?? '',
-        role: response.data.role ?? '',
-      };
-      authLogin(userData);
-      storeAuthUser(userData);
+      // storeAuthToken(response.data.token);
+      // const userData = {
+      //   userId: response.data.userId ?? 0,
+      //   candidateId: response.data.candidateId ?? null,
+      //   email: response.data.email ?? '',
+      //   role: response.data.role ?? '',
+      // };
+      authLogin();
+      // storeAuthUser(userData);
       const userRole = response.data.role?.toLowerCase() ?? '';
-      toast.success('Login successful.');
+      // toast.success('Login successful.');
       router.push(userRole.includes('admin') ? ROUTES.adminDashboard : ROUTES.recruitment);
       router.refresh();
     } catch (caughtError) {
+      console.log('Login error:', caughtError);
       const errorMessage = getErrorMessage(caughtError, 'Unable to login right now. Please try again.');
       setError(errorMessage);
       toast.error(errorMessage);

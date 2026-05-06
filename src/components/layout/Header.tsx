@@ -26,42 +26,40 @@ export default function Header() {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const router = useRouter();
   const { language, setLanguage } = usePortalLanguage();
-  const { user, logout, isLoading } = useAuth();
-  const [isMounted, setIsMounted] = useState(false);
+  const { user, logout, status } = useAuth();
   const content = HEADER_COPY[language];
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const isAdmin =
+    user?.role?.toLowerCase?.().includes('admin') ?? false;
 
-  const isAdmin = isMounted && user?.role?.toLowerCase().includes('admin');
-  const navLinks = !isMounted || isAdmin
-    ? []
-    : HEADER_NAV_ITEMS.map((item) => ({
+  const navLinks =
+    status === 'loading' || isAdmin
+      ? []
+      : HEADER_NAV_ITEMS.map((item) => ({
         href: item.href,
         label: content[item.labelKey],
       }));
 
   const closeMenu = () => setIsMenuOpen(false);
 
+  /**
+   * Handles user logout by calling the logout API and then redirecting to the login page.
+   */
   const handleLogout = async () => {
     setIsUserMenuOpen(false);
 
     try {
       await logout();
+    } finally {
       router.replace(ROUTES.login);
-      router.refresh();
-    } catch (error) {
-      console.error('Logout error:', error);
-      router.replace(ROUTES.login);
-      router.refresh();
     }
   };
 
   return (
     <header className="bg-slate-800 text-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-        <Link href={isMounted && isAdmin ? ROUTES.adminDashboard : ROUTES.home} className="flex min-w-0 items-center gap-2 sm:gap-3" onClick={closeMenu}>
+        <Link href={isAdmin ? ROUTES.adminDashboard : ROUTES.home}
+          className="flex min-w-0 items-center gap-2 sm:gap-3" onClick={closeMenu}>
           <Image src="/logo.png" alt="KOP Bank Logo" width={40} height={40} className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" priority />
           <div className="min-w-0">
             <p className="max-w-37.5 truncate text-[11px] font-semibold leading-tight sm:max-w-none sm:text-sm">{content.logoLineOne}</p>
@@ -113,7 +111,7 @@ export default function Header() {
             </div>
           )}
 
-          {isLoading ? null : user ? (
+          {status === 'loading' ? null : user ? (
             <div className="relative">
               <button
                 type="button"
@@ -121,9 +119,13 @@ export default function Header() {
                 className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-slate-700"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fcd62e] text-slate-900">
-                  <span className="text-xs font-semibold">A</span>
+                  <span className="text-xs font-semibold">
+                    {user?.fullName?.charAt(0).toUpperCase()}
+                  </span>
                 </div>
-                <span>Admin</span>
+                <span>
+                  {user?.fullName ?? 'User'}
+                </span>
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -180,13 +182,15 @@ export default function Header() {
                 </div>
               </div>
             )}
-            {isLoading ? null : user ? (
+            {status === 'loading' ? null : user ? (
               <>
                 <div className="flex items-center gap-2 rounded-md px-3 py-2 text-slate-100">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fcd62e] text-slate-900">
-                    <span className="text-xs font-semibold">A</span>
+                    <span className="text-xs font-semibold">
+                      {user?.fullName?.charAt(0).toUpperCase()}
+                    </span>
                   </div>
-                  <span>Admin</span>
+                  <span>{user?.fullName ?? 'User'}</span>
                 </div>
                 <button
                   type="button"

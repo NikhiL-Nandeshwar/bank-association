@@ -1,4 +1,14 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
 export default function Footer() {
+  const [year, setYear] = useState(new Date().getFullYear());
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
+
   return (
     <footer className="border-t border-slate-700 bg-slate-800 text-slate-300">
       <div className="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -32,7 +42,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="flex items-end text-sm">
-          © {new Date().getFullYear()} - Kolhapur District Urban Banks Association
+          © {year} - Kolhapur District Urban Banks Association
         </div>
       </div>
     </footer>
