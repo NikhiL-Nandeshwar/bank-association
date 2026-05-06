@@ -18,6 +18,9 @@ export function AdminGuard({ children }: AdminGuardProps) {
     const { user, status } = useAuth();
     const router = useRouter();
 
+    console.log('USER:', user);
+    console.log('ROLE:', user?.role);
+
     useEffect(() => {
         if (status === 'loading') return;
 
