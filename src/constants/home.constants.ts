@@ -208,7 +208,7 @@ export const QUICK_ACTIONS_COPY = {
     actions: [
       {
         title: 'Active Recruitments',
-        description: '4 Open Positions',
+        description: 'View Open Positions',
         href: ROUTES.recruitment,
         iconKey: 'recruitment',
         iconClassName: 'text-blue-700',
