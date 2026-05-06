@@ -54,19 +54,15 @@ export default function LoginPage() {
     try {
       setIsSubmitting(true);
       const response = await login(loginPayload.data);
-      // storeAuthToken(response.data.token);
-      // const userData = {
-      //   userId: response.data.userId ?? 0,
-      //   candidateId: response.data.candidateId ?? null,
-      //   email: response.data.email ?? '',
-      //   role: response.data.role ?? '',
-      // };
-      authLogin();
-      // storeAuthUser(userData);
+
+      await authLogin();
+
       const userRole = response.data.role?.toLowerCase() ?? '';
-      // toast.success('Login successful.');
-      router.push(userRole.includes('admin') ? ROUTES.adminDashboard : ROUTES.recruitment);
-      router.refresh();
+      router.replace(
+        userRole.includes('admin')
+          ? ROUTES.adminDashboard
+          : ROUTES.recruitment
+      );
     } catch (caughtError) {
       console.log('Login error:', caughtError);
       const errorMessage = getErrorMessage(caughtError, 'Unable to login right now. Please try again.');
