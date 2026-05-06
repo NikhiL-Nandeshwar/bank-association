@@ -62,9 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('loading');
 
     try {
-      await logoutApi(); // backend clears cookie
+      await logoutApi();
+
+      setUser(null);
+      setStatus('unauthenticated');
+
+      toast.success('Logged out successfully.');
     } catch {
-      // ignore
+      toast.error('Logout failed.');
     } finally {
       setUser(null);
       setStatus('unauthenticated');
