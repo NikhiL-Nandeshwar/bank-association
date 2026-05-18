@@ -3,6 +3,7 @@
 import { HERO_COPY } from '@/constants/home.constants';
 import { ROUTES } from '@/constants/routes.constants';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePortalLanguage } from '@/lib/usePortalLanguage';
 
 export default function Hero() {
@@ -11,27 +12,52 @@ export default function Hero() {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/hero-bg.png')" }} />
-      <div className="absolute inset-0 bg-slate-600/85" />
+    <div className="absolute inset-0 bg-[#e8d3f8]" />
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 py-20">
-        <div className="max-w-2xl">
-          <h1 className="text-3xl font-bold leading-snug text-white md:text-4xl">
-            {content.titleLineOne}
-            <br />
-            <span className="text-[#fcd62e]">{content.titleLineTwo}</span>
-          </h1>
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-14">
+        <div className="grid items-center gap-12 md:grid-cols-[320px_1fr]">
 
-          <p className="mt-4 text-sm text-white/90 md:text-base">{content.description}</p>
-
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href={ROUTES.about} className="inline-flex items-center rounded-md bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-yellow-400">
-              {content.about}
-            </Link>
-            <Link href={ROUTES.recruitment} className="inline-flex items-center rounded-md border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white hover:bg-white/20">
-              {content.recruitment}
-            </Link>
+          {/* Left Logo */}
+          <div className="flex justify-center md:justify-start">
+            <Image
+              src="/logo.png"
+              alt="Logo"
+              width={400}
+              height={400}
+              className="h-auto w-64 md:w-80 lg:w-96 object-contain"
+              priority
+            />
           </div>
+
+          {/* Right Content */}
+          <div className="max-w-2xl text-center md:text-left">
+            <h1 className="text-3xl font-bold leading-snug text-white md:text-4xl">
+              {content.titleLineOne}
+              <br />
+              <span className="text-[#d7b6f1]">
+                {content.titleLineTwo}
+              </span>
+            </h1>
+
+            <p className="mt-4 text-md text-white/90">
+              {content.description}
+            </p>
+
+            <div className="mt-8 flex flex-wrap justify-center gap-3 md:justify-start">
+              <Link
+                href={ROUTES.about}
+                className="inline-flex items-center rounded-md bg-[#e9d0fd] border border-[#7c3aad] px-5 py-3 text-md font-semibold text-[#7c3aad] shadow-sm transition hover:bg-[#e0c0fa]"              >
+                {content.about}
+              </Link>
+
+              <Link
+                href={ROUTES.recruitment}
+                className="inline-flex items-center rounded-md border border-[#ac42fd] bg-[#7c3aad] px-5 py-3 text-md font-semibold text-white backdrop-blur-sm transition hover:bg-[#7d50a0]"              >
+                {content.recruitment}
+              </Link>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>

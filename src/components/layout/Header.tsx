@@ -55,14 +55,14 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-slate-800 text-white">
+    <header className="bg-[#b65f8e] text-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
         <Link href={isAdmin ? ROUTES.adminDashboard : ROUTES.home}
           className="flex min-w-0 items-center gap-2 sm:gap-3" onClick={closeMenu}>
           <Image src="/logo.png" alt="KOP Bank Logo" width={40} height={40} className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" priority />
           <div className="min-w-0">
             <p className="max-w-37.5 truncate text-[11px] font-semibold leading-tight sm:max-w-none sm:text-sm">{content.logoLineOne}</p>
-            <p className="max-w-37.5 truncate text-[10px] text-[#fcd62e] sm:max-w-none sm:text-xs">{content.logoLineTwo}</p>
+            <p className="max-w-37.5 truncate text-[10px] text-[#fbf5da] sm:max-w-none sm:text-xs">{content.logoLineTwo}</p>
           </div>
         </Link>
 
@@ -97,13 +97,28 @@ export default function Header() {
           ))}
 
           {!isAdmin && (
-            <div className="ml-2 flex items-center gap-3 rounded-full border border-slate-600 bg-slate-700/60 px-3 py-1.5 text-xs">
-              <span className="text-slate-300">{content.languageLabel}</span>
-              <div className="flex items-center rounded-full bg-slate-800/80 p-1 font-semibold">
-                <button type="button" onClick={() => setLanguage('mr')} className={cn('rounded-full px-3 py-1 transition', language === 'mr' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
+            <div className="ml-2 flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs backdrop-blur-md">              <span className="text-slate-300">{content.languageLabel}</span>
+              <div className="flex items-center rounded-full bg-white/15 p-1 font-semibold">
+                <button type="button" onClick={() => setLanguage('mr')}
+
+                  className={cn(
+                    'rounded-full px-3 py-1 transition',
+                    language === 'mr'
+                      ? 'bg-white text-[#6d298e]'
+                      : 'text-white hover:bg-white/10'
+                  )}>
                   {content.marathi}
                 </button>
-                <button type="button" onClick={() => setLanguage('en')} className={cn('rounded-full px-3 py-1 transition', language === 'en' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
+                <button
+                  type="button"
+                  onClick={() => setLanguage('en')}
+                  className={cn(
+                    'rounded-full px-3 py-1 transition',
+                    language === 'en'
+                      ? 'bg-white text-[#6d298e]'
+                      : 'text-white hover:bg-white/10'
+                  )}
+                >
                   {content.english}
                 </button>
               </div>
@@ -153,7 +168,8 @@ export default function Header() {
               )}
             </div>
           ) : (
-            <Link href={ROUTES.login} className="inline-flex items-center rounded-md bg-[#fcd62e] px-4 py-2 text-slate-800 hover:bg-yellow-400">
+            <Link href={ROUTES.login}
+              className="inline-flex items-center rounded-md bg-white px-5 py-2 font-medium text-[#6d298e] shadow-sm transition hover:bg-[#f3e8ff]">
               {content.login}
             </Link>
           )}
