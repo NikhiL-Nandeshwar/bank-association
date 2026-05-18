@@ -97,14 +97,15 @@ export default function Header() {
           ))}
 
           {!isAdmin && (
-            <div className="ml-2 flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs backdrop-blur-md">              <span className="text-slate-300">{content.languageLabel}</span>
+            <div className="ml-2 flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs backdrop-blur-md">              
+            <span className="text-white/85">{content.languageLabel}</span>
               <div className="flex items-center rounded-full bg-white/15 p-1 font-semibold">
                 <button type="button" onClick={() => setLanguage('mr')}
 
                   className={cn(
                     'rounded-full px-3 py-1 transition',
                     language === 'mr'
-                      ? 'bg-white text-[#6d298e]'
+                      ? 'bg-white text-[#b13c7a]'
                       : 'text-white hover:bg-white/10'
                   )}>
                   {content.marathi}
@@ -115,7 +116,7 @@ export default function Header() {
                   className={cn(
                     'rounded-full px-3 py-1 transition',
                     language === 'en'
-                      ? 'bg-white text-[#6d298e]'
+                      ? 'bg-white text-[#b13c7a]'
                       : 'text-white hover:bg-white/10'
                   )}
                 >

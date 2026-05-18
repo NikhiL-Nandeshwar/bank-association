@@ -12,7 +12,7 @@ export default function Hero() {
 
   return (
     <section className="relative overflow-hidden">
-    <div className="absolute inset-0 bg-[#e8d3f8]" />
+    <div className="absolute inset-0 bg-[#f9f6f7]" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-14">
         <div className="grid items-center gap-12 md:grid-cols-[320px_1fr]">
@@ -31,28 +31,28 @@ export default function Hero() {
 
           {/* Right Content */}
           <div className="max-w-2xl text-center md:text-left">
-            <h1 className="text-3xl font-bold leading-snug text-white md:text-4xl">
+            <h1 className="text-3xl font-bold leading-snug text-[#b13c7a] md:text-4xl">
               {content.titleLineOne}
               <br />
-              <span className="text-[#d7b6f1]">
+              <span className="text-[#bb7d9e]">
                 {content.titleLineTwo}
               </span>
             </h1>
 
-            <p className="mt-4 text-md text-white/90">
+            <p className="mt-4 text-md text-[#b13c7a]/70">
               {content.description}
             </p>
 
             <div className="mt-8 flex flex-wrap justify-center gap-3 md:justify-start">
               <Link
                 href={ROUTES.about}
-                className="inline-flex items-center rounded-md bg-[#e9d0fd] border border-[#7c3aad] px-5 py-3 text-md font-semibold text-[#7c3aad] shadow-sm transition hover:bg-[#e0c0fa]"              >
+                className="inline-flex items-center rounded-md bg-[] border border-[#b13c7a] px-5 py-3 text-md font-semibold text-[#b13c7a] shadow-sm transition hover:bg-[#f9d8ea]"              >
                 {content.about}
               </Link>
 
               <Link
                 href={ROUTES.recruitment}
-                className="inline-flex items-center rounded-md border border-[#ac42fd] bg-[#7c3aad] px-5 py-3 text-md font-semibold text-white backdrop-blur-sm transition hover:bg-[#7d50a0]"              >
+                className="inline-flex items-center rounded-md border border-[#c63b85] bg-[#b13c7a] px-5 py-3 text-md font-semibold text-white backdrop-blur-sm transition hover:bg-[#be5b90]"              >
                 {content.recruitment}
               </Link>
             </div>
