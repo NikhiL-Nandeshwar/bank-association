@@ -1,5 +1,5 @@
 import { AdminBank, AdminRecruitment } from "@/types/adminDashboard";
-import { ApiPagedResult, Vacancy } from "@/types/api.types";
+import { ApiPagedResult, Bank, Vacancy } from "@/types/api.types";
 
 export function readStoredList<T>(key: string): T[] {
   if (typeof window === 'undefined') return [];
@@ -52,6 +52,23 @@ export function createRecruitmentCode(bank: AdminBank, id: number) {
 
 export function getVacancyItems(data: ApiPagedResult<Vacancy> | Vacancy[]) {
   return Array.isArray(data) ? data : data.items;
+}
+
+export function getBankItems(data: ApiPagedResult<Bank> | Bank[]) {
+  return Array.isArray(data) ? data : data.items;
+}
+
+export function formatApiBank(item: Bank): AdminBank {
+  return {
+    bankId: item.bankId,
+    bankName: item.bankName,
+    bankNameMarathi: item.bankNameMarathi ?? '',
+    bankCode: item.bankCode ?? '',
+    address: item.address ?? '',
+    contactEmail: item.contactEmail ?? '',
+    contactPhone: item.contactPhone ?? '',
+    logoUrl: item.logoUrl ?? '',
+  };
 }
 
 export function formatApiRecruitment(item: Vacancy): AdminRecruitment {

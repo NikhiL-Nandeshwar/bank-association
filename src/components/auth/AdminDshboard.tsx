@@ -8,7 +8,7 @@ import { ROUTES } from '@/constants/routes.constants';
 import { useEffect, useState } from 'react';
 import { AdminBank, AdminRecruitment } from '@/types/adminDashboard';
 import { formatDate } from '@/utils/adminDashboardHelper';
-import { fetchRecruitmentsService } from '@/actions/api/admin.actions';
+import { fetchBanksService, fetchRecruitmentsService } from '@/actions/api/admin.actions';
 import { useBankForm } from '@/hooks/useBankForm';
 import { useRecruitmentForm } from '@/hooks/useRecruitmentForm';
 import { useRecruitmentActions } from '@/hooks/useRecruitmentActions';
@@ -40,12 +40,22 @@ export default function AdminDashboardPage() {
         }
     }
 
+    async function loadBanks() {
+        try {
+            const data = await fetchBanksService();
+            setBanks(data);
+        } catch {
+            toast.error('Failed to load banks');
+        }
+    }
+
     const recruitment = useRecruitmentForm(loadRecruitments);
     const actions = useRecruitmentActions(loadRecruitments);
 
     useEffect(() => {
         if (status !== 'authenticated' || !isAdmin) return;
 
+        loadBanks();
         loadRecruitments();
     }, [status, isAdmin, router]);
 

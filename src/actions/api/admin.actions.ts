@@ -1,9 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getErrorMessage } from "@/utils/api-error";
 import { createVacancy, getVacancies, updateVacancy } from "./vacancy.actions";
-import { formatApiRecruitment, getVacancyItems } from "@/utils/adminDashboardHelper";
-import { ADMIN_DASHBOARD_MESSAGES } from "@/app/admin/dashboard/messages";
-import { createBank } from "./bank.actions";
+import { formatApiBank, formatApiRecruitment, getBankItems, getVacancyItems } from "@/utils/adminDashboardHelper";
+import { createBank, getBanks } from "./bank.actions";
+
+export async function fetchBanksService() {
+    const response = await getBanks();
+
+    return getBankItems(response.data).map(formatApiBank);
+}
 
 export async function fetchRecruitmentsService() {
     const response = await getVacancies();
