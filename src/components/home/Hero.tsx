@@ -39,7 +39,7 @@ export default function Hero() {
               </span>
             </h1>
 
-            <p className="mt-4 text-md text-[#b13c7a]/70">
+            <p className="mt-4 text-xl text-[#b13c7a]/80">
               {content.description}
             </p>
 

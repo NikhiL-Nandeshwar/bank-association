@@ -55,7 +55,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-[#b65f8e] text-white">
+    <header className="bg-[#7A2E92] text-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
         <Link href={isAdmin ? ROUTES.adminDashboard : ROUTES.home}
           className="flex min-w-0 items-center gap-2 sm:gap-3" onClick={closeMenu}>

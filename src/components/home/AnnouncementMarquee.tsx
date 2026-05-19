@@ -8,14 +8,16 @@ export default function AnnouncementMarquee() {
   const content = ANNOUNCEMENT_COPY[language];
 
   return (
-    <section className="border-y border-amber-200 bg-amber-50">
+    <section className="border-y border-[#D9A9C3] bg-[#F6EAF1]">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2">
-        <span className="shrink-0 rounded-md bg-amber-500 px-2.5 py-1 text-xs font-semibold text-slate-900">
-          {content.label}
+        <span className="shrink-0 rounded-md bg-[#C0568A] px-2.5 py-1 text-xs font-semibold text-white">          {content.label}
         </span>
 
         <div className="relative flex-1 overflow-hidden">
-          <div className="flex w-max min-w-full items-center gap-8 whitespace-nowrap text-sm font-medium text-slate-700 will-change-transform" style={{ animation: 'marquee-scroll 22s linear infinite' }}>
+          <div
+            className="flex w-max min-w-full items-center gap-8 whitespace-nowrap text-sm font-medium text-[#6B2D4F] will-change-transform"
+            style={{ animation: 'marquee-scroll 22s linear infinite' }}
+          >
             <span>{content.message}</span>
             <span aria-hidden="true">{content.message}</span>
           </div>
