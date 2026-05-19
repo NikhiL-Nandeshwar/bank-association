@@ -73,7 +73,7 @@ export const ASSOCIATION_COMMITMENT_COPY = {
 export const HERO_COPY = {
   en: {
     titleLineOne: 'Online Application Portal 2026-27',
-    titleLineTwo: 'Recruitment Process',
+    titleLineTwo: 'Recruitment Process, E-books and Current Updates',
     description: 'Submit online applications for recruitment opportunities across member cooperative banks.',
     about: 'About Us',
     recruitment: 'Recruitment Updates',
