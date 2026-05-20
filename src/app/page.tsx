@@ -35,7 +35,7 @@ export default function Home() {
       <Hero />
       <AnnouncementMarquee />
       {/* <AssociationCommitment /> */}
-      <QuickActions />
+      {/* <QuickActions /> */}
       <AssociationCommitment />
 
       <PortalHighlights />

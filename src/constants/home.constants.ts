@@ -13,7 +13,7 @@ export const ANNOUNCEMENT_COPY = {
 
 export const ASSOCIATION_COMMITMENT_COPY = {
   en: {
-    badge: 'Our Commitment',
+    badge: 'About us',
     title: 'Strong support for member banks',
     description:
       'Kolhapur District Urban Banks Association helps member institutions with planning, training, and implementation support so they can build stronger, more people-focused banking operations.',
@@ -41,7 +41,7 @@ export const ASSOCIATION_COMMITMENT_COPY = {
     ],
   },
   mr: {
-    badge: '\u0906\u092e\u091a\u0940 \u092c\u093e\u0902\u0927\u093f\u0932\u0915\u0940',
+    badge: 'आमच्याबद्दल',
     title: '\u0938\u0926\u0938\u094d\u092f \u092c\u0901\u0915\u093e\u0902\u0938\u093e\u0920\u0940 \u0920\u094b\u0938 \u0938\u093e\u0925',
     description:
       '\u0915\u094b\u0932\u094d\u0939\u093e\u092a\u0942\u0930 \u091c\u093f\u0932\u094d\u0939\u093e \u0928\u093e\u0917\u0930\u0940 \u092c\u0901\u0915\u094d\u0938 \u0938\u0939\u0915\u093e\u0930\u0940 \u0905\u0938\u094b\u0938\u093f\u090f\u0936\u0928 \u0938\u0926\u0938\u094d\u092f \u0938\u0902\u0938\u094d\u0925\u093e\u0902\u0928\u093e \u0928\u093f\u092f\u094b\u091c\u0928, \u092a\u094d\u0930\u0936\u093f\u0915\u094d\u0937\u0923 \u0906\u0923\u093f \u0905\u0902\u092e\u0932\u092c\u091c\u093e\u0935\u0923\u0940 \u092f\u093e \u0924\u093f\u0928\u094d\u0939\u0940 \u0938\u094d\u0924\u0930\u093e\u0902\u0935\u0930 \u0920\u094b\u0938 \u0938\u0939\u093e\u092f\u094d\u092f \u0926\u0947\u090a\u0928 \u0905\u0927\u093f\u0915 \u0938\u0915\u094d\u0937\u092e \u0906\u0923\u093f \u0932\u094b\u0915\u093e\u092d\u093f\u092e\u0941\u0916 \u092c\u0901\u0915\u093f\u0902\u0917 \u0935\u094d\u092f\u0935\u0938\u094d\u0925\u0947\u0915\u0921\u0947 \u0935\u093e\u091f\u091a\u093e\u0932 \u0918\u0921\u0935\u0924\u0947.',
@@ -72,7 +72,7 @@ export const ASSOCIATION_COMMITMENT_COPY = {
 
 export const HERO_COPY = {
   en: {
-    titleLineOne: 'Online Application Portal 2026-27',
+    titleLineOne: 'Online Application Portal 2026-27 !!',
     titleLineTwo: 'Recruitment Process, E-books, Current Updates and Other Services',
     description: 'Submit online applications for recruitment opportunities across member cooperative banks.',
     about: 'About Us',
@@ -80,8 +80,9 @@ export const HERO_COPY = {
   },
   mr: {
     titleLineOne: '\u0911\u0928\u0932\u093e\u0907\u0928 \u0905\u0930\u094d\u091c \u092a\u094b\u0930\u094d\u091f\u0932 2026-27 \u0938\u093e\u0920\u0940',
-titleLineTwo: '\u092D\u0930\u0924\u0940 \u092A\u094D\u0930\u0915\u094D\u0930\u093F\u092F\u093E, \u0908-\u092C\u0941\u0915\u094D\u0938, \u0935\u0930\u094D\u0924\u092E\u093E\u0928 \u0905\u0926\u094D\u092F\u0924\u0928\u0947 \u0906\u0923\u0940 \u0907\u0924\u0930 \u0938\u0947\u0935\u093E',    about: '\u0906\u092e\u091a\u094d\u092f\u093e\u092c\u0926\u094d\u0926\u0932',
+    titleLineTwo: '\u092D\u0930\u0924\u0940 \u092A\u094D\u0930\u0915\u094D\u0930\u093F\u092F\u093E, \u0908-\u092C\u0941\u0915\u094D\u0938, \u0935\u0930\u094D\u0924\u092E\u093E\u0928 \u0905\u0926\u094D\u092F\u0924\u0928\u0947 \u0906\u0923\u0940 \u0907\u0924\u0930 \u0938\u0947\u0935\u093E', about: '\u0906\u092e\u091a\u094d\u092f\u093e\u092c\u0926\u094d\u0926\u0932',
     recruitment: '\u092d\u0930\u0924\u0940 \u0905\u0926\u094d\u092f\u0924\u0928\u0947',
+    description: 'सदस्य सहकारी बँकांमधील भरतीच्या संधींसाठी ऑनलाइन अर्ज सादर करा.'
   },
 } as const;
 
