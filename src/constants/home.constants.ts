@@ -119,6 +119,80 @@ export const LATEST_UPDATES_COPY = {
   },
 } as const;
 
+export const LATEST_NEWS_COPY = {
+  en: {
+    badge: 'Latest news',
+    title: 'News, circulars and member updates',
+    description:
+      'Important association announcements will appear here. These sample items are ready to be replaced by the admin news API.',
+    featuredLabel: 'Priority notice',
+    readMore: 'Read details',
+    items: [
+      {
+        type: 'Circular',
+        title: 'Member bank meeting schedule announced for June 2026',
+        summary:
+          'Directors and senior officers are requested to review the agenda and confirm participation through the association office.',
+        date: '18 May 2026',
+        tone: 'violet',
+      },
+      {
+        type: 'Recruitment',
+        title: 'Online application helpdesk timings updated',
+        summary:
+          'Candidate support will be available on working days from 10:30 AM to 5:30 PM for form and payment related queries.',
+        date: '16 May 2026',
+        tone: 'emerald',
+      },
+      {
+        type: 'Notice',
+        title: 'Public holiday list and office working days published',
+        summary:
+          'Member institutions can refer to the latest holiday and working day notice for administrative planning.',
+        date: '14 May 2026',
+        tone: 'amber',
+      },
+    ],
+  },
+  mr: {
+    badge: 'ताज्या घडामोडी',
+    title: 'बातम्या, परिपत्रके आणि सदस्य अद्यतने',
+    description:
+      'असोसिएशनच्या महत्त्वाच्या घोषणा येथे दिसतील. ही नमुना माहिती नंतर अॅडमिन न्यूज API मधून येईल.',
+    featuredLabel: 'महत्त्वाची सूचना',
+    readMore: 'तपशील पहा',
+
+    items: [
+      {
+        type: 'परिपत्रक',
+        title: 'जून 2026 साठी सदस्य बँक बैठकीचे वेळापत्रक जाहीर',
+        summary:
+          'संचालक आणि वरिष्ठ अधिकाऱ्यांनी अजेंडा पाहून सहभाग निश्चित करावा.',
+        date: '18 मे 2026',
+        tone: 'violet',
+      },
+
+      {
+        type: 'भरती',
+        title: 'ऑनलाइन अर्ज हेल्पडेस्कची वेळ अद्ययावत',
+        summary:
+          'अर्ज आणि पेमेंट संबंधित मदत कामकाजाच्या दिवशी सकाळी 10:30 ते सायंकाळी 5:30 उपलब्ध राहील.',
+        date: '16 मे 2026',
+        tone: 'emerald',
+      },
+
+      {
+        type: 'सूचना',
+        title: 'सार्वजनिक सुट्ट्या आणि कार्यालयीन दिवसांची यादी प्रकाशित',
+        summary:
+          'सदस्य संस्थांनी प्रशासकीय नियोजनासाठी नवीन सुट्टी व कामकाज दिवस सूचना पाहावी.',
+        date: '14 मे 2026',
+        tone: 'amber',
+      },
+    ],
+  },
+} as const;
+
 export const PORTAL_HIGHLIGHTS_COPY = {
   en: {
     badge: 'Candidate Services',

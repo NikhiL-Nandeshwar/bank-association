@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 // Framework
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 // UI components
 import ChangePasswordModal from '@/components/ui/ChangePasswordModal';
@@ -28,6 +28,7 @@ export default function Header() {
   const { language, setLanguage } = usePortalLanguage();
   const { user, logout, status } = useAuth();
   const content = HEADER_COPY[language];
+  const pathname = usePathname();
   const isAdmin =
     user?.role?.toLowerCase?.().includes('admin') ?? false;
 
@@ -91,14 +92,23 @@ export default function Header() {
 
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
           {navLinks.map((item) => (
-            <Link key={item.href} href={item.href} className="hover:text-[#fcd62e]">
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'rounded-md px-2 py-2 transition',
+                pathname === item.href
+                  ? 'text-[#fcd62e]'
+                  : 'text-white hover:text-[#fcd62e]'
+              )}
+            >
               {item.label}
             </Link>
           ))}
 
           {!isAdmin && (
-            <div className="ml-2 flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs backdrop-blur-md">              
-            <span className="text-white/85">{content.languageLabel}</span>
+            <div className="ml-2 flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs backdrop-blur-md">
+              <span className="text-white/85">{content.languageLabel}</span>
               <div className="flex items-center rounded-full bg-white/15 p-1 font-semibold">
                 <button type="button" onClick={() => setLanguage('mr')}
 
@@ -178,59 +188,103 @@ export default function Header() {
       </div>
 
       {isMenuOpen && (
-        <nav className="border-t border-slate-700 bg-slate-800 md:hidden">
-          <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 text-sm font-medium">
+        <nav className="border-t border-white/10 bg-[#7A2E92] md:hidden">
+          <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 text-sm font-medium">
+
             {navLinks.map((item) => (
-              <Link key={item.href} href={item.href} onClick={closeMenu} className={cn('rounded-md px-3 py-2', item.href === ROUTES.recruitment ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-100 hover:bg-slate-700')}>
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={closeMenu}
+                className={cn(
+                  'rounded-xl px-4 py-3 transition',
+                  pathname === item.href
+                    ? 'bg-[#f8def5] text-[#7A2E92] font-semibold'
+                    : 'bg-white/10 text-white hover:bg-white/20'
+                )}
+              >
                 {item.label}
               </Link>
             ))}
+
             {!isAdmin && (
-              <div className="flex items-center gap-3 rounded-full border border-slate-600 bg-slate-700/60 px-3 py-1.5 text-xs">
-                <span className="text-slate-300">{content.languageLabel}</span>
-                <div className="flex items-center rounded-full bg-slate-800/80 p-1 font-semibold">
-                  <button type="button" onClick={() => setLanguage('mr')} className={cn('rounded-full px-3 py-1 transition', language === 'mr' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
+              <div className="mt-2 flex items-center justify-between rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs backdrop-blur-md">
+                <span className="text-white/85">
+                  {content.languageLabel}
+                </span>
+
+                <div className="flex items-center rounded-full bg-white/15 p-1 font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setLanguage('mr')}
+                    className={cn(
+                      'rounded-full px-3 py-1 transition',
+                      language === 'mr'
+                        ? 'bg-white text-[#b13c7a]'
+                        : 'text-white hover:bg-white/10'
+                    )}
+                  >
                     {content.marathi}
                   </button>
-                  <button type="button" onClick={() => setLanguage('en')} className={cn('rounded-full px-3 py-1 transition', language === 'en' ? 'bg-[#fcd62e] text-slate-900' : 'text-slate-200')}>
+
+                  <button
+                    type="button"
+                    onClick={() => setLanguage('en')}
+                    className={cn(
+                      'rounded-full px-3 py-1 transition',
+                      language === 'en'
+                        ? 'bg-white text-[#b13c7a]'
+                        : 'text-white hover:bg-white/10'
+                    )}
+                  >
                     {content.english}
                   </button>
                 </div>
               </div>
             )}
+
             {status === 'loading' ? null : user ? (
               <>
-                <div className="flex items-center gap-2 rounded-md px-3 py-2 text-slate-100">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fcd62e] text-slate-900">
-                    <span className="text-xs font-semibold">
+                <div className="mt-2 flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 text-white">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fcd62e] text-slate-900">
+                    <span className="text-sm font-semibold">
                       {user?.userName?.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span>{user?.userName ?? 'User'}</span>
+
+                  <span className="font-medium">
+                    {user?.userName ?? 'User'}
+                  </span>
                 </div>
+
                 <button
                   type="button"
                   onClick={() => {
                     closeMenu();
                     setIsChangePasswordModalOpen(true);
                   }}
-                  className="rounded-md px-3 py-2 text-left text-slate-100 hover:bg-slate-700"
+                  className="rounded-xl bg-white/10 px-4 py-3 text-left text-white transition hover:bg-white/20"
                 >
                   Change Password
                 </button>
+
                 <button
                   type="button"
                   onClick={() => {
                     closeMenu();
                     void handleLogout();
                   }}
-                  className="rounded-md px-3 py-2 text-left text-slate-100 hover:bg-slate-700"
+                  className="rounded-xl bg-white/10 px-4 py-3 text-left text-white transition hover:bg-white/20"
                 >
                   Logout
                 </button>
               </>
             ) : (
-              <Link href={ROUTES.login} onClick={closeMenu} className="mt-2 rounded-md bg-[#fcd62e] px-3 py-2 text-center font-semibold text-slate-900 hover:bg-yellow-400">
+              <Link
+                href={ROUTES.login}
+                onClick={closeMenu}
+                className="mt-2 rounded-xl bg-white px-4 py-3 text-center font-semibold text-[#6d298e] shadow-sm transition hover:bg-[#f3e8ff]"
+              >
                 {content.login}
               </Link>
             )}

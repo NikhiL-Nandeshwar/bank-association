@@ -23,6 +23,41 @@ body {
   animation: marquee-scroll 22s linear infinite;
 }
 
+.latest-news-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+
+.latest-news-track {
+  animation: latest-news-scroll 34s linear infinite;
+}
+
+.latest-news-mask:hover .latest-news-track {
+  animation-play-state: paused;
+}
+
+@keyframes latest-news-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .latest-news-track {
+    animation: none;
+    flex-wrap: wrap;
+    width: auto;
+  }
+
+  .latest-news-mask {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
 .textured-surface {
   background-color: #f7f8fb;
   background-image:

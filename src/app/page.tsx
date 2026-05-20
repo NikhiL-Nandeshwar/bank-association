@@ -7,10 +7,7 @@ import { useRouter } from 'next/navigation';
 import AnnouncementMarquee from '@/components/home/AnnouncementMarquee';
 import AssociationCommitment from '@/components/home/AssociationCommitment';
 import Hero from '@/components/home/Hero';
-import LatestUpdates from '@/components/home/LatestUpdates';
-import PortalHighlights from '@/components/home/PortalHighlights';
-import QuickActions from '@/components/home/QuickActions';
-import RecruitmentOverview from '@/components/home/RecruitmentOverview';
+import LatestNewsTicker from '@/components/home/LatestNewsTicker';
 import { useAuth } from '@/lib/useAuth';
 import { ROUTES } from '@/constants/routes.constants';
 
@@ -37,11 +34,10 @@ export default function Home() {
       {/* <AssociationCommitment /> */}
       {/* <QuickActions /> */}
       <AssociationCommitment />
-
-      <PortalHighlights />
-
-      <RecruitmentOverview />
-      <LatestUpdates />
+      <LatestNewsTicker />
+      {/* <PortalHighlights /> */}
+      {/* <RecruitmentOverview /> */}
+      {/* <LatestUpdates /> */}
     </>
   );
 }
