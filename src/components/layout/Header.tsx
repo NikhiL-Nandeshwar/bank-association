@@ -38,6 +38,7 @@ export default function Header() {
       : HEADER_NAV_ITEMS.map((item) => ({
         href: item.href,
         label: content[item.labelKey],
+        external: item.external ?? false,
       }));
 
   const closeMenu = () => setIsMenuOpen(false);
@@ -91,20 +92,32 @@ export default function Header() {
         </div>
 
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
-          {navLinks.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'rounded-md px-2 py-2 transition',
-                pathname === item.href
-                  ? 'text-[#fcd62e]'
-                  : 'text-white hover:text-[#fcd62e]'
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navLinks.map((item) =>
+            item.external ? (
+              <a
+                key={item.href}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-md px-2 py-2 text-white transition hover:text-[#fcd62e]"
+              >
+                {item.label}
+              </a>
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'rounded-md px-2 py-2 transition',
+                  pathname === item.href
+                    ? 'text-[#fcd62e]'
+                    : 'text-white hover:text-[#fcd62e]'
+                )}
+              >
+                {item.label}
+              </Link>
+            )
+          )}
 
           {!isAdmin && (
             <div className="ml-2 flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs backdrop-blur-md">
@@ -191,21 +204,37 @@ export default function Header() {
         <nav className="border-t border-white/10 bg-[#7A2E92] md:hidden">
           <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 text-sm font-medium">
 
-            {navLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={closeMenu}
-                className={cn(
-                  'rounded-xl px-4 py-3 transition',
-                  pathname === item.href
-                    ? 'bg-[#f8def5] text-[#7A2E92] font-semibold'
-                    : 'bg-white/10 text-white hover:bg-white/20'
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {navLinks.map((item) =>
+              item.external ? (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    'rounded-md px-2 py-2 transition',
+                    pathname === item.href
+                      ? 'text-[#fcd62e]'
+                      : 'text-white hover:text-[#fcd62e]'
+                  )}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'rounded-md px-2 py-2 transition',
+                    pathname === item.href
+                      ? 'text-[#fcd62e]'
+                      : 'text-white hover:text-[#fcd62e]'
+                  )}
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
 
             {!isAdmin && (
               <div className="mt-2 flex items-center justify-between rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs backdrop-blur-md">
