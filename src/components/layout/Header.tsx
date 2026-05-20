@@ -56,13 +56,13 @@ export default function Header() {
 
   return (
     <header className="bg-[#7A2E92] text-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4">
         <Link href={isAdmin ? ROUTES.adminDashboard : ROUTES.home}
           className="flex min-w-0 items-center gap-2 sm:gap-3" onClick={closeMenu}>
-          <Image src="/logo.png" alt="KOP Bank Logo" width={40} height={40} className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" priority />
+          <Image src="/logo.png" alt="KOP Bank Logo" width={46} height={46} className="h-12 w-12 shrink-0 object-contain" priority />
           <div className="min-w-0">
-            <p className="max-w-37.5 truncate text-[11px] font-semibold leading-tight sm:max-w-none sm:text-sm">{content.logoLineOne}</p>
-            <p className="max-w-37.5 truncate text-[10px] text-[#fbf5da] sm:max-w-none sm:text-xs">{content.logoLineTwo}</p>
+            <p className="max-w-37.5 truncate text-lg font-semibold leading-tight sm:max-w-none ">{content.logoLineOne}</p>
+            <p className="max-w-37.5 truncate text-md text-[#fbf5da] sm:max-w-none ">{content.logoLineTwo}</p>
           </div>
         </Link>
 

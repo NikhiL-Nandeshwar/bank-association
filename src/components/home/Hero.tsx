@@ -34,12 +34,12 @@ export default function Hero() {
             <h1 className="text-3xl font-bold leading-snug text-[#b13c7a] md:text-4xl">
               {content.titleLineOne}
               <br />
-              <span className="text-[#bb7d9e] text-[33px]">
+              <span className="text-[#536071] font-medium text-[33px]">
                 {content.titleLineTwo}
               </span>
             </h1>
 
-            <p className="mt-6 text-xl text-[#b13c7a]/80">
+            <p className="mt-6 text-xl text-slate-600">
               {content.description}
             </p>
 
