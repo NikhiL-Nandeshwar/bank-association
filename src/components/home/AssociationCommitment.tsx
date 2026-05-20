@@ -41,12 +41,12 @@ export default function AssociationCommitment() {
                   </div>
 
                   {/* Title */}
-                  <h3 className="mt-3 text-xl font-bold leading-snug text-slate-600">
+                  <h3 className="mt-3 text-[22px] font-semibold leading-snug text-[#7A2E92]/90">
                     {item.title}
                   </h3>
 
                   {/* Description */}
-                  <p className="mt-2 text-lg leading-relaxed text-[#5b5563]">
+                  <p className="mt-2 text-lg leading-relaxed text-slate-800">
                     {item.description}
                   </p>
                 </div>
