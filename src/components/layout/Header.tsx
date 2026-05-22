@@ -91,7 +91,7 @@ export default function Header() {
           </button>
         </div>
 
-        <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
+        <nav className="hidden items-center gap-5 text-md font-medium md:flex">
           {navLinks.map((item) =>
             item.external ? (
               <a
