@@ -32,4 +32,10 @@ export const API_ENDPOINTS = {
     uploadNoticePdf: 'Vacancy/UploadNoticePdf',
     getPublicList: 'Vacancy/GetPublicList',
   },
+  news: {
+    create: 'news/create',
+    getAll: 'news/GetAll',
+    update: 'news/update',
+    getPublic: 'news/GetPublic',
+  },
 } as const;

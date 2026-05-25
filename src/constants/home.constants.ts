@@ -124,7 +124,7 @@ export const LATEST_NEWS_COPY = {
     badge: 'Latest news',
     title: 'News, circulars and member updates',
     description:
-      'Important association announcements will appear here. These sample items are ready to be replaced by the admin news API.',
+      'Important association announcements will appear here.',
     featuredLabel: 'Priority notice',
     readMore: 'Read details',
     items: [

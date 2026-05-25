@@ -43,3 +43,19 @@ export type BankFormErrors = Partial<Record<BankFormField, string>>;
 export type RecruitmentForm = typeof emptyRecruitmentForm;
 export type RecruitmentFormField = keyof RecruitmentForm;
 export type RecruitmentFormErrors = Partial<Record<RecruitmentFormField, string>>;
+
+export type AdminNews = {
+  id: number;
+  newsEng: string;
+  newsMrt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type NewsForm = {
+  newsEng: string;
+  newsMrt: string;
+};
+
+export type NewsFormField = keyof NewsForm;
+export type NewsFormErrors = Partial<Record<NewsFormField, string>>;

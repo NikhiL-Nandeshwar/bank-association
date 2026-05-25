@@ -16,4 +16,11 @@ export const ADMIN_DASHBOARD_MESSAGES = {
     publishFailed: 'Failed to publish recruitment.',
     loadFailed: 'Unable to load recruitments from the API.',
   },
+  news: {
+    validationError: 'Please fix the highlighted news fields.',
+    saveSuccess: 'News added successfully.',
+    saveFailed: 'Failed to add news.',
+    localSaveFallback: 'News saved locally. API save can be retried when backend is available.',
+    translationInfo: 'Note: Marathi translation can be entered manually or auto-translated.',
+  },
 } as const;

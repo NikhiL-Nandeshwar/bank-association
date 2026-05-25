@@ -82,3 +82,12 @@ export type Vacancy = {
   isPublished?: boolean;
   publishedAt?: string | null;
 };
+
+export type News = {
+  id?: number;
+  newsId?: number;
+  newsEng: string;
+  newsMrt: string;
+  createdAt?: string;
+  updatedAt?: string;
+};

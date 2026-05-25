@@ -27,3 +27,8 @@ export const emptyRecruitmentForm = {
   noticePdfUrl: '',
   noticePdfFileName: '',
 };
+
+export const emptyNewsForm = {
+  newsEng: '',
+  newsMrt: '',
+};
