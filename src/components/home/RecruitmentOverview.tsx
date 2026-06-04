@@ -176,7 +176,7 @@ export default function RecruitmentOverview() {
               onClick={() => setActiveTab('current')}
               className={`border-b-2 px-6 py-3 text-sm font-semibold transition ${
                 activeTab === 'current'
-                  ? 'border-yellow-400 bg-blue-950 text-[#fcd62e]'
+                  ? 'border-[#c63b85] bg-[#b13c7a] hover:bg-[#b13c7a]/90 text-white'
                   : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
@@ -187,7 +187,7 @@ export default function RecruitmentOverview() {
               onClick={() => setActiveTab('previous')}
               className={`border-b-2 px-6 py-3 text-sm font-semibold transition ${
                 activeTab === 'previous'
-                  ? 'border-yellow-400 bg-blue-950 text-[#fcd62e]'
+                  ? 'border-[#c63b85] bg-[#b13c7a] hover:bg-[#b13c7a]/90 text-white'
                   : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
@@ -225,7 +225,7 @@ export default function RecruitmentOverview() {
                                 post: 'postName' in item ? item.postName : undefined,
                               },
                             }}
-                            className="inline-block rounded-md bg-[#fcd62e] px-4 py-1.5 text-xs font-semibold text-gray-800 hover:bg-yellow-400"
+                            className="inline-block rounded-md bg-[#b13c7a] px-4 py-1.5 text-xs font-semibold border border-[#b13c7a] text-white hover:bg-[#b13c7a]/80 transition"
                           >
                             {content.apply}
                           </Link>
@@ -269,7 +269,7 @@ export default function RecruitmentOverview() {
 
         <div className="space-y-6">
           <div className="rounded-xl bg-white p-5 shadow-sm">
-            <h3 className="mb-4 rounded-lg bg-gradient-to-r from-slate-600 to-slate-800 p-2 text-sm font-semibold text-white">
+            <h3 className="mb-4 rounded-lg  p-2 text-sm font-semibold text-[#b13c7a] border border-[#b13c7a]">
               {content.acts}
             </h3>
 
@@ -281,7 +281,7 @@ export default function RecruitmentOverview() {
           </div>
 
           <div className="rounded-xl bg-white p-5 shadow-sm">
-            <h3 className="mb-4 rounded-lg bg-gradient-to-r from-slate-600 to-slate-800 p-2 text-sm font-semibold text-white">
+            <h3 className="mb-4 rounded-lg p-2 text-sm font-semibold text-[#b13c7a] border border-[#b13c7a]">
               {content.quickLinks}
             </h3>
             <ul className="space-y-3 text-sm text-slate-700">
@@ -289,7 +289,7 @@ export default function RecruitmentOverview() {
                 <li key={item}>- {item}</li>
               ))}
             </ul>
-          </div>
+          </div> 
         </div>
       </div>
     </section>

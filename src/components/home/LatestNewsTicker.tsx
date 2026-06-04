@@ -1,11 +1,9 @@
 'use client';
 
 import { ArrowUpRight, CalendarDays, Megaphone, Newspaper } from 'lucide-react';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { LATEST_NEWS_COPY } from '@/constants/home.constants';
-import { ROUTES } from '@/constants/routes.constants';
 import { usePortalLanguage } from '@/lib/usePortalLanguage';
 import { getNews } from '@/actions/api/news.actions';
 import type { News } from '@/types/api.types';

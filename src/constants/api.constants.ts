@@ -6,6 +6,7 @@ export const API_BASE_URL =
 export const API_ENDPOINTS = {
   auth: {
     login: 'Auth/Login',
+    signup: 'Auth/Signup',
     sendOtp: 'Auth/SendOtp',
     verifyOtp: 'Auth/VerifyForgotPasswordOtp',
     forgotPassword: 'Auth/ForgotPassword',

@@ -11,6 +11,28 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required.'),
 });
 
+export const firstNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'First name is required.')
+  .max(50, 'First name cannot exceed 50 characters.')
+  .regex(/^[A-Za-z\s]+$/, 'First name can only contain letters.');
+
+export const lastNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Last name is required.')
+  .max(50, 'Last name cannot exceed 50 characters.')
+  .regex(/^[A-Za-z\s]+$/, 'Last name can only contain letters.');
+
+export const signupSchema = z.object({
+  firstName: firstNameSchema,
+  lastName: lastNameSchema,
+  email: emailSchema,
+});
+
+export type SignupRequest = z.infer<typeof signupSchema>;
+
 export const otpRequestSchema = z.object({
   email: emailSchema,
 });

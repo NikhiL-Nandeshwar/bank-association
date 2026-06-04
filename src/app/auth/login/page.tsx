@@ -130,8 +130,8 @@ export default function LoginPage() {
             <Link href={ROUTES.forgotPassword} className="font-medium text-emerald-700 hover:text-emerald-800">
               Forgot password?
             </Link>
-            <Link href={ROUTES.apply} className="font-medium text-slate-700 hover:text-slate-950">
-              New application
+            <Link href={ROUTES.signup} className="font-medium text-slate-700 hover:text-slate-950">
+              Signup
             </Link>
           </div>
         </form>
