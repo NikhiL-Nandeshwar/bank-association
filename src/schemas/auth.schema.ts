@@ -25,9 +25,18 @@ export const lastNameSchema = z
   .max(50, 'Last name cannot exceed 50 characters.')
   .regex(/^[A-Za-z\s]+$/, 'Last name can only contain letters.');
 
+export const fullNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Full name is required.')
+  .max(100, 'Full name cannot exceed 100 characters.')
+  .regex(
+    /^[A-Za-z\s]+$/,
+    'Full name can only contain letters and spaces.'
+  );
+
 export const signupSchema = z.object({
-  firstName: firstNameSchema,
-  lastName: lastNameSchema,
+  fullName: fullNameSchema,
   email: emailSchema,
 });
 

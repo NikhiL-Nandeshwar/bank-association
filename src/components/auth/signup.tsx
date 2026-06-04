@@ -23,8 +23,7 @@ type SignupFieldErrors = Partial<
 >;
 
 export default function Signup() {
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
+    const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [otp, setOtp] = useState('');
     const [isCodeSent, setIsCodeSent] = useState(false);
@@ -50,8 +49,7 @@ export default function Signup() {
         setFieldErrors({});
 
         const signupPayload = signupSchema.safeParse({
-            firstName,
-            lastName,
+            fullName,
             email,
         });
 
@@ -148,26 +146,15 @@ export default function Signup() {
                         </p>
                     </div>
 
-                    <div className="mt-6 space-y-4">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <FormInput
-                                id="firstName"
-                                label="First Name"
-                                value={firstName}
-                                error={fieldErrors.firstName}
-                                onChange={(e) => setFirstName(e.target.value)}
-                                placeholder="First name"
-                            />
-
-                            <FormInput
-                                id="lastName"
-                                label="Last Name"
-                                value={lastName}
-                                error={fieldErrors.lastName}
-                                onChange={(e) => setLastName(e.target.value)}
-                                placeholder="Last name"
-                            />
-                        </div>
+                    <div className="mt-6 space-y-3">
+                        <FormInput
+                            id="fullName"
+                            label="Full Name"
+                            value={fullName}
+                            error={fieldErrors.fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            placeholder="Enter your full name as per Aadhar"
+                        />
                         <FormInput
                             id="email"
                             type="email"

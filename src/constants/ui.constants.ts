@@ -1,6 +1,6 @@
 export const FORM_STYLES = {
   input:
-    'mt-2 w-full rounded-md border border-slate-300 px-3 py-2.5 text-sm text-slate-950 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100',
+    'mt-1.5 w-full rounded-md border border-slate-300 px-3 py-2.5 text-sm text-slate-950 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100',
   inputInvalid:
     'border-red-300 focus:border-red-500 focus:ring-red-100',
   label: 'text-sm font-medium text-slate-800',

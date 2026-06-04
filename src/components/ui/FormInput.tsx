@@ -33,7 +33,7 @@ export default function FormInput({
         </label>
       )}
 
-      <div className="relative mt-2">
+      <div className="relative">
         <input
           id={id}
           className={cn(
