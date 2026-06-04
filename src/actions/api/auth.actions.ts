@@ -39,6 +39,13 @@ export function verifyOtp(payload: VerifyOtpRequest) {
   });
 }
 
+export function verifyForgotPasswordOtp(payload: VerifyOtpRequest) {
+  return apiRequest<unknown>(API_ENDPOINTS.auth.verifyForgotPasswordOtp, {
+    method: 'POST',
+    body: payload,
+  });
+}
+
 export function forgotPassword(payload: OtpRequest) {
   return apiRequest<unknown>(API_ENDPOINTS.auth.forgotPassword, {
     method: 'POST',

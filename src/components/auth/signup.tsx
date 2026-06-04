@@ -15,8 +15,9 @@ import { ROUTES } from '@/constants/routes.constants';
 import OtpInputController from '../ui/OtpInputController';
 import { SignupRequest, signupSchema } from '@/schemas/auth.schema';
 import { getZodFieldErrors } from '@/utils/validation';
-import { sendOtp } from '@/actions/api/auth.actions';
+import { sendOtp, verifyOtp } from '@/actions/api/auth.actions';
 import { getErrorMessage } from '@/utils/api-error';
+import router from 'next/router';
 
 type SignupFieldErrors = Partial<
     Record<keyof SignupRequest, string>
@@ -94,25 +95,49 @@ export default function Signup() {
         try {
             setIsSubmitting(true);
 
-            // API Call
-            // await verifyCode({ email, verificationCode });
+            await verifyOtp({
+                email,
+                otpCode: otp,
+            });
 
             toast.success('Email verified successfully.');
-        } catch {
-            toast.error('Invalid verification code.');
+
+            // Optional:
+            router.push(ROUTES.login);
+        } catch (caughtError) {
+            const errorMessage = getErrorMessage(
+                caughtError,
+                'Invalid verification code.'
+            );
+
+            toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
     }
 
     async function handleResendCode() {
+
         try {
+            setIsSubmitting(true);
+
+            await sendOtp({
+                email,
+            });
+
             setOtp('');
             setCountdown(30);
 
             toast.success('Verification code resent.');
-        } catch {
-            toast.error('Unable to resend code.');
+        } catch (caughtError) {
+            const errorMessage = getErrorMessage(
+                caughtError,
+                'Unable to resend code.'
+            );
+
+            toast.error(errorMessage);
+        } finally {
+            setIsSubmitting(false);
         }
     }
 
