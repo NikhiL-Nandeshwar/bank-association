@@ -24,6 +24,7 @@ type SignupFieldErrors = Partial<
 
 export default function Signup() {
     const [fullName, setFullName] = useState('');
+    const [mobile, setMobile] = useState('');
     const [email, setEmail] = useState('');
     const [otp, setOtp] = useState('');
     const [isCodeSent, setIsCodeSent] = useState(false);
@@ -51,6 +52,7 @@ export default function Signup() {
         const signupPayload = signupSchema.safeParse({
             fullName,
             email,
+            mobile
         });
 
         if (!signupPayload.success) {
@@ -163,6 +165,16 @@ export default function Signup() {
                             error={fieldErrors.email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="name@example.com"
+                        />
+                        <FormInput
+                            id="mobile"
+                            type="tel"
+                            label="Mobile Number (Optional)"
+                            value={mobile}
+                            error={fieldErrors.mobile}
+                            onChange={(e) => setMobile(e.target.value)}
+                            placeholder="Enter 10 digit mobile number"
+                            maxLength={10}
                         />
 
                         {isCodeSent && (

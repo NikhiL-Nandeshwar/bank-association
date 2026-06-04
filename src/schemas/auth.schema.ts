@@ -35,9 +35,22 @@ export const fullNameSchema = z
     'Full name can only contain letters and spaces.'
   );
 
+export const mobileSchema = z
+  .string()
+  .trim()
+  .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number.');
+
 export const signupSchema = z.object({
   fullName: fullNameSchema,
   email: emailSchema,
+  mobile: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === '' || /^[6-9]\d{9}$/.test(value),
+      'Enter a valid 10-digit mobile number.'
+    )
+    .optional(),
 });
 
 export type SignupRequest = z.infer<typeof signupSchema>;
