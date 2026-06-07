@@ -8,6 +8,7 @@ import { fixPdfUrl } from '@/lib/utils';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePortalLanguage } from '@/lib/usePortalLanguage';
+import { useAuth } from '@/lib/useAuth';
 
 type CurrentRecruitment = {
   code: string;
@@ -133,7 +134,29 @@ export default function RecruitmentOverview() {
   const [previousRecruitments, setPreviousRecruitments] = useState<CurrentRecruitment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const content = RECRUITMENT_OVERVIEW_COPY[language];
+  const { status } = useAuth();
+  const isLoggedIn = status === 'authenticated';
   const visibleRecruitments = activeTab === 'current' ? currentRecruitments : previousRecruitments;
+
+  const getApplyHref = (item: CurrentRecruitment) => {
+    const redirectToApply = `${ROUTES.apply}?code=${encodeURIComponent(item.code)}&name=${encodeURIComponent(item.name)}${item.postName ? `&post=${encodeURIComponent(item.postName)}` : ''}`;
+
+    return isLoggedIn
+      ? {
+          pathname: ROUTES.apply,
+          query: {
+            code: item.code,
+            name: item.name,
+            post: item.postName,
+          },
+        }
+      : {
+          pathname: ROUTES.signup,
+          query: {
+            redirect: redirectToApply,
+          },
+        };
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -217,14 +240,7 @@ export default function RecruitmentOverview() {
                       {activeTab === 'current' ? (
                         <div className="flex flex-col items-center gap-2">
                           <Link
-                            href={{
-                              pathname: ROUTES.apply,
-                              query: {
-                                code: item.code,
-                                name: item.name,
-                                post: 'postName' in item ? item.postName : undefined,
-                              },
-                            }}
+                            href={getApplyHref(item)}
                             className="inline-block rounded-md bg-[#b13c7a] px-4 py-1.5 text-xs font-semibold border border-[#b13c7a] text-white hover:bg-[#b13c7a]/80 transition"
                           >
                             {content.apply}

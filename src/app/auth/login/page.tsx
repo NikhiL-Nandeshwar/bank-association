@@ -3,7 +3,7 @@
 // Framework
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 // UI components
@@ -30,6 +30,8 @@ type LoginFieldErrors = Partial<Record<keyof LoginRequest, string>>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect') ?? '';
   const { login: authLogin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,11 +60,13 @@ export default function LoginPage() {
       await authLogin();
 
       const userRole = response.data.role?.toLowerCase() ?? '';
-      router.replace(
-        userRole.includes('admin')
-          ? ROUTES.adminDashboard
-          : ROUTES.recruitment
-      );
+      const destination = userRole.includes('admin')
+        ? ROUTES.adminDashboard
+        : redirect
+          ? redirect
+          : ROUTES.recruitment;
+
+      router.replace(destination);
     } catch (caughtError) {
       console.log('Login error:', caughtError);
       const errorMessage = getErrorMessage(caughtError, 'Unable to login right now. Please try again.');
@@ -130,7 +134,10 @@ export default function LoginPage() {
             <Link href={ROUTES.forgotPassword} className="font-medium text-emerald-700 hover:text-emerald-800">
               Forgot password?
             </Link>
-            <Link href={ROUTES.signup} className="font-medium text-slate-700 hover:text-slate-950">
+            <Link
+              href={redirect ? `${ROUTES.signup}?redirect=${encodeURIComponent(redirect)}` : ROUTES.signup}
+              className="font-medium text-slate-700 hover:text-slate-950"
+            >
               Signup
             </Link>
           </div>
