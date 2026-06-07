@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import ApplicationWizard from '@/components/recruitment/ApplicationWizard';
 import { useAuth } from '@/lib/useAuth';
@@ -15,19 +15,23 @@ type RecruitmentApplyPageQuery = {
 
 export default function RecruitmentApplyPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { status, user } = useAuth();
+  const [query, setQuery] = useState<RecruitmentApplyPageQuery>({});
 
-  const query = useMemo<RecruitmentApplyPageQuery>(() => ({
-    code: searchParams.get('code') ?? undefined,
-    name: searchParams.get('name') ?? undefined,
-    post: searchParams.get('post') ?? undefined,
-  }), [searchParams]);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setQuery({
+      code: params.get('code') ?? undefined,
+      name: params.get('name') ?? undefined,
+      post: params.get('post') ?? undefined,
+    });
+  }, []);
 
   useEffect(() => {
     if (status === 'loading') return;
 
-    const applyPath = `${ROUTES.apply}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    const params = new URLSearchParams(window.location.search);
+    const applyPath = `${ROUTES.apply}${params.toString() ? `?${params.toString()}` : ''}`;
 
     if (status === 'unauthenticated') {
       router.replace(`${ROUTES.signup}?redirect=${encodeURIComponent(applyPath)}`);
@@ -37,7 +41,7 @@ export default function RecruitmentApplyPage() {
     if (!user?.role?.toLowerCase().includes('candidate')) {
       router.replace(ROUTES.recruitment);
     }
-  }, [status, user, router, searchParams]);
+  }, [status, user, router]);
 
   if (status !== 'authenticated' || !user?.role?.toLowerCase().includes('candidate')) {
     return null;

@@ -3,7 +3,7 @@
 // Framework
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 // UI Components
@@ -83,8 +83,7 @@ const SIGNUP_COPY = {
 
 export default function Signup() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const redirect = searchParams.get('redirect') ?? '';
+    const [redirect, setRedirect] = useState('');
     const { language } = usePortalLanguage();
     const content = SIGNUP_COPY[language];
     const [fullName, setFullName] = useState('');
@@ -106,6 +105,11 @@ export default function Signup() {
 
         return () => clearInterval(timer);
     }, [isCodeSent, countdown]);
+
+    useEffect(() => {
+        const query = new URLSearchParams(window.location.search);
+        setRedirect(query.get('redirect') ?? '');
+    }, []);
 
     async function handleSignup(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();

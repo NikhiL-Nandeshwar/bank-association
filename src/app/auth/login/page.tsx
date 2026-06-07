@@ -2,8 +2,8 @@
 
 // Framework
 import Link from 'next/link';
-import { FormEvent, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { FormEvent, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 // UI components
@@ -30,8 +30,7 @@ type LoginFieldErrors = Partial<Record<keyof LoginRequest, string>>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') ?? '';
+  const [redirect, setRedirect] = useState('');
   const { login: authLogin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,6 +38,11 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({});
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    setRedirect(query.get('redirect') ?? '');
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
