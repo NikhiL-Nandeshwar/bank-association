@@ -107,6 +107,7 @@ export function formatApiRecruitment(item: Vacancy): AdminRecruitment {
     isNCLRequired: item.isNCLRequired,
     noticePdfUrl: item.noticePdfUrl ?? '',
     noticePdfFileName: item.noticePdfFileName ?? '',
+    eligibilityCriteria: item.eligibilityCriteria ?? undefined,
     status: item.status || 'Open',
     isPublished: Boolean(item.isPublished) || item.status?.toLowerCase() === 'published',
   };

@@ -1,4 +1,5 @@
 import { emptyBankForm, emptyRecruitmentForm } from "@/constants/adminDashboard";
+import type { EligibilityCriteria } from "@/types/api.types";
 
 export type AdminBank = {
     bankId: number;
@@ -33,6 +34,7 @@ export type AdminRecruitment = {
     isNCLRequired: boolean;
     noticePdfUrl: string;
     noticePdfFileName: string;
+    eligibilityCriteria?: EligibilityCriteria[];
     status: string;
     isPublished: boolean;
 };

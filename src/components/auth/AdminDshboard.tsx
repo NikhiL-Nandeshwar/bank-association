@@ -15,6 +15,42 @@ import { useNewsForm } from '@/hooks/useNewsForm';
 import { useRecruitmentActions } from '@/hooks/useRecruitmentActions';
 import { toast } from 'sonner';
 
+const ELIGIBILITY_CRITERIA_TYPES = ['EDUCATION', 'COURSE'] as const;
+const ELIGIBILITY_CRITERIA_VALUES = {
+  EDUCATION: [
+    'SSC_10TH',
+    'HSC_12TH',
+    'GRADUATION',
+  ] as const,
+  COURSE: [
+    'MSCIT',
+    'CCC',
+  ] as const,
+};
+
+const ELIGIBILITY_CRITERIA_DEFAULT_DECLARATIONS: Record<string, { declarationEng: string; declarationMrt: string }> = {
+  SSC_10TH: {
+    declarationEng: 'I have passed Secondary School Certificate (10th) examination.',
+    declarationMrt: 'मी माध्यमिक शालान्त प्रमाणपत्र (१०वी) परीक्षा उत्तीर्ण केली आहे.',
+  },
+  HSC_12TH: {
+    declarationEng: 'I have passed Higher Secondary Certificate (12th) examination.',
+    declarationMrt: 'मी उच्च माध्यमिक शालान्त प्रमाणपत्र (१२वी) परीक्षा उत्तीर्ण केली आहे.',
+  },
+  GRADUATION: {
+    declarationEng: 'I have completed Graduation from a recognized university.',
+    declarationMrt: 'मी मान्यताप्राप्त विद्यापीठातून पदवी पूर्ण केली आहे.',
+  },
+  MSCIT: {
+    declarationEng: 'I have completed MS-CIT or equivalent computer course.',
+    declarationMrt: 'मी एमएस-सीआयटी किंवा समकक्ष संगणक अभ्यासक्रम पूर्ण केला आहे.',
+  },
+  CCC: {
+    declarationEng: 'I have completed CCC (Course on Computer Concepts).',
+    declarationMrt: 'मी सीसीसी (कोर्स ऑन कंप्यूटर कॉन्सेप्ट्स) पूर्ण केला आहे.',
+  },
+};
+
 /**
  * Admin dashboard page component for managing banks and recruitment notices.
  * Only accessible to users with admin privileges. Provides forms for 
@@ -355,6 +391,28 @@ export default function AdminDashboardPage() {
                                     />
 
                                     <AdminInput
+                                        label="Required city / district"
+                                        value={recruitment.form.requiredCityDistrict}
+                                        onChange={(v) =>
+                                            recruitment.setForm((p) => ({
+                                                ...p,
+                                                requiredCityDistrict: v,
+                                            }))
+                                        }
+                                    />
+
+                                    <AdminInput
+                                        label="Required state"
+                                        value={recruitment.form.requiredStateId}
+                                        onChange={(v) =>
+                                            recruitment.setForm((p) => ({
+                                                ...p,
+                                                requiredStateId: v,
+                                            }))
+                                        }
+                                    />
+
+                                    <AdminInput
                                         label="Required education"
                                         value={recruitment.form.requiredEducation}
                                         onChange={(v) =>
@@ -364,6 +422,209 @@ export default function AdminDashboardPage() {
                                             }))
                                         }
                                     />
+
+                                    <div className="col-span-full rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                        <div className="mb-4 flex items-center justify-between gap-4">
+                                            <div>
+                                                <p className="text-sm font-semibold text-slate-900">Eligibility criteria</p>
+                                                <p className="mt-1 text-sm text-slate-500">Add one or more eligibility conditions for this vacancy.</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    recruitment.setForm((p) => ({
+                                                        ...p,
+                                                        eligibilityCriteria: [
+                                                            ...p.eligibilityCriteria,
+                                                            {
+                                                                criteriaType: '',
+                                                                criteriaValue: '',
+                                                                groupTag: '',
+                                                                isMandatory: false,
+                                                                declarationEng: '',
+                                                                declarationMrt: '',
+                                                                sortOrder: 0,
+                                                            },
+                                                        ],
+                                                    }))
+                                                }
+                                                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                                            >
+                                                Add criterion
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {recruitment.form.eligibilityCriteria.length === 0 ? (
+                                                <p className="text-sm text-slate-500">No eligibility criteria added yet.</p>
+                                            ) : null}
+
+                                            {recruitment.form.eligibilityCriteria.map((criteria, criteriaIndex) => (
+                                                <div key={criteriaIndex} className="rounded-xl border border-slate-200 bg-white p-4">
+                                                    <div className="grid gap-4 md:grid-cols-2">
+                                                        <label className="block">
+                                                            <span className="text-sm font-semibold text-slate-800">Criteria type</span>
+                                                            <select
+                                                                value={criteria.criteriaType}
+                                                                onChange={(event) =>
+                                                                    recruitment.setForm((p) => {
+                                                                        const type = event.target.value;
+                                                                        const updated = [...p.eligibilityCriteria];
+                                                                        updated[criteriaIndex] = {
+                                                                            ...updated[criteriaIndex],
+                                                                            criteriaType: type,
+                                                                            criteriaValue: '',
+                                                                            declarationEng: '',
+                                                                            declarationMrt: '',
+                                                                        };
+                                                                        return { ...p, eligibilityCriteria: updated };
+                                                                    })
+                                                                }
+                                                                className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+                                                            >
+                                                                <option value="">Select criteria type</option>
+                                                                {ELIGIBILITY_CRITERIA_TYPES.map((type) => (
+                                                                    <option key={type} value={type}>
+                                                                        {type}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </label>
+
+                                                        <label className="block">
+                                                            <span className="text-sm font-semibold text-slate-800">Criteria value</span>
+                                                            <select
+                                                                value={criteria.criteriaValue}
+                                                                onChange={(event) => {
+                                                                    const newValue = event.target.value;
+                                                                    const defaultDeclaration = ELIGIBILITY_CRITERIA_DEFAULT_DECLARATIONS[newValue] ?? {
+                                                                        declarationEng: '',
+                                                                        declarationMrt: '',
+                                                                    };
+                                                                    recruitment.setForm((p) => {
+                                                                        const updated = [...p.eligibilityCriteria];
+                                                                        updated[criteriaIndex] = {
+                                                                            ...updated[criteriaIndex],
+                                                                            criteriaValue: newValue,
+                                                                            declarationEng: defaultDeclaration.declarationEng,
+                                                                            declarationMrt: defaultDeclaration.declarationMrt,
+                                                                        };
+                                                                        return { ...p, eligibilityCriteria: updated };
+                                                                    });
+                                                                }}
+                                                                className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+                                                            >
+                                                                <option value="">Select criteria value</option>
+                                                                {(criteria.criteriaType
+                                                                    ? ELIGIBILITY_CRITERIA_VALUES[criteria.criteriaType as keyof typeof ELIGIBILITY_CRITERIA_VALUES]
+                                                                    : [...ELIGIBILITY_CRITERIA_VALUES.EDUCATION, ...ELIGIBILITY_CRITERIA_VALUES.COURSE]
+                                                                ).map((value) => (
+                                                                    <option key={value} value={value}>
+                                                                        {value}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </label>
+
+                                                        <AdminInput
+                                                            label="Group tag"
+                                                            value={criteria.groupTag}
+                                                            onChange={(value) =>
+                                                                recruitment.setForm((p) => {
+                                                                    const updated = [...p.eligibilityCriteria];
+                                                                    updated[criteriaIndex] = {
+                                                                        ...updated[criteriaIndex],
+                                                                        groupTag: value,
+                                                                    };
+                                                                    return { ...p, eligibilityCriteria: updated };
+                                                                })
+                                                            }
+                                                        />
+
+                                                        <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={criteria.isMandatory}
+                                                                onChange={(event) =>
+                                                                    recruitment.setForm((p) => {
+                                                                        const updated = [...p.eligibilityCriteria];
+                                                                        updated[criteriaIndex] = {
+                                                                            ...updated[criteriaIndex],
+                                                                            isMandatory: event.target.checked,
+                                                                        };
+                                                                        return { ...p, eligibilityCriteria: updated };
+                                                                    })
+                                                                }
+                                                                className="h-4 w-4"
+                                                            />
+                                                            <span className="text-sm text-slate-800">Mandatory</span>
+                                                        </div>
+
+                                                        <AdminInput
+                                                            label="Declaration (English)"
+                                                            value={criteria.declarationEng}
+                                                            onChange={(value) =>
+                                                                recruitment.setForm((p) => {
+                                                                    const updated = [...p.eligibilityCriteria];
+                                                                    updated[criteriaIndex] = {
+                                                                        ...updated[criteriaIndex],
+                                                                        declarationEng: value,
+                                                                    };
+                                                                    return { ...p, eligibilityCriteria: updated };
+                                                                })
+                                                            }
+                                                        />
+
+                                                        <AdminInput
+                                                            label="Declaration (Marathi)"
+                                                            value={criteria.declarationMrt}
+                                                            onChange={(value) =>
+                                                                recruitment.setForm((p) => {
+                                                                    const updated = [...p.eligibilityCriteria];
+                                                                    updated[criteriaIndex] = {
+                                                                        ...updated[criteriaIndex],
+                                                                        declarationMrt: value,
+                                                                    };
+                                                                    return { ...p, eligibilityCriteria: updated };
+                                                                })
+                                                            }
+                                                        />
+
+                                                        <AdminInput
+                                                            label="Sort order"
+                                                            value={String(criteria.sortOrder)}
+                                                            onChange={(value) =>
+                                                                recruitment.setForm((p) => {
+                                                                    const updated = [...p.eligibilityCriteria];
+                                                                    updated[criteriaIndex] = {
+                                                                        ...updated[criteriaIndex],
+                                                                        sortOrder: parseInt(value, 10) || 0,
+                                                                    };
+                                                                    return { ...p, eligibilityCriteria: updated };
+                                                                })
+                                                            }
+                                                        />
+                                                    </div>
+
+                                                    <div className="mt-4 flex justify-end">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                recruitment.setForm((p) => {
+                                                                    const updated = [...p.eligibilityCriteria];
+                                                                    updated.splice(criteriaIndex, 1);
+                                                                    return { ...p, eligibilityCriteria: updated };
+                                                                })
+                                                            }
+                                                            className="rounded-md border border-rose-300 bg-white px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
 
                                     <AdminInput
                                         label="Notice PDF URL"

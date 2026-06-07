@@ -30,6 +30,7 @@ export function useRecruitmentForm(loadRecruitments: () => Promise<void>) {
     const parsed = createVacancySchema.safeParse({
       ...form,
       requiredCityDistrict: form.requiredCityDistrict || undefined,
+      eligibilityCriteria: form.eligibilityCriteria?.length ? form.eligibilityCriteria : undefined,
     });
 
     if (!parsed.success) {
@@ -92,6 +93,7 @@ export function useRecruitmentForm(loadRecruitments: () => Promise<void>) {
       isNCLRequired: item.isNCLRequired,
       noticePdfUrl: item.noticePdfUrl,
       noticePdfFileName: item.noticePdfFileName,
+      eligibilityCriteria: item.eligibilityCriteria ?? [],
     });
   };
 

@@ -14,13 +14,16 @@ import {
   type LanguageSkills,
   type SummaryTone,
 } from '@/constants/application-wizard.constants';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { EligibilityCriteria } from '@/types/api.types';
 
 type ApplicationWizardProps = {
   initialRecruitment: {
     code: string;
     name: string;
     postName?: string;
+    bankName?: string;
+    eligibilityCriteria?: EligibilityCriteria[];
   };
 };
 
@@ -75,6 +78,7 @@ type FormState = {
   preferredLocation: string;
   noticePeriod: string;
   relocate: string;
+  acceptedEligibilityCriteria: Record<number, boolean>;
   declarationAccepted: boolean;
   paymentMethod: string;
   paymentStatus: string;
@@ -91,7 +95,7 @@ const initialState = (recruitment: ApplicationWizardProps['initialRecruitment'])
   recruitmentCode: recruitment.code,
   recruitmentName: recruitment.name,
   applicationId: generateApplicationId(recruitment),
-  bankName: 'The Malegaon Merchants Co-op. Bank Ltd.',
+  bankName: recruitment.name ?? '',
   postName: recruitment.postName ?? '',
   employmentType: 'full-time',
   firstName: '',
@@ -131,6 +135,7 @@ const initialState = (recruitment: ApplicationWizardProps['initialRecruitment'])
   preferredLocation: '',
   noticePeriod: '',
   relocate: '',
+  acceptedEligibilityCriteria: {},
   declarationAccepted: false,
   paymentMethod: 'UPI',
   paymentStatus: '',
@@ -169,7 +174,7 @@ function hasExperienceDetails(entries: ExperienceEntry[]) {
   );
 }
 
-function validateStep(step: number, form: FormState): ErrorMap {
+function validateStep(step: number, form: FormState, eligibilityCriteria?: EligibilityCriteria[]): ErrorMap {
   const errors: ErrorMap = {};
 
   if (step === 0) {
@@ -178,6 +183,15 @@ function validateStep(step: number, form: FormState): ErrorMap {
     if (!fieldValue(form.applicationId).trim()) errors.applicationId = 'Application ID is required.';
     if (!fieldValue(form.bankName).trim()) errors.bankName = 'Bank name is required.';
     if (!fieldValue(form.postName).trim()) errors.postName = 'Post name is required.';
+    
+    // Validate mandatory eligibility criteria
+    if (eligibilityCriteria && eligibilityCriteria.length > 0) {
+      const mandatoryCriteria = eligibilityCriteria.filter((c) => c.isMandatory);
+      const allMandatoryChecked = mandatoryCriteria.every((c, index) => form.acceptedEligibilityCriteria[index] === true);
+      if (mandatoryCriteria.length > 0 && !allMandatoryChecked) {
+        errors.acceptedEligibilityCriteria = 'Please accept all mandatory eligibility criteria to proceed.';
+      }
+    }
   }
 
   if (step === 1) {
@@ -319,6 +333,15 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [errors, setErrors] = useState<ErrorMap>({});
   const [submitted, setSubmitted] = useState(false);
   const [showHallTicket, setShowHallTicket] = useState(false);
+console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
+
+  useEffect(() => {
+    setForm(initialState(initialRecruitment));
+    setCurrentStep(0);
+    setErrors({});
+    setSubmitted(false);
+    setShowHallTicket(false);
+  }, [initialRecruitment.code]); // re-init when recruitment changes
 
   const form = useMemo(
     () => normalizeFormState(initialRecruitment, formState),
@@ -387,8 +410,19 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     setErrors((prev) => ({ ...prev, languageSkills: undefined }));
   };
 
+  const toggleEligibilityCriteria = (criteriaIndex: number) => {
+    setForm((prev) => ({
+      ...prev,
+      acceptedEligibilityCriteria: {
+        ...prev.acceptedEligibilityCriteria,
+        [criteriaIndex]: !prev.acceptedEligibilityCriteria[criteriaIndex],
+      },
+    }));
+    setErrors((prev) => ({ ...prev, acceptedEligibilityCriteria: undefined }));
+  };
+
   const goNext = () => {
-    const nextErrors = validateStep(currentStep, form);
+    const nextErrors = validateStep(currentStep, form, initialRecruitment.eligibilityCriteria);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
@@ -486,23 +520,21 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               return (
                 <div
                   key={item.id}
-                  className={`rounded-3xl border px-4 py-4 transition ${
-                    isActive
+                  className={`rounded-3xl border px-4 py-4 transition ${isActive
                       ? 'border-amber-300 bg-amber-300/10'
                       : isDone
                         ? 'border-emerald-400/20 bg-emerald-400/10'
                         : 'border-white/10 bg-white/5'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-semibold ${
-                        isActive
+                      className={`flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-semibold ${isActive
                           ? 'bg-amber-300 text-slate-900'
                           : isDone
                             ? 'bg-emerald-400 text-slate-900'
                             : 'bg-white/10 text-slate-200'
-                      }`}
+                        }`}
                     >
                       {isDone ? 'OK' : item.id}
                     </div>
@@ -535,35 +567,70 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
 
           <div className="mt-8 space-y-8">
             {currentStep === 0 && (
-              <div className="grid gap-6 md:grid-cols-2">
-                <FormField label="Application ID" error={errors.applicationId}>
-                  <input
-                    value={form.applicationId}
-                    disabled
-                    className={`${APPLICATION_INPUT_CLASS_NAME} cursor-not-allowed bg-slate-100 text-slate-500`}
-                    placeholder="Generated automatically"
-                  />
-                </FormField>
-                <FormField label="Recruitment code" error={errors.recruitmentCode}>
-                  <input value={form.recruitmentCode} onChange={(event) => updateField('recruitmentCode', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="KM-016" />
-                </FormField>
-                <FormField label="Bank name" error={errors.bankName}>
-                  <input value={form.bankName} onChange={(event) => updateField('bankName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                </FormField>
-                <FormField label="Post name" error={errors.postName}>
-                  <input value={form.postName} onChange={(event) => updateField('postName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Clerk / Officer / Assistant" />
-                </FormField>
-                <FormField label="Employment type">
-                  <select value={form.employmentType} onChange={(event) => updateField('employmentType', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
-                    <option value="full-time">Full-time</option>
-                    <option value="contract">Contract</option>
-                    <option value="trainee">Trainee</option>
-                  </select>
-                </FormField>
-                <FormField label="Recruitment title" error={errors.recruitmentName}>
-                  <textarea value={form.recruitmentName} onChange={(event) => updateField('recruitmentName', event.target.value)} className={`${APPLICATION_INPUT_CLASS_NAME} min-h-32`} placeholder="Name of the recruitment" />
-                </FormField>
-              </div>
+              <>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <FormField label="Application ID" error={errors.applicationId}>
+                    <input
+                      value={form.applicationId}
+                      disabled
+                      className={`${APPLICATION_INPUT_CLASS_NAME} cursor-not-allowed bg-slate-100 text-slate-500`}
+                      placeholder="Generated automatically"
+                    />
+                  </FormField>
+                  <FormField label="Recruitment code" error={errors.recruitmentCode}>
+                    <input value={form.recruitmentCode} onChange={(event) => updateField('recruitmentCode', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="KM-016" />
+                  </FormField>
+                  <FormField label="Bank name" error={errors.bankName}>
+                    <input value={form.bankName} onChange={(event) => updateField('bankName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                  </FormField>
+                  <FormField label="Post name" error={errors.postName}>
+                    <input value={form.postName} onChange={(event) => updateField('postName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Clerk / Officer / Assistant" />
+                  </FormField>
+                  <FormField label="Employment type">
+                    <select value={form.employmentType} onChange={(event) => updateField('employmentType', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
+                      <option value="full-time">Full-time</option>
+                      <option value="contract">Contract</option>
+                      <option value="trainee">Trainee</option>
+                    </select>
+                  </FormField>
+                  <FormField label="Recruitment title" error={errors.recruitmentName}>
+                    <textarea value={form.recruitmentName} onChange={(event) => updateField('recruitmentName', event.target.value)} className={`${APPLICATION_INPUT_CLASS_NAME} min-h-32`} placeholder="Name of the recruitment" />
+                  </FormField>
+                </div>
+
+                
+
+                {initialRecruitment.eligibilityCriteria && initialRecruitment.eligibilityCriteria.length > 0 && (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold text-slate-900">Eligibility Criteria</h3>
+                      <p className="mt-1 text-xs text-slate-600">Please confirm that you meet all the following mandatory criteria to proceed with the application.</p>
+                    </div>
+                    {errors.acceptedEligibilityCriteria && (
+                      <p className="mb-4 text-sm font-semibold text-red-600">{errors.acceptedEligibilityCriteria}</p>
+                    )}
+                    <div className="space-y-3">
+                      {initialRecruitment.eligibilityCriteria
+                        .sort((a, b) => a.sortOrder - b.sortOrder)
+                        .map((criteria, index) => (
+                          <label key={index} className="flex items-start gap-3 rounded-lg border border-white bg-white p-3 transition hover:border-amber-300">
+                            <input
+                              type="checkbox"
+                              checked={form.acceptedEligibilityCriteria[index] || false}
+                              onChange={() => toggleEligibilityCriteria(index)}
+                              className="mt-1 h-5 w-5 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                            />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-slate-900">{criteria.declarationEng}</p>
+                              <p className="mt-1 text-xs text-slate-600">{criteria.declarationMrt}</p>
+                              {criteria.isMandatory && <span className="mt-1 inline-block rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">Mandatory</span>}
+                            </div>
+                          </label>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {currentStep === 1 && (
@@ -909,9 +976,8 @@ function ChoiceButtons({
           key={choice}
           type="button"
           onClick={() => onChange(choice)}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-            value === choice ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-          }`}
+          className={`rounded-full px-4 py-2 text-sm font-medium transition ${value === choice ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
         >
           {choice}
         </button>

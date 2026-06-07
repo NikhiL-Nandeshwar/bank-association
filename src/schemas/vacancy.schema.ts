@@ -16,6 +16,16 @@ const optionalPositiveNumberSchema = z.preprocess(
   z.coerce.number().int('Enter a whole number.').positive('Enter a number greater than 0.').optional(),
 );
 
+const eligibilityCriteriaSchema = z.object({
+  criteriaType: z.string().trim().min(1, 'Criteria type is required.'),
+  criteriaValue: z.string().trim().min(1, 'Criteria value is required.'),
+  groupTag: z.string().trim().min(1, 'Group tag is required.'),
+  isMandatory: z.boolean(),
+  declarationEng: z.string().trim().min(1, 'English declaration is required.'),
+  declarationMrt: z.string().trim().min(1, 'Marathi declaration is required.'),
+  sortOrder: z.coerce.number().int('Sort order must be a whole number.').nonnegative('Sort order must be non-negative.'),
+});
+
 export const createVacancySchema = z
   .object({
     bankId: requiredPositiveNumberSchema('Select a bank before adding recruitment.', 'Select a bank before adding recruitment.'),
@@ -40,6 +50,7 @@ export const createVacancySchema = z
       .optional()
       .or(z.literal('')),
     noticePdfFileName: z.string().trim().optional(),
+    eligibilityCriteria: z.array(eligibilityCriteriaSchema).optional(),
   })
   .refine((value) => value.applicationEndDate >= value.applicationStartDate, {
     path: ['applicationEndDate'],

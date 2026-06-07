@@ -56,6 +56,16 @@ export type BankDropdownItem = {
   bankCode: string;
 };
 
+export type EligibilityCriteria = {
+  criteriaType: string;
+  criteriaValue: string;
+  groupTag: string;
+  isMandatory: boolean;
+  declarationEng: string;
+  declarationMrt: string;
+  sortOrder: number;
+};
+
 export type Vacancy = {
   vacancyId?: number;
   id?: number;
@@ -78,6 +88,7 @@ export type Vacancy = {
   isNCLRequired: boolean;
   noticePdfUrl?: string | null;
   noticePdfFileName?: string | null;
+  eligibilityCriteria?: EligibilityCriteria[];
   status?: string;
   isPublished?: boolean;
   publishedAt?: string | null;
