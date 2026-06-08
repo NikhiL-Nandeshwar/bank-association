@@ -242,7 +242,9 @@ export function validateStep(step: number, form: FormState, eligibilityCriteria?
         if (!form.maharashtraDomiciled) errors.maharashtraDomiciled = 'Please select domicile status.';
         if (!form.nonCreamyLayer) errors.nonCreamyLayer = 'Please select non-creamy layer status.';
         if (!form.maritalStatus) errors.maritalStatus = 'Please select marital status.';
-        if (!fieldValue(form.husbandsName).trim()) errors.husbandsName = "Husband's name is required.";
+        if (form.maritalStatus === 'Married' && !fieldValue(form.husbandsName).trim()) {
+            errors.husbandsName = 'Spouse name is required.';
+        }
         if (!fieldValue(form.mothersName).trim()) errors.mothersName = "Mother's name is required.";
         if (!fieldValue(form.fathersName).trim()) errors.fathersName = "Father's name is required.";
         if (!form.nationalityIndian) errors.nationalityIndian = 'Please confirm citizenship.';

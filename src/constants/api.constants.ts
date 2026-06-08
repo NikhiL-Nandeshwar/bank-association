@@ -54,6 +54,7 @@ export const API_ENDPOINTS = {
     getPublic: 'news/GetPublic',
   },
   application: {
-    step1and2: 'Application/SaveStep1'
+    step1and2: 'Application/SaveStep1',
+    startOrResume: 'Application/StartOrResume',
   }
 } as const;

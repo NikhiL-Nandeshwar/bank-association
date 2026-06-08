@@ -76,7 +76,7 @@ export function getDistricts(params: { stateId?: number }) {
   });
 }
 
-export function getTalukas(params: { districtId?: number }) {
+export function getTalukas(params: { districtId?: number; stateId?: number }) {
   return apiRequest<MasterListResponse>(appendQuery(API_ENDPOINTS.master.getTalukas, params), {
     method: 'GET',
   });

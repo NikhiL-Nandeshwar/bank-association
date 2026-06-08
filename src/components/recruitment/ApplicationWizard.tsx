@@ -10,7 +10,8 @@ import { useEffect, useMemo, useState } from 'react';
 import type { EligibilityCriteria } from '@/types/api.types';
 import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep1and2Payload } from '@/types/applicationSteps';
 import { calculateAgeAsOn, ChoiceButtons, ErrorMap, FormField, generateTransactionNumber, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons } from './helper/applicationStepsHelper';
-import { saveStep1and2 } from '@/actions/api/application.actions';
+import { saveStep1and2, startOrResumeApplication } from '@/actions/api/application.actions';
+import { toast } from 'sonner';
 
 
 export default function ApplicationWizard({ initialRecruitment }: ApplicationWizardProps) {
@@ -37,7 +38,9 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [isStateLoading, setIsStateLoading] = useState(false);
   const [isDistrictLoading, setIsDistrictLoading] = useState(false);
   const [isTalukaLoading, setIsTalukaLoading] = useState(false);
+  const [isStartingOrResuming, setIsStartingOrResuming] = useState(false);
   const [isSavingStep1and2, setIsSavingStep1and2] = useState(false);
+  const [startOrResumeError, setStartOrResumeError] = useState<string | null>(null);
   const [saveStep1and2Error, setSaveStep1and2Error] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,6 +50,8 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     setSubmitted(false);
     setShowHallTicket(false);
     setEligibilityCriteria(initialRecruitment.eligibilityCriteria ?? []);
+    setIsStartingOrResuming(false);
+    setStartOrResumeError(null);
   }, [initialRecruitment.code]); // re-init when recruitment changes
 
   useEffect(() => {
@@ -245,6 +250,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   useEffect(() => {
     let isActive = true;
     const districtId = getSelectedMasterId(form.district);
+    const stateId = getSelectedMasterId(form.state);
 
     async function loadTalukas() {
       if (!districtId) {
@@ -256,7 +262,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       setIsTalukaLoading(true);
 
       try {
-        const response = await getTalukas({ districtId }).catch(() => null);
+        const response = await getTalukas({ districtId, stateId }).catch(() => null);
         if (!isActive) return;
         setTalukaOptions(toMasterOptions(response?.data));
       } finally {
@@ -466,6 +472,25 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     }
 
     // ── Fire SaveStep1 after step 2 (index 2) is validated ──
+    if (currentStep === 0) {
+      if (!initialRecruitment.vacancyId) {
+        setStartOrResumeError('Vacancy ID is missing for this recruitment.');
+        return;
+      }
+
+      setIsStartingOrResuming(true);
+      setStartOrResumeError(null);
+
+      try {
+        await startOrResumeApplication(initialRecruitment.vacancyId);
+      } catch {
+        setStartOrResumeError('Could not start or resume your application. Please try again.');
+        return;
+      } finally {
+        setIsStartingOrResuming(false);
+      }
+    }
+
     if (currentStep === 2) {
       setIsSavingStep1and2(true);
       setSaveStep1and2Error(null);
@@ -693,6 +718,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                     </p>
                   </div>
                 )}
+                {startOrResumeError ? <p className="text-sm font-semibold text-rose-600">{startOrResumeError}</p> : null}
               </>
             )}
 
@@ -1071,8 +1097,19 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
             </button>
 
             {currentStep < APPLICATION_STEPS.length - 1 ? (
-              <button type="button" onClick={goNext} className="inline-flex items-center justify-center rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400">
-                {currentStep === 6 ? 'Continue to payment' : 'Continue to next step'}
+              <button
+                type="button"
+                onClick={goNext}
+                disabled={isStartingOrResuming || isSavingStep1and2}
+                className="inline-flex items-center justify-center rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isStartingOrResuming
+                  ? 'Starting...'
+                  : isSavingStep1and2
+                    ? 'Saving...'
+                    : currentStep === 6
+                      ? 'Continue to payment'
+                      : 'Continue to next step'}
               </button>
             ) : null}
           </div>
