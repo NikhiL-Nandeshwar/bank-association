@@ -33,6 +33,19 @@ export const API_ENDPOINTS = {
     publish: 'Vacancy/Publish',
     uploadNoticePdf: 'Vacancy/UploadNoticePdf',
     getPublicList: 'Vacancy/GetPublicList',
+    getEligibilityCriteria: (vacancyId: number) => `Vacancy/GetEligibilityCriteria?vacancyId=${vacancyId}`,
+  },
+  master: {
+    getAllMasters: 'Master/GetAllMasters',
+    getCategories: 'Master/GetCategories',
+    getReligions: 'Master/GetReligions',
+    getCastes: 'Master/GetCastes',
+    getSubCastes: 'Master/GetSubCastes',
+    getNationalities: 'Master/GetNationalities',
+    getCountries: 'Master/GetCountries',
+    getStates: 'Master/GetStates',
+    getDistricts: 'Master/GetDistricts',
+    getTalukas: 'Master/GetTalukas',
   },
   news: {
     create: 'news/create',
@@ -40,4 +53,7 @@ export const API_ENDPOINTS = {
     update: 'news/update',
     getPublic: 'news/GetPublic',
   },
+  application: {
+    step1and2: 'Application/SaveStep1'
+  }
 } as const;

@@ -1,7 +1,7 @@
 import { apiRequest } from '@/actions/api/client';
 import { API_ENDPOINTS } from '@/constants/api.constants';
 import type { CreateVacancyRequest, UpdateVacancyRequest } from '@/schemas/vacancy.schema';
-import type { ApiPagedResult, Vacancy } from '@/types/api.types';
+import type { ApiPagedResult, EligibilityCriteria, Vacancy } from '@/types/api.types';
 
 export function createVacancy(payload: CreateVacancyRequest) {
   return apiRequest<unknown>(API_ENDPOINTS.vacancy.create, {
@@ -18,6 +18,12 @@ export function getVacancies() {
 
 export function getPublicList() {
   return apiRequest<ApiPagedResult<Vacancy> | Vacancy[]>(API_ENDPOINTS.vacancy.getPublicList, {
+    method: 'GET',
+  });
+}
+
+export function getEligibilityCriteria(vacancyId: number) {
+  return apiRequest<EligibilityCriteria[]>(API_ENDPOINTS.vacancy.getEligibilityCriteria(vacancyId), {
     method: 'GET',
   });
 }

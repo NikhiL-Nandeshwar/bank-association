@@ -1,331 +1,17 @@
 'use client';
 
 import {
-  APPLICATION_INPUT_CLASS_NAME,
-  APPLICATION_STEPS,
-  EDUCATION_TEMPLATE,
-  EMPTY_LANGUAGE_SKILLS,
-  LANGUAGE_ABILITIES,
-  LANGUAGE_NAMES,
-  SUMMARY_TONE_CLASS_NAMES,
-  type EducationEntry,
-  type LanguageAbility,
-  type LanguageName,
-  type LanguageSkills,
-  type SummaryTone,
+  APPLICATION_INPUT_CLASS_NAME, APPLICATION_STEPS, LANGUAGE_ABILITIES, LANGUAGE_NAMES,
+  type EducationEntry, type LanguageAbility, type LanguageName
 } from '@/constants/application-wizard.constants';
+import { getCategories, getCastesByCategoryReligion, getCountries, getDistricts, getReligions, getStates, getSubCastes, getTalukas } from '@/actions/api/master.actions';
+import { getEligibilityCriteria } from '@/actions/api/vacancy.actions';
 import { useEffect, useMemo, useState } from 'react';
 import type { EligibilityCriteria } from '@/types/api.types';
+import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep1and2Payload } from '@/types/applicationSteps';
+import { calculateAgeAsOn, ChoiceButtons, ErrorMap, FormField, generateTransactionNumber, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons } from './helper/applicationStepsHelper';
+import { saveStep1and2 } from '@/actions/api/application.actions';
 
-type ApplicationWizardProps = {
-  initialRecruitment: {
-    code: string;
-    name: string;
-    postName?: string;
-    bankName?: string;
-    eligibilityCriteria?: EligibilityCriteria[];
-  };
-};
-
-type ExperienceEntry = {
-  organization: string;
-  designation: string;
-  location: string;
-  totalService: string;
-};
-
-type FormState = {
-  recruitmentCode: string;
-  recruitmentName: string;
-  applicationId: string;
-  bankName: string;
-  postName: string;
-  employmentType: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  ageAsOn: string;
-  gender: string;
-  category: string;
-  caste: string;
-  religion: string;
-  maharashtraDomiciled: string;
-  nonCreamyLayer: string;
-  maritalStatus: string;
-  spouseName: string;
-  motherName: string;
-  nationalityIndian: string;
-  email: string;
-  phone: string;
-  alternatePhone: string;
-  addressLine1: string;
-  addressLine2: string;
-  addressLine3: string;
-  taluka: string;
-  district: string;
-  city: string;
-  state: string;
-  pincode: string;
-  languageSkills: LanguageSkills;
-  educationEntries: EducationEntry[];
-  experienceLevel: string;
-  experienceEntries: ExperienceEntry[];
-  keySkills: string;
-  aadhaarNumber: string;
-  panNumber: string;
-  resumeLink: string;
-  portfolioLink: string;
-  preferredLocation: string;
-  noticePeriod: string;
-  relocate: string;
-  acceptedEligibilityCriteria: Record<number, boolean>;
-  declarationAccepted: boolean;
-  paymentMethod: string;
-  paymentStatus: string;
-  transactionNumber: string;
-  paymentDate: string;
-};
-
-function generateApplicationId(recruitment: ApplicationWizardProps['initialRecruitment']) {
-  const code = recruitment.code.replace(/[^a-z0-9]/gi, '').toUpperCase() || 'REC';
-  return `APP-${code}-2026`;
-}
-
-const initialState = (recruitment: ApplicationWizardProps['initialRecruitment']): FormState => ({
-  recruitmentCode: recruitment.code,
-  recruitmentName: recruitment.name,
-  applicationId: generateApplicationId(recruitment),
-  bankName: recruitment.name ?? '',
-  postName: recruitment.postName ?? '',
-  employmentType: 'full-time',
-  firstName: '',
-  lastName: '',
-  dateOfBirth: '',
-  ageAsOn: '',
-  gender: '',
-  category: '',
-  caste: '',
-  religion: '',
-  maharashtraDomiciled: '',
-  nonCreamyLayer: '',
-  maritalStatus: '',
-  spouseName: '',
-  motherName: '',
-  nationalityIndian: 'Yes',
-  email: '',
-  phone: '',
-  alternatePhone: '',
-  addressLine1: '',
-  addressLine2: '',
-  addressLine3: '',
-  taluka: '',
-  district: '',
-  city: '',
-  state: '',
-  pincode: '',
-  languageSkills: structuredClone(EMPTY_LANGUAGE_SKILLS),
-  educationEntries: structuredClone(EDUCATION_TEMPLATE),
-  experienceLevel: '',
-  experienceEntries: [{ organization: '', designation: '', location: '', totalService: '' }],
-  keySkills: '',
-  aadhaarNumber: '',
-  panNumber: '',
-  resumeLink: '',
-  portfolioLink: '',
-  preferredLocation: '',
-  noticePeriod: '',
-  relocate: '',
-  acceptedEligibilityCriteria: {},
-  declarationAccepted: false,
-  paymentMethod: 'UPI',
-  paymentStatus: '',
-  transactionNumber: '',
-  paymentDate: '',
-});
-
-type ErrorMap = Partial<Record<keyof FormState, string>>;
-
-function fieldValue(value: unknown) {
-  return typeof value === 'string' ? value : '';
-}
-
-function hasLanguageSelected(skills: LanguageSkills) {
-  return Object.values(skills ?? {}).some((language) => Object.values(language).some(Boolean));
-}
-
-function hasCompletedEducation(entries: EducationEntry[]) {
-  return (entries ?? []).some(
-    (entry) =>
-      fieldValue(entry.completed) === 'Yes' &&
-      fieldValue(entry.institute).trim() &&
-      fieldValue(entry.board).trim() &&
-      fieldValue(entry.score).trim() &&
-      fieldValue(entry.passedMonthYear).trim(),
-  );
-}
-
-function hasExperienceDetails(entries: ExperienceEntry[]) {
-  return (entries ?? []).some(
-    (entry) =>
-      fieldValue(entry.organization).trim() &&
-      fieldValue(entry.designation).trim() &&
-      fieldValue(entry.location).trim() &&
-      fieldValue(entry.totalService).trim(),
-  );
-}
-
-function validateStep(step: number, form: FormState, eligibilityCriteria?: EligibilityCriteria[]): ErrorMap {
-  const errors: ErrorMap = {};
-
-  if (step === 0) {
-    if (!fieldValue(form.recruitmentCode).trim()) errors.recruitmentCode = 'Recruitment code is required.';
-    if (!fieldValue(form.recruitmentName).trim()) errors.recruitmentName = 'Recruitment name is required.';
-    if (!fieldValue(form.applicationId).trim()) errors.applicationId = 'Application ID is required.';
-    if (!fieldValue(form.bankName).trim()) errors.bankName = 'Bank name is required.';
-    if (!fieldValue(form.postName).trim()) errors.postName = 'Post name is required.';
-    
-    // Validate mandatory eligibility criteria
-    if (eligibilityCriteria && eligibilityCriteria.length > 0) {
-      const mandatoryCriteria = eligibilityCriteria.filter((c) => c.isMandatory);
-      const allMandatoryChecked = mandatoryCriteria.every((c, index) => form.acceptedEligibilityCriteria[index] === true);
-      if (mandatoryCriteria.length > 0 && !allMandatoryChecked) {
-        errors.acceptedEligibilityCriteria = 'Please accept all mandatory eligibility criteria to proceed.';
-      }
-    }
-  }
-
-  if (step === 1) {
-    if (!fieldValue(form.firstName).trim()) errors.firstName = 'First name is required.';
-    if (!fieldValue(form.lastName).trim()) errors.lastName = 'Last name is required.';
-    if (!form.dateOfBirth) errors.dateOfBirth = 'Date of birth is required.';
-    if (!fieldValue(form.ageAsOn).trim()) errors.ageAsOn = 'Age as on date is required.';
-    if (!form.gender) errors.gender = 'Please select a gender.';
-    if (!form.category) errors.category = 'Please select a category.';
-    if (!fieldValue(form.caste).trim()) errors.caste = 'Caste is required.';
-    if (!fieldValue(form.religion).trim()) errors.religion = 'Religion is required.';
-    if (!form.maharashtraDomiciled) errors.maharashtraDomiciled = 'Please select domicile status.';
-    if (!form.nonCreamyLayer) errors.nonCreamyLayer = 'Please select non-creamy layer status.';
-    if (!form.maritalStatus) errors.maritalStatus = 'Please select marital status.';
-    if (!fieldValue(form.spouseName).trim()) errors.spouseName = 'Spouse name is required.';
-    if (!fieldValue(form.motherName).trim()) errors.motherName = "Mother's name is required.";
-    if (!form.nationalityIndian) errors.nationalityIndian = 'Please confirm citizenship.';
-  }
-
-  if (step === 2) {
-    if (!fieldValue(form.email).trim()) {
-      errors.email = 'Email is required.';
-    } else if (!/\S+@\S+\.\S+/.test(fieldValue(form.email))) {
-      errors.email = 'Enter a valid email address.';
-    }
-
-    if (!/^\d{10}$/.test(fieldValue(form.phone))) errors.phone = 'Enter a valid 10-digit phone number.';
-    if (form.alternatePhone && !/^\d{10}$/.test(form.alternatePhone)) errors.alternatePhone = 'Enter a valid 10-digit alternate number.';
-    if (!fieldValue(form.addressLine1).trim()) errors.addressLine1 = 'Address line 1 is required.';
-    if (!fieldValue(form.taluka).trim()) errors.taluka = 'Taluka is required.';
-    if (!fieldValue(form.district).trim()) errors.district = 'District is required.';
-    if (!fieldValue(form.city).trim()) errors.city = 'City is required.';
-    if (!fieldValue(form.state).trim()) errors.state = 'State is required.';
-    if (!/^\d{6}$/.test(fieldValue(form.pincode))) errors.pincode = 'Enter a valid 6-digit pincode.';
-    if (!hasLanguageSelected(form.languageSkills)) errors.languageSkills = 'Select at least one language ability.';
-  }
-
-  if (step === 3 && !hasCompletedEducation(form.educationEntries)) {
-    errors.educationEntries = 'Add at least one completed education row with institute, board, score, and passing month/year.';
-  }
-
-  if (step === 4) {
-    if (!form.experienceLevel) errors.experienceLevel = 'Please select your experience level.';
-    if (form.experienceLevel !== 'fresher' && !hasExperienceDetails(form.experienceEntries)) {
-      errors.experienceEntries = 'Add at least one complete experience row.';
-    }
-    if (!fieldValue(form.keySkills).trim()) errors.keySkills = 'Key skills are required.';
-  }
-
-  if (step === 5) {
-    if (!/^\d{12}$/.test(fieldValue(form.aadhaarNumber))) errors.aadhaarNumber = 'Enter a valid 12-digit Aadhaar number.';
-    if (!/^[A-Z]{5}\d{4}[A-Z]$/i.test(fieldValue(form.panNumber))) errors.panNumber = 'Enter a valid PAN number.';
-    if (!fieldValue(form.resumeLink).trim()) {
-      errors.resumeLink = 'Resume link is required.';
-    } else if (!/^https?:\/\//.test(fieldValue(form.resumeLink))) {
-      errors.resumeLink = 'Resume link should start with http:// or https://';
-    }
-
-    if (form.portfolioLink && !/^https?:\/\//.test(fieldValue(form.portfolioLink))) {
-      errors.portfolioLink = 'Portfolio link should start with http:// or https://';
-    }
-
-    if (!fieldValue(form.preferredLocation).trim()) errors.preferredLocation = 'Preferred location is required.';
-    if (!fieldValue(form.noticePeriod).trim()) errors.noticePeriod = 'Notice period is required.';
-    if (!form.relocate) errors.relocate = 'Please choose a relocation preference.';
-  }
-
-  if (step === 6 && !form.declarationAccepted) {
-    errors.declarationAccepted = 'You need to accept the declaration before payment.';
-  }
-
-  return errors;
-}
-
-function generateTransactionNumber() {
-  return `DEMO${Date.now().toString().slice(-10)}`;
-}
-
-function calculateAgeAsOn(dateOfBirth: string) {
-  if (!dateOfBirth) return '';
-
-  const birthDate = new Date(dateOfBirth);
-  if (Number.isNaN(birthDate.getTime())) return '';
-
-  const today = new Date();
-  let years = today.getFullYear() - birthDate.getFullYear();
-  let months = today.getMonth() - birthDate.getMonth();
-  let days = today.getDate() - birthDate.getDate();
-
-  if (days < 0) {
-    const previousMonthLastDate = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
-    days += previousMonthLastDate;
-    months -= 1;
-  }
-
-  if (months < 0) {
-    months += 12;
-    years -= 1;
-  }
-
-  if (years < 0) return '';
-
-  return `${years} years, ${months} months, ${days} days`;
-}
-
-function normalizeFormState(
-  recruitment: ApplicationWizardProps['initialRecruitment'],
-  form: Partial<FormState>,
-): FormState {
-  const defaults = initialState(recruitment);
-  const languageSkills = form.languageSkills ?? defaults.languageSkills;
-  const educationEntries = form.educationEntries?.length ? form.educationEntries : defaults.educationEntries;
-  const experienceEntries = form.experienceEntries?.length ? form.experienceEntries : defaults.experienceEntries;
-
-  return {
-    ...defaults,
-    ...form,
-    languageSkills: {
-      marathi: { ...defaults.languageSkills.marathi, ...languageSkills.marathi },
-      hindi: { ...defaults.languageSkills.hindi, ...languageSkills.hindi },
-      english: { ...defaults.languageSkills.english, ...languageSkills.english },
-    },
-    educationEntries: educationEntries.map((entry, index) => ({
-      ...(defaults.educationEntries[index] ?? EDUCATION_TEMPLATE[0]),
-      ...entry,
-    })),
-    experienceEntries: experienceEntries.map((entry) => ({
-      organization: fieldValue(entry.organization),
-      designation: fieldValue(entry.designation),
-      location: fieldValue(entry.location),
-      totalService: fieldValue(entry.totalService),
-    })),
-  };
-}
 
 export default function ApplicationWizard({ initialRecruitment }: ApplicationWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
@@ -333,7 +19,26 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [errors, setErrors] = useState<ErrorMap>({});
   const [submitted, setSubmitted] = useState(false);
   const [showHallTicket, setShowHallTicket] = useState(false);
-console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
+  const [eligibilityCriteria, setEligibilityCriteria] = useState<EligibilityCriteria[]>(
+    initialRecruitment.eligibilityCriteria ?? [],
+  );
+  const [isEligibilityLoading, setIsEligibilityLoading] = useState(false);
+  const [categoryOptions, setCategoryOptions] = useState<MasterOption[]>([]);
+  const [casteOptions, setCasteOptions] = useState<MasterOption[]>([]);
+  const [subCasteOptions, setSubCasteOptions] = useState<MasterOption[]>([]);
+  const [religionOptions, setReligionOptions] = useState<MasterOption[]>([]);
+  const [countryOptions, setCountryOptions] = useState<MasterOption[]>([]);
+  const [stateOptions, setStateOptions] = useState<MasterOption[]>([]);
+  const [districtOptions, setDistrictOptions] = useState<MasterOption[]>([]);
+  const [talukaOptions, setTalukaOptions] = useState<MasterOption[]>([]);
+  const [isMasterLoading, setIsMasterLoading] = useState(false);
+  const [isCasteLoading, setIsCasteLoading] = useState(false);
+  const [isSubCasteLoading, setIsSubCasteLoading] = useState(false);
+  const [isStateLoading, setIsStateLoading] = useState(false);
+  const [isDistrictLoading, setIsDistrictLoading] = useState(false);
+  const [isTalukaLoading, setIsTalukaLoading] = useState(false);
+  const [isSavingStep1and2, setIsSavingStep1and2] = useState(false);
+  const [saveStep1and2Error, setSaveStep1and2Error] = useState<string | null>(null);
 
   useEffect(() => {
     setForm(initialState(initialRecruitment));
@@ -341,12 +46,238 @@ console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
     setErrors({});
     setSubmitted(false);
     setShowHallTicket(false);
+    setEligibilityCriteria(initialRecruitment.eligibilityCriteria ?? []);
   }, [initialRecruitment.code]); // re-init when recruitment changes
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadEligibilityCriteria() {
+      if (!initialRecruitment.vacancyId) {
+        setEligibilityCriteria(initialRecruitment.eligibilityCriteria ?? []);
+        return;
+      }
+
+      setIsEligibilityLoading(true);
+
+      try {
+        const response = await getEligibilityCriteria(initialRecruitment.vacancyId);
+        if (!isActive) return;
+        setEligibilityCriteria(response.data ?? []);
+      } catch {
+        if (!isActive) return;
+        setEligibilityCriteria(initialRecruitment.eligibilityCriteria ?? []);
+      } finally {
+        if (isActive) setIsEligibilityLoading(false);
+      }
+    }
+
+    void loadEligibilityCriteria();
+
+    return () => {
+      isActive = false;
+    };
+  }, [initialRecruitment.vacancyId, initialRecruitment.eligibilityCriteria]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadMasters() {
+      setIsMasterLoading(true);
+
+      try {
+        const [categoriesResponse, religionsResponse, countriesResponse] = await Promise.all([
+          getCategories().catch(() => null),
+          getReligions().catch(() => null),
+          getCountries().catch(() => null),
+        ]);
+
+        if (!isActive) return;
+
+        setCategoryOptions(toCategoryOptions(categoriesResponse?.data));
+        setReligionOptions(toReligionOptions(religionsResponse?.data));
+        setCountryOptions(toMasterOptions(countriesResponse?.data));
+      } finally {
+        if (isActive) setIsMasterLoading(false);
+      }
+    }
+
+    void loadMasters();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
 
   const form = useMemo(
     () => normalizeFormState(initialRecruitment, formState),
     [formState, initialRecruitment],
   );
+
+  useEffect(() => {
+    let isActive = true;
+    const categoryId = getSelectedMasterId(form.category);
+    const religionId = getSelectedMasterId(form.religion);
+
+    async function loadCastes() {
+      if (!categoryId || !religionId) {
+        setCasteOptions([]);
+        setSubCasteOptions([]);
+        setIsCasteLoading(false);
+        setIsSubCasteLoading(false);
+        return;
+      }
+
+      setIsCasteLoading(true);
+
+      try {
+        const response = await getCastesByCategoryReligion({ categoryId, religionId }).catch(() => null);
+        if (!isActive) return;
+        setCasteOptions(toMasterOptions(response?.data));
+      } finally {
+        if (isActive) setIsCasteLoading(false);
+      }
+    }
+
+    void loadCastes();
+
+    return () => {
+      isActive = false;
+    };
+  }, [form.category, form.religion]);
+
+  useEffect(() => {
+    let isActive = true;
+    const casteId = getSelectedMasterId(form.caste);
+
+    async function loadSubCastes() {
+      if (!casteId) {
+        setSubCasteOptions([]);
+        setIsSubCasteLoading(false);
+        return;
+      }
+
+      setIsSubCasteLoading(true);
+
+      try {
+        const response = await getSubCastes({ casteId }).catch(() => null);
+        if (!isActive) return;
+        setSubCasteOptions(toMasterOptions(response?.data));
+      } finally {
+        if (isActive) setIsSubCasteLoading(false);
+      }
+    }
+
+    void loadSubCastes();
+
+    return () => {
+      isActive = false;
+    };
+  }, [form.caste]);
+
+  useEffect(() => {
+    let isActive = true;
+    const countryId = getSelectedMasterId(form.country);
+
+    async function loadStates() {
+      if (!countryId) {
+        setStateOptions([]);
+        setDistrictOptions([]);
+        setTalukaOptions([]);
+        setIsStateLoading(false);
+        setIsDistrictLoading(false);
+        setIsTalukaLoading(false);
+        return;
+      }
+
+      setIsStateLoading(true);
+
+      try {
+        const response = await getStates({ countryId }).catch(() => null);
+        if (!isActive) return;
+        setStateOptions(toMasterOptions(response?.data));
+      } finally {
+        if (isActive) {
+          setIsStateLoading(false);
+        }
+      }
+    }
+
+    void loadStates();
+
+    return () => {
+      isActive = false;
+    };
+  }, [form.country]);
+
+  useEffect(() => {
+    let isActive = true;
+    const stateId = getSelectedMasterId(form.state);
+
+    async function loadDistricts() {
+      if (!stateId) {
+        setDistrictOptions([]);
+        setTalukaOptions([]);
+        setIsDistrictLoading(false);
+        setIsTalukaLoading(false);
+        return;
+      }
+
+      setIsDistrictLoading(true);
+
+      try {
+        const response = await getDistricts({ stateId }).catch(() => null);
+        if (!isActive) return;
+        setDistrictOptions(toMasterOptions(response?.data));
+      } finally {
+        if (isActive) setIsDistrictLoading(false);
+      }
+    }
+
+    void loadDistricts();
+
+    return () => {
+      isActive = false;
+    };
+  }, [form.state]);
+
+  useEffect(() => {
+    let isActive = true;
+    const districtId = getSelectedMasterId(form.district);
+
+    async function loadTalukas() {
+      if (!districtId) {
+        setTalukaOptions([]);
+        setIsTalukaLoading(false);
+        return;
+      }
+
+      setIsTalukaLoading(true);
+
+      try {
+        const response = await getTalukas({ districtId }).catch(() => null);
+        if (!isActive) return;
+        setTalukaOptions(toMasterOptions(response?.data));
+      } finally {
+        if (isActive) setIsTalukaLoading(false);
+      }
+    }
+
+    void loadTalukas();
+
+    return () => {
+      isActive = false;
+    };
+  }, [form.district]);
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      acceptedEligibilityCriteria: {},
+    }));
+  }, [eligibilityCriteria]);
+
 
   const progress = useMemo(
     () => `${Math.round(((currentStep + 1) / APPLICATION_STEPS.length) * 100)}%`,
@@ -358,6 +289,65 @@ console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
   const updateField = <K extends keyof FormState>(field: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      category: value,
+      caste: '',
+      subCaste: '',
+    }));
+    setErrors((prev) => ({ ...prev, category: undefined, caste: undefined, subCaste: undefined }));
+  };
+
+  const handleReligionChange = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      religion: value,
+      caste: '',
+      subCaste: '',
+    }));
+    setErrors((prev) => ({ ...prev, religion: undefined, caste: undefined, subCaste: undefined }));
+  };
+
+  const handleCasteChange = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      caste: value,
+      subCaste: '',
+    }));
+    setErrors((prev) => ({ ...prev, caste: undefined, subCaste: undefined }));
+  };
+
+  const handleCountryChange = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      country: value,
+      state: '',
+      district: '',
+      taluka: '',
+    }));
+    setErrors((prev) => ({ ...prev, country: undefined, state: undefined, district: undefined, taluka: undefined }));
+  };
+
+  const handleStateChange = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      state: value,
+      district: '',
+      taluka: '',
+    }));
+    setErrors((prev) => ({ ...prev, state: undefined, district: undefined, taluka: undefined }));
+  };
+
+  const handleDistrictChange = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      district: value,
+      taluka: '',
+    }));
+    setErrors((prev) => ({ ...prev, district: undefined, taluka: undefined }));
   };
 
   const updateDateOfBirth = (dateOfBirth: string) => {
@@ -421,11 +411,73 @@ console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
     setErrors((prev) => ({ ...prev, acceptedEligibilityCriteria: undefined }));
   };
 
-  const goNext = () => {
-    const nextErrors = validateStep(currentStep, form, initialRecruitment.eligibilityCriteria);
+  function buildStep1and2Payload(f: FormState): SaveStep1and2Payload {
+    return {
+      vacancyId: initialRecruitment.vacancyId ?? 0,
+      aadhaarNumber: f.aadhaarNumber || '123456789123',
+      fullName: `${f.firstName} ${f.lastName}`.trim(),
+      fullNameMarathi: f.fullNameMarathi || '',
+      dateOfBirth: f.dateOfBirth
+        ? new Date(f.dateOfBirth).toISOString()
+        : '',
+      gender: f.gender,
+      categoryId: Number(f.category) || 0,
+      religionId: Number(f.religion) || 0,
+      casteId: Number(f.caste) || 0,
+      subCasteId: Number(f.subCaste) || 0,
+      nationalityId: f.nationalityIndian === 'Yes' ? 1 : 0,
+      isMahaDomiciled: f.maharashtraDomiciled === 'Yes',
+      isNonCreamyLayer: f.nonCreamyLayer === 'Yes',
+      maritalStatus: f.maritalStatus,
+      fathersName: f.fathersName || '',                          // add a field if you collect it
+      mothersName: f.mothersName || '',
+      husbandsName: f.husbandsName || '',
+      addressLine1: f.addressLine1,
+      addressLine2: f.addressLine2,
+      addressLine3: f.addressLine3,
+      countryId: Number(f.country) || 0,
+      stateId: Number(f.state) || 0,
+      districtId: Number(f.district) || 0,
+      talukaId: Number(f.taluka) || 0,
+      pinCode: f.pincode,
+      mobileNumber: f.phone,
+      alternateNumber: f.alternatePhone,
+      languages: LANGUAGE_NAMES
+        .filter((lang) => Object.values(f.languageSkills[lang]).some(Boolean))
+        .map((lang) => ({
+          languageName: lang,
+          canRead: f.languageSkills[lang].read,
+          canWrite: f.languageSkills[lang].write,
+          canSpeak: f.languageSkills[lang].speak,
+        })),
+    };
+  }
+
+  const goNext = async () => {
+    if (currentStep === 0 && isEligibilityLoading) {
+      setErrors({ acceptedEligibilityCriteria: 'Please wait for the eligibility criteria to load.' });
+      return;
+    }
+
+    const nextErrors = validateStep(currentStep, form, eligibilityCriteria);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
+    }
+
+    // ── Fire SaveStep1 after step 2 (index 2) is validated ──
+    if (currentStep === 2) {
+      setIsSavingStep1and2(true);
+      setSaveStep1and2Error(null);
+      try {
+        await saveStep1and2(buildStep1and2Payload(form));
+      } catch {
+        setSaveStep1and2Error('Could not save your details. Please try again.');
+        setIsSavingStep1and2(false);
+        return;                     // block navigation on failure
+      } finally {
+        setIsSavingStep1and2(false);
+      }
     }
 
     setErrors({});
@@ -521,19 +573,19 @@ console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
                 <div
                   key={item.id}
                   className={`rounded-3xl border px-4 py-4 transition ${isActive
-                      ? 'border-amber-300 bg-amber-300/10'
-                      : isDone
-                        ? 'border-emerald-400/20 bg-emerald-400/10'
-                        : 'border-white/10 bg-white/5'
+                    ? 'border-amber-300 bg-amber-300/10'
+                    : isDone
+                      ? 'border-emerald-400/20 bg-emerald-400/10'
+                      : 'border-white/10 bg-white/5'
                     }`}
                 >
                   <div className="flex items-start gap-3">
                     <div
                       className={`flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-semibold ${isActive
-                          ? 'bg-amber-300 text-slate-900'
-                          : isDone
-                            ? 'bg-emerald-400 text-slate-900'
-                            : 'bg-white/10 text-slate-200'
+                        ? 'bg-amber-300 text-slate-900'
+                        : isDone
+                          ? 'bg-emerald-400 text-slate-900'
+                          : 'bg-white/10 text-slate-200'
                         }`}
                     >
                       {isDone ? 'OK' : item.id}
@@ -598,9 +650,14 @@ console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
                   </FormField>
                 </div>
 
-                
 
-                {initialRecruitment.eligibilityCriteria && initialRecruitment.eligibilityCriteria.length > 0 && (
+
+                {isEligibilityLoading ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                    <p className="text-sm font-semibold text-slate-900">Loading eligibility criteria...</p>
+                    <p className="mt-1 text-xs text-slate-600">We are fetching the vacancy-specific criteria for this recruitment.</p>
+                  </div>
+                ) : eligibilityCriteria.length > 0 ? (
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
                     <div className="mb-4">
                       <h3 className="text-sm font-semibold text-slate-900">Eligibility Criteria</h3>
@@ -610,8 +667,7 @@ console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
                       <p className="mb-4 text-sm font-semibold text-red-600">{errors.acceptedEligibilityCriteria}</p>
                     )}
                     <div className="space-y-3">
-                      {initialRecruitment.eligibilityCriteria
-                        .sort((a, b) => a.sortOrder - b.sortOrder)
+                      {sortEligibilityCriteria(eligibilityCriteria)
                         .map((criteria, index) => (
                           <label key={index} className="flex items-start gap-3 rounded-lg border border-white bg-white p-3 transition hover:border-amber-300">
                             <input
@@ -629,6 +685,13 @@ console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
                         ))}
                     </div>
                   </div>
+                ) : (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                    <h3 className="text-sm font-semibold text-slate-900">Eligibility Criteria</h3>
+                    <p className="mt-1 text-xs text-slate-600">
+                      No vacancy-specific eligibility criteria were returned for this recruitment.
+                    </p>
+                  </div>
                 )}
               </>
             )}
@@ -636,10 +699,10 @@ console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
             {currentStep === 1 && (
               <div className="grid gap-6 md:grid-cols-2">
                 <FormField label="First name" error={errors.firstName}>
-                  <input value={form.firstName} onChange={(event) => updateField('firstName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                  <input value={form.firstName} placeholder='Enter your first name' onChange={(event) => updateField('firstName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Last name" error={errors.lastName}>
-                  <input value={form.lastName} onChange={(event) => updateField('lastName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                  <input value={form.lastName} placeholder='Enter your last name' onChange={(event) => updateField('lastName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Date of birth" error={errors.dateOfBirth}>
                   <input type="date" value={form.dateOfBirth} onChange={(event) => updateDateOfBirth(event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
@@ -655,49 +718,99 @@ console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
                 <FormField label="Gender" error={errors.gender}>
                   <select value={form.gender} onChange={(event) => updateField('gender', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
                     <option value="">Select gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                    <option value="OTHER">Other</option>
                   </select>
                 </FormField>
-                <FormField label="Category" error={errors.category}>
-                  <select value={form.category} onChange={(event) => updateField('category', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
-                    <option value="">Select category</option>
-                    <option value="General">General</option>
-                    <option value="OBC">OBC</option>
-                    <option value="SC">SC</option>
-                    <option value="ST">ST</option>
-                    <option value="EWS">EWS</option>
-                  </select>
+                <FormField label="Aadhar No" error={errors.aadhaarNumber}>
+                  <input value={form.aadhaarNumber} placeholder='Enter your aadhar number' onChange={(event) => updateField('aadhaarNumber', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
-                <FormField label="Caste" error={errors.caste}>
-                  <input value={form.caste} onChange={(event) => updateField('caste', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                </FormField>
-                <FormField label="Religion" error={errors.religion}>
-                  <input value={form.religion} onChange={(event) => updateField('religion', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                </FormField>
+                <LookupField
+                  label="Category"
+                  error={errors.category}
+                  value={form.category}
+                  onChange={handleCategoryChange}
+                  options={categoryOptions}
+                  isLoading={isMasterLoading}
+                  placeholder="Select category"
+                />
+                <LookupField
+                  label="Religion"
+                  error={errors.religion}
+                  value={form.religion}
+                  onChange={handleReligionChange}
+                  options={religionOptions}
+                  isLoading={isMasterLoading}
+                  placeholder="Select religion"
+                />
+                <LookupField
+                  label="Caste"
+                  error={errors.caste}
+                  value={form.caste}
+                  onChange={handleCasteChange}
+                  options={casteOptions}
+                  isLoading={isMasterLoading || isCasteLoading}
+                  placeholder="Select caste"
+                />
+                <LookupField
+                  label="Sub caste"
+                  error={errors.subCaste}
+                  value={form.subCaste}
+                  onChange={(value) => updateField('subCaste', value)}
+                  options={subCasteOptions}
+                  isLoading={isSubCasteLoading}
+                  placeholder="Select sub caste"
+                />
+
                 <FormField label="Maharashtra domiciled?" error={errors.maharashtraDomiciled}>
                   <YesNoButtons value={form.maharashtraDomiciled} onChange={(value) => updateField('maharashtraDomiciled', value)} />
                 </FormField>
                 <FormField label="Non-creamy layer?" error={errors.nonCreamyLayer}>
                   <YesNoButtons value={form.nonCreamyLayer} onChange={(value) => updateField('nonCreamyLayer', value)} />
                 </FormField>
+                <FormField label="Nationality / Citizenship Indian?" error={errors.nationalityIndian}>
+                  <YesNoButtons value={form.nationalityIndian} onChange={(value) => updateField('nationalityIndian', value)} />
+                </FormField>
                 <FormField label="Marital status" error={errors.maritalStatus}>
-                  <select value={form.maritalStatus} onChange={(event) => updateField('maritalStatus', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
+                  <select
+                    value={form.maritalStatus}
+                    onChange={(event) => updateField('maritalStatus', event.target.value)}
+                    className={APPLICATION_INPUT_CLASS_NAME}
+                  >
                     <option value="">Select marital status</option>
                     <option value="Single">Single</option>
                     <option value="Married">Married</option>
                     <option value="Other">Other</option>
                   </select>
                 </FormField>
-                <FormField label="Nationality / Citizenship Indian?" error={errors.nationalityIndian}>
-                  <YesNoButtons value={form.nationalityIndian} onChange={(value) => updateField('nationalityIndian', value)} />
+
+                {form.maritalStatus === 'Married' && (
+                  <FormField label="Spouse name" error={errors.husbandsName}>
+                    <input
+                      value={form.husbandsName}
+                      placeholder="Enter your spouse name"
+                      onChange={(event) => updateField('husbandsName', event.target.value)}
+                      className={APPLICATION_INPUT_CLASS_NAME}
+                    />
+                  </FormField>
+                )}
+
+                <FormField label="Mother's name" error={errors.mothersName}>
+                  <input
+                    value={form.mothersName}
+                    placeholder="Enter your mother name"
+                    onChange={(event) => updateField('mothersName', event.target.value)}
+                    className={APPLICATION_INPUT_CLASS_NAME}
+                  />
                 </FormField>
-                <FormField label="Spouse name" error={errors.spouseName}>
-                  <input value={form.spouseName} onChange={(event) => updateField('spouseName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                </FormField>
-                <FormField label="Mother's name" error={errors.motherName}>
-                  <input value={form.motherName} onChange={(event) => updateField('motherName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                <FormField label="Father's name" error={errors.fathersName}>
+                  <input
+                    value={form.fathersName}
+                    placeholder="Enter your father name"
+                    onChange={(event) => updateField('fathersName', event.target.value)}
+                    className={APPLICATION_INPUT_CLASS_NAME}
+                  />
                 </FormField>
               </div>
             )}
@@ -726,17 +839,44 @@ console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
                   <FormField label="Address line 3">
                     <input value={form.addressLine3} onChange={(event) => updateField('addressLine3', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
-                  <FormField label="Taluka" error={errors.taluka}>
-                    <input value={form.taluka} onChange={(event) => updateField('taluka', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                  </FormField>
-                  <FormField label="District" error={errors.district}>
-                    <input value={form.district} onChange={(event) => updateField('district', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                  </FormField>
+                  <LookupField
+                    label="Country"
+                    error={errors.country}
+                    value={form.country}
+                    onChange={handleCountryChange}
+                    options={countryOptions}
+                    isLoading={isMasterLoading}
+                    placeholder="Select country"
+                  />
+                  <LookupField
+                    label="State"
+                    error={errors.state}
+                    value={form.state}
+                    onChange={handleStateChange}
+                    options={stateOptions}
+                    isLoading={isStateLoading}
+                    placeholder="Select state"
+                  />
+                  <LookupField
+                    label="District"
+                    error={errors.district}
+                    value={form.district}
+                    onChange={handleDistrictChange}
+                    options={districtOptions}
+                    isLoading={isDistrictLoading}
+                    placeholder="Select district"
+                  />
+                  <LookupField
+                    label="Taluka"
+                    error={errors.taluka}
+                    value={form.taluka}
+                    onChange={(value) => updateField('taluka', value)}
+                    options={talukaOptions}
+                    isLoading={isTalukaLoading}
+                    placeholder="Select taluka"
+                  />
                   <FormField label="City" error={errors.city}>
                     <input value={form.city} onChange={(event) => updateField('city', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                  </FormField>
-                  <FormField label="State" error={errors.state}>
-                    <input value={form.state} onChange={(event) => updateField('state', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                 </div>
 
@@ -866,9 +1006,9 @@ console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
                   <ReviewRow label="Recruitment" value={`${form.recruitmentCode} - ${form.recruitmentName}`} />
                   <ReviewRow label="Applicant" value={fullName} />
                   <ReviewRow label="Birth details" value={`${form.dateOfBirth} | ${form.ageAsOn} | ${form.gender} | ${form.category} | ${form.caste}`} />
-                  <ReviewRow label="Family details" value={`Spouse: ${form.spouseName} | Mother: ${form.motherName} | ${form.maritalStatus}`} />
+                  <ReviewRow label="Family details" value={`Spouse: ${form.husbandsName} | Mother: ${form.mothersName} | ${form.maritalStatus}`} />
                   <ReviewRow label="Contact" value={`${form.email} | ${form.phone} | Alt: ${form.alternatePhone || 'NA'}`} />
-                  <ReviewRow label="Address" value={`${form.addressLine1}, ${form.addressLine2}, ${form.addressLine3}, ${form.taluka}, ${form.district}, ${form.city}, ${form.state} - ${form.pincode}`} />
+                  <ReviewRow label="Address" value={`${form.addressLine1}, ${form.addressLine2}, ${form.addressLine3}, ${form.taluka}, ${form.district}, ${form.city}, ${form.state}, ${form.country} - ${form.pincode}`} />
                   <ReviewRow label="Education" value={form.educationEntries.filter((entry) => entry.completed === 'Yes').map((entry) => `${entry.level}: ${entry.score} (${entry.passedMonthYear})`).join(' | ') || 'NA'} />
                   <ReviewRow label="Experience" value={form.experienceLevel === 'fresher' ? 'Fresher' : form.experienceEntries.map((entry) => `${entry.designation} at ${entry.organization} (${entry.totalService})`).join(' | ')} />
                   <ReviewRow label="Documents" value={`Aadhaar ending ${form.aadhaarNumber.slice(-4)} | PAN ${form.panNumber}`} />
@@ -942,159 +1082,4 @@ console.log('initialRecruitment.eligibilityCriteria', initialRecruitment)
   );
 }
 
-function FormField({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="block">
-      <span className="text-sm font-semibold text-slate-800">{label}</span>
-      {children}
-      {error ? <span className="mt-2 block text-sm text-rose-600">{error}</span> : null}
-    </label>
-  );
-}
 
-function ChoiceButtons({
-  choices,
-  value,
-  onChange,
-}: {
-  choices: string[];
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="mt-3 flex flex-wrap gap-3">
-      {choices.map((choice) => (
-        <button
-          key={choice}
-          type="button"
-          onClick={() => onChange(choice)}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition ${value === choice ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-        >
-          {choice}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function YesNoButtons({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return <ChoiceButtons choices={['Yes', 'No']} value={value} onChange={onChange} />;
-}
-
-function ReviewRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-2 text-sm leading-7 text-slate-700">{value}</p>
-    </div>
-  );
-}
-
-function HallTicketPreview({ form, fullName }: { form: FormState; fullName: string }) {
-  const examDate = '18 May 2026';
-  const examTime = '10:30 AM to 12:30 PM';
-  const reportingTime = '09:30 AM';
-  const venue = form.preferredLocation
-    ? `District Cooperative Training Centre, ${form.preferredLocation}`
-    : 'District Cooperative Training Centre, Kolhapur';
-
-  return (
-    <div className="mt-8 overflow-hidden rounded-[1.5rem] border border-amber-300 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-      <div className="flex flex-col gap-4 border-b border-amber-200 bg-white px-6 py-5 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-700">Hall ticket preview</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-900">Recruitment Examination Hall Ticket</h2>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-right">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Hall Ticket No.</p>
-          <p className="mt-1 text-sm font-semibold text-slate-900">HT-{form.applicationId.replace('APP-', '')}</p>
-        </div>
-      </div>
-
-      <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_190px]">
-        <div className="p-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <TicketDetail label="Candidate name" value={fullName} />
-            <TicketDetail label="Application ID" value={form.applicationId} />
-            <TicketDetail label="Recruitment code" value={form.recruitmentCode} />
-            <TicketDetail label="Post applied" value={form.postName || 'Bank recruitment post'} />
-            <TicketDetail label="Bank name" value={form.bankName} />
-            <TicketDetail label="Category" value={form.category || 'General'} />
-          </div>
-
-          <div className="mt-6 grid gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:grid-cols-3">
-            <TicketDetail label="Exam date" value={examDate} />
-            <TicketDetail label="Exam time" value={examTime} />
-            <TicketDetail label="Reporting" value={reportingTime} />
-          </div>
-
-          <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
-            <TicketDetail label="Exam venue" value={venue} />
-            <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-6 text-slate-500">
-              Carry a printed hall ticket, original photo ID, and one passport-size photograph. Entry closes 15 minutes before exam time.
-            </p>
-          </div>
-        </div>
-
-        <div className="border-t border-slate-200 bg-slate-50 p-6 md:border-l md:border-t-0">
-          <div className="flex h-32 items-center justify-center overflow-hidden rounded-xl border border-slate-300 bg-white">
-            <img src="/hallticket/Display_Pic.jpg" alt="Candidate photograph" className="h-full w-full object-cover" />
-          </div>
-          <div className="mt-6 flex h-16 items-center justify-center overflow-hidden rounded-xl border border-slate-300 bg-white px-3 py-2">
-            <img src="/hallticket/SIGN.png" alt="Candidate signature" className="max-h-full max-w-full object-contain" />
-          </div>
-          <p className="mt-2 text-center text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Signature</p>
-          <div className="mt-6 rounded-xl bg-slate-900 px-4 py-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-white">
-            Verified
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 text-xs text-slate-600 sm:grid-cols-3">
-        <span>Payment ref: {form.transactionNumber}</span>
-        <span>Issued on: {form.paymentDate || '30/04/2026'}</span>
-        <span>Status: Provisional admission</span>
-      </div>
-    </div>
-  );
-}
-
-function TicketDetail({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
-      <p className="mt-1 text-sm font-semibold leading-6 text-slate-900">{value}</p>
-    </div>
-  );
-}
-
-function SummaryCard({
-  label,
-  value,
-  detail,
-  tone,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  tone: SummaryTone;
-}) {
-  const toneClassName = SUMMARY_TONE_CLASS_NAMES[tone];
-
-  return (
-    <div className={`rounded-3xl p-6 ${toneClassName}`}>
-      <p className="text-xs font-semibold uppercase tracking-[0.2em]">{label}</p>
-      <p className="mt-2 text-lg font-semibold text-slate-900">{value}</p>
-      <p className="mt-1 text-sm text-slate-600">{detail}</p>
-    </div>
-  );
-}

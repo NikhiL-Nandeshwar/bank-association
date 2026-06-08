@@ -40,7 +40,11 @@ export default function RecruitmentApplyPage() {
   }, []);
 
   useEffect(() => {
-    if (!query.code) return;
+    if (!query.code) {
+      setSelectedVacancy(null);
+      setIsLoading(false);
+      return;
+    }
 
     async function fetchVacancy() {
       try {
@@ -89,11 +93,11 @@ export default function RecruitmentApplyPage() {
   return (
     <ApplicationWizard
       initialRecruitment={{
+        vacancyId: selectedVacancy?.vacancyId ?? selectedVacancy?.id,
         code: query.code ?? 'KM-016',
         name: query.name ?? 'Kolhapur District Urban Banks Association Recruitment',
         postName: selectedVacancy?.postName || query.post,
         bankName: selectedVacancy?.bankName || query.bankName,
-        eligibilityCriteria: selectedVacancy?.eligibilityCriteria,
       }}
     />
   );

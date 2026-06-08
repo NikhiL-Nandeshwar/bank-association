@@ -56,6 +56,30 @@ export type BankDropdownItem = {
   bankCode: string;
 };
 
+export type MasterItem = {
+  id?: number | string;
+  masterId?: number;
+  countryId?: number;
+  stateId?: number;
+  districtId?: number;
+  categoryId?: number;
+  religionId?: number;
+  casteId?: number;
+  code?: string;
+  value?: string;
+  text?: string;
+  label?: string;
+  name?: string;
+  nameMarathi?: string;
+  description?: string;
+  descriptionMarathi?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+  [key: string]: unknown;
+};
+
+export type MasterListResponse = MasterItem[] | ApiPagedResult<MasterItem>;
+
 export type EligibilityCriteria = {
   criteriaType: string;
   criteriaValue: string;
