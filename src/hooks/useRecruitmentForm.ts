@@ -34,6 +34,8 @@ export function useRecruitmentForm(loadRecruitments: () => Promise<void>) {
     });
 
     if (!parsed.success) {
+      console.table(parsed.error.issues);
+
       setErrors(getZodFieldErrors(parsed.error));
       toast.error(ADMIN_DASHBOARD_MESSAGES.recruitment.validationError);
       return;

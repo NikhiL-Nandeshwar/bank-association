@@ -55,6 +55,7 @@ export const API_ENDPOINTS = {
   },
   application: {
     step1and2: 'Application/SaveStep1',
+    step3: 'Application/SaveStep2',
     startOrResume: 'Application/StartOrResume',
   }
 } as const;

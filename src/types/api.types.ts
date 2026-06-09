@@ -33,6 +33,8 @@ export type CurrentUser = {
   email: string;
   role: string;
   userName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
 };
 
 export type Bank = {

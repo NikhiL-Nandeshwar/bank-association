@@ -1,6 +1,14 @@
-import { APPLICATION_INPUT_CLASS_NAME, EDUCATION_TEMPLATE, EducationEntry, EMPTY_LANGUAGE_SKILLS, LanguageSkills, SUMMARY_TONE_CLASS_NAMES, SummaryTone } from "@/constants/application-wizard.constants";
+import { APPLICATION_INPUT_CLASS_NAME, EDUCATION_TEMPLATE, EMPTY_LANGUAGE_SKILLS, LanguageSkills, SUMMARY_TONE_CLASS_NAMES, SummaryTone } from "@/constants/application-wizard.constants";
 import { EligibilityCriteria, MasterItem, MasterListResponse } from "@/types/api.types";
-import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption } from "@/types/applicationSteps";
+import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep3Payload } from "@/types/applicationSteps";
+
+const EDUCATION_CRITERION_LEVEL_MAP: Record<string, string> = {
+    SSC_10TH: 'SSC / 10th',
+    HSC_12TH: 'HSC / 12th',
+    GRADUATION: 'Graduation',
+    POST_GRADUATION: 'Post Graduation',
+    DIPLOMA: 'Diploma',
+};
 
 export type ErrorMap = Partial<Record<keyof FormState, string>>;
 
@@ -72,15 +80,51 @@ export function hasLanguageSelected(skills: LanguageSkills) {
     return Object.values(skills ?? {}).some((language) => Object.values(language).some(Boolean));
 }
 
-export function hasCompletedEducation(entries: EducationEntry[]) {
-    return (entries ?? []).some(
-        (entry) =>
-            fieldValue(entry.completed) === 'Yes' &&
-            fieldValue(entry.institute).trim() &&
-            fieldValue(entry.board).trim() &&
-            fieldValue(entry.score).trim() &&
-            fieldValue(entry.passedMonthYear).trim(),
+export function getMandatoryEducationLevels(criteria?: EligibilityCriteria[]) {
+    return Array.from(
+        new Set(
+            (criteria ?? [])
+                .filter((item) => item.isMandatory)
+                .map((item) => {
+                    const directMatch = EDUCATION_CRITERION_LEVEL_MAP[item.criteriaValue?.toUpperCase?.() ?? ''];
+                    if (directMatch) return directMatch;
+
+                    const declaration = `${item.declarationEng ?? ''} ${item.declarationMrt ?? ''}`.toLowerCase();
+                    if (declaration.includes('10th')) return 'SSC / 10th';
+                    if (declaration.includes('12th')) return 'HSC / 12th';
+                    if (declaration.includes('post graduation') || declaration.includes('postgraduate')) return 'Post Graduation';
+                    if (declaration.includes('graduation')) return 'Graduation';
+                    if (declaration.includes('diploma')) return 'Diploma';
+
+                    return '';
+                })
+                .filter(Boolean),
+        ),
     );
+}
+
+function toIsoDateString(value: string) {
+    if (!value.trim()) return null;
+
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
+export function buildSaveStep3Payload(form: FormState, applicationId: number): SaveStep3Payload {
+    return {
+        applicationId,
+        educations: form.educationEntries.map((entry, index) => ({
+            educationId: entry.educationId ?? 0,
+            educationLevel: entry.level,
+            specialization: fieldValue(entry.specialization).trim(),
+            organizationName: fieldValue(entry.institute).trim() || fieldValue(entry.board).trim(),
+            percentageOrCGPA: Number(fieldValue(entry.score)) || 0,
+            className: fieldValue(entry.className).trim(),
+            passedMonthYear: fieldValue(entry.passedMonthYear).trim(),
+            passedDate: toIsoDateString(fieldValue(entry.passedDate)),
+            sortOrder: entry.sortOrder ?? index,
+        })),
+    };
 }
 
 export function hasExperienceDetails(entries: ExperienceEntry[]) {
@@ -269,10 +313,6 @@ export function validateStep(step: number, form: FormState, eligibilityCriteria?
         if (!hasLanguageSelected(form.languageSkills)) errors.languageSkills = 'Select at least one language ability.';
     }
 
-    if (step === 3 && !hasCompletedEducation(form.educationEntries)) {
-        errors.educationEntries = 'Add at least one completed education row with institute, board, score, and passing month/year.';
-    }
-
     if (step === 4) {
         if (!form.experienceLevel) errors.experienceLevel = 'Please select your experience level.';
         if (form.experienceLevel !== 'fresher' && !hasExperienceDetails(form.experienceEntries)) {
@@ -357,6 +397,7 @@ export function normalizeFormState(
         educationEntries: educationEntries.map((entry, index) => ({
             ...(defaults.educationEntries[index] ?? EDUCATION_TEMPLATE[0]),
             ...entry,
+            passedDate: fieldValue(entry.passedDate),
         })),
         experienceEntries: experienceEntries.map((entry) => ({
             organization: fieldValue(entry.organization),

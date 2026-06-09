@@ -113,3 +113,20 @@ export type SaveStep1and2Payload = {
   alternateNumber: string;
   languages: { languageName: string; canRead: boolean; canWrite: boolean; canSpeak: boolean }[];
 };
+
+export type SaveStep3EducationPayload = {
+  educationId: number;
+  educationLevel: string;
+  specialization: string;
+  organizationName: string;
+  percentageOrCGPA: number;
+  className: string;
+  passedMonthYear: string;
+  passedDate: string | null;
+  sortOrder: number;
+};
+
+export type SaveStep3Payload = {
+  applicationId: number;
+  educations: SaveStep3EducationPayload[];
+};

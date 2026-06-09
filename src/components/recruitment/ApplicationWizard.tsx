@@ -9,9 +9,10 @@ import { getEligibilityCriteria } from '@/actions/api/vacancy.actions';
 import { useEffect, useMemo, useState } from 'react';
 import type { EligibilityCriteria } from '@/types/api.types';
 import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep1and2Payload } from '@/types/applicationSteps';
-import { calculateAgeAsOn, ChoiceButtons, ErrorMap, FormField, generateTransactionNumber, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons } from './helper/applicationStepsHelper';
-import { saveStep1and2, startOrResumeApplication } from '@/actions/api/application.actions';
-import { toast } from 'sonner';
+import { calculateAgeAsOn, buildSaveStep3Payload, ChoiceButtons, ErrorMap, FormField, generateTransactionNumber, getMandatoryEducationLevels, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons } from './helper/applicationStepsHelper';
+import { saveStep1and2, saveStep3, startOrResumeApplication } from '@/actions/api/application.actions';
+import { createSaveStep3Schema } from '@/schemas/application.schema';
+import { useAuth } from '@/lib/useAuth';
 
 function normalizeEligibilityCriteriaResponse(data: unknown): EligibilityCriteria[] {
   if (Array.isArray(data)) {
@@ -57,7 +58,65 @@ function normalizeEligibilityCriteriaResponse(data: unknown): EligibilityCriteri
   return [];
 }
 
+function extractApplicationId(data: unknown): number {
+  if (typeof data === 'number' && Number.isFinite(data)) {
+    return data;
+  }
+
+  if (typeof data === 'string') {
+    const parsed = Number(data);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  if (data && typeof data === 'object') {
+    const record = data as Record<string, unknown>;
+    const application = record.application as Record<string, unknown> | undefined;
+    const candidates = [
+      record.applicationId,
+      record.id,
+      record.applicationID,
+      application?.applicationId,
+      application?.id,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+        return candidate;
+      }
+
+      if (typeof candidate === 'string') {
+        const parsed = Number(candidate);
+        if (Number.isFinite(parsed)) {
+          return parsed;
+        }
+      }
+    }
+
+    if ('data' in record) {
+      return extractApplicationId(record.data);
+    }
+  }
+
+  return 0;
+}
+
+function splitAuthName(userName?: string | null) {
+  const trimmed = userName?.trim() ?? '';
+
+  if (!trimmed) {
+    return { firstName: '', lastName: '' };
+  }
+
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+
+  return {
+    firstName: parts[0] ?? '',
+    lastName: parts.slice(1).join(' '),
+  };
+}
+
 export default function ApplicationWizard({ initialRecruitment }: ApplicationWizardProps) {
+  const { user, status } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [formState, setForm] = useState<FormState>(() => initialState(initialRecruitment));
   const [errors, setErrors] = useState<ErrorMap>({});
@@ -83,8 +142,11 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [isTalukaLoading, setIsTalukaLoading] = useState(false);
   const [isStartingOrResuming, setIsStartingOrResuming] = useState(false);
   const [isSavingStep1and2, setIsSavingStep1and2] = useState(false);
+  const [isSavingStep3, setIsSavingStep3] = useState(false);
   const [startOrResumeError, setStartOrResumeError] = useState<string | null>(null);
   const [saveStep1and2Error, setSaveStep1and2Error] = useState<string | null>(null);
+  const [saveStep3Error, setSaveStep3Error] = useState<string | null>(null);
+  const [applicationRecordId, setApplicationRecordId] = useState<number>(0);
 
   useEffect(() => {
     setForm(initialState(initialRecruitment));
@@ -95,7 +157,37 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     setEligibilityCriteria(initialRecruitment.eligibilityCriteria ?? []);
     setIsStartingOrResuming(false);
     setStartOrResumeError(null);
-  }, [initialRecruitment.code]); // re-init when recruitment changes
+    setSaveStep3Error(null);
+    setApplicationRecordId(0);
+  }, [initialRecruitment]); // re-init when recruitment changes
+
+  useEffect(() => {
+    if (status !== 'authenticated' || !user) {
+      return;
+    }
+
+    const fallbackName = splitAuthName(user.userName);
+    const firstName = user.firstName?.trim() || fallbackName.firstName;
+    const lastName = user.lastName?.trim() || fallbackName.lastName;
+
+    setForm((prev) => {
+      let next = prev;
+
+      if (!prev.firstName.trim() && firstName) {
+        next = { ...next, firstName };
+      }
+
+      if (!prev.lastName.trim() && lastName) {
+        next = { ...next, lastName };
+      }
+
+      if (!prev.email.trim() && user.email) {
+        next = { ...next, email: user.email };
+      }
+
+      return next;
+    });
+  }, [status, user]);
 
   useEffect(() => {
     let isActive = true;
@@ -161,6 +253,16 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const form = useMemo(
     () => normalizeFormState(initialRecruitment, formState),
     [formState, initialRecruitment],
+  );
+
+  const mandatoryEducationLevels = useMemo(
+    () => getMandatoryEducationLevels(eligibilityCriteria),
+    [eligibilityCriteria],
+  );
+
+  const saveStep3Schema = useMemo(
+    () => createSaveStep3Schema(mandatoryEducationLevels),
+    [mandatoryEducationLevels],
   );
 
   useEffect(() => {
@@ -318,7 +420,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     return () => {
       isActive = false;
     };
-  }, [form.district]);
+  }, [form.district, form.state]);
 
   useEffect(() => {
     setForm((prev) => ({
@@ -525,7 +627,8 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       setStartOrResumeError(null);
 
       try {
-        await startOrResumeApplication(initialRecruitment.vacancyId);
+        const response = await startOrResumeApplication(initialRecruitment.vacancyId);
+        setApplicationRecordId(extractApplicationId(response.data));
       } catch {
         setStartOrResumeError('Could not start or resume your application. Please try again.');
         return;
@@ -545,6 +648,32 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
         return;                     // block navigation on failure
       } finally {
         setIsSavingStep1and2(false);
+      }
+    }
+
+    if (currentStep === 3) {
+      setIsSavingStep3(true);
+      setSaveStep3Error(null);
+
+      const payload = buildSaveStep3Payload(form, applicationRecordId);
+      const parsedPayload = saveStep3Schema.safeParse(payload);
+
+      if (!parsedPayload.success) {
+        setErrors({
+          educationEntries: parsedPayload.error.issues[0]?.message ?? 'Please complete the required education details.',
+        });
+        setIsSavingStep3(false);
+        return;
+      }
+
+      try {
+        await saveStep3(parsedPayload.data);
+      } catch {
+        setSaveStep3Error('Could not save your education details. Please try again.');
+        setIsSavingStep3(false);
+        return;
+      } finally {
+        setIsSavingStep3(false);
       }
     }
 
@@ -768,10 +897,10 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
             {currentStep === 1 && (
               <div className="grid gap-6 md:grid-cols-2">
                 <FormField label="First name" error={errors.firstName}>
-                  <input value={form.firstName} placeholder='Enter your first name' onChange={(event) => updateField('firstName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                  <input value={form.firstName} readOnly placeholder='Enter your first name' onChange={(event) => updateField('firstName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Last name" error={errors.lastName}>
-                  <input value={form.lastName} placeholder='Enter your last name' onChange={(event) => updateField('lastName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                  <input value={form.lastName} readOnly placeholder='Enter your last name' onChange={(event) => updateField('lastName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Date of birth" error={errors.dateOfBirth}>
                   <input type="date" value={form.dateOfBirth} onChange={(event) => updateDateOfBirth(event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
@@ -888,7 +1017,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               <div className="space-y-8">
                 <div className="grid gap-6 md:grid-cols-2">
                   <FormField label="Email address" error={errors.email}>
-                    <input type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                    <input readOnly type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                   <FormField label="Mobile number" error={errors.phone}>
                     <input value={form.phone} onChange={(event) => updateField('phone', event.target.value.replace(/\D/g, '').slice(0, 10))} className={APPLICATION_INPUT_CLASS_NAME} placeholder="10-digit number" />
@@ -975,33 +1104,128 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                     ))}
                   </div>
                   {errors.languageSkills ? <p className="mt-2 text-sm text-rose-600">{errors.languageSkills}</p> : null}
+                  {saveStep1and2Error ? <p className="mt-2 text-sm text-rose-600">{saveStep1and2Error}</p> : null}
                 </div>
               </div>
             )}
 
             {currentStep === 3 && (
               <div className="space-y-5">
-                {form.educationEntries.map((entry, index) => (
-                  <div key={entry.level} className="rounded-[1.5rem] border border-slate-200 p-5">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                      <h3 className="text-base font-semibold text-slate-900">{entry.level}</h3>
-                      <select value={entry.completed} onChange={(event) => updateEducation(index, 'completed', event.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none focus:border-slate-900">
-                        <option value="">Completed?</option>
-                        <option value="Yes">Yes</option>
-                        <option value="No">No</option>
-                      </select>
+                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
+                  <p className="font-semibold text-slate-800">Mandatory education levels</p>
+                  <p className="mt-1">
+                    {mandatoryEducationLevels.length > 0
+                      ? mandatoryEducationLevels.join(', ')
+                      : 'No education level is marked mandatory for this recruitment.'}
+                  </p>
+                </div>
+
+                {form.educationEntries.map((entry, index) => {
+                  const isMandatory = mandatoryEducationLevels.includes(entry.level);
+
+                  return (
+                    <div
+                      key={entry.level}
+                      className={`rounded-[1.5rem] border p-5 ${
+                        isMandatory ? 'border-amber-300 bg-amber-50/60' : 'border-slate-200 bg-white'
+                      }`}
+                    >
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <h3 className="text-base font-semibold text-slate-900">{entry.level}</h3>
+                          <p className="mt-1 text-sm text-slate-600">
+                            {isMandatory
+                              ? 'This education must be completed before you continue.'
+                              : 'Optional. Fill it only if it applies to you.'}
+                          </p>
+                        </div>
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
+                            isMandatory ? 'bg-amber-200/80 text-amber-900' : 'bg-slate-100 text-slate-500'
+                          }`}
+                        >
+                          {isMandatory ? 'Mandatory' : 'Optional'}
+                        </span>
+                      </div>
+
+                      <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        <label className="block">
+                          <span className="text-sm font-semibold text-slate-800">
+                            Institute / organization{isMandatory ? ' *' : ''}
+                          </span>
+                          <input
+                            value={entry.institute}
+                            onChange={(event) => updateEducation(index, 'institute', event.target.value)}
+                            className={APPLICATION_INPUT_CLASS_NAME}
+                            placeholder={isMandatory ? 'Required' : 'Optional'}
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-sm font-semibold text-slate-800">Board / university{isMandatory ? ' *' : ''}</span>
+                          <input
+                            value={entry.board}
+                            onChange={(event) => updateEducation(index, 'board', event.target.value)}
+                            className={APPLICATION_INPUT_CLASS_NAME}
+                            placeholder={isMandatory ? 'Required' : 'Optional'}
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-sm font-semibold text-slate-800">
+                            Specialization{isMandatory ? ' *' : ''}
+                          </span>
+                          <input
+                            value={entry.specialization}
+                            onChange={(event) => updateEducation(index, 'specialization', event.target.value)}
+                            className={APPLICATION_INPUT_CLASS_NAME}
+                            placeholder={isMandatory ? 'Required' : 'Optional'}
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-sm font-semibold text-slate-800">
+                            Percentage / CGPA{isMandatory ? ' *' : ''}
+                          </span>
+                          <input
+                            value={entry.score}
+                            onChange={(event) => updateEducation(index, 'score', event.target.value)}
+                            className={APPLICATION_INPUT_CLASS_NAME}
+                            placeholder={isMandatory ? 'Required' : 'Optional'}
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-sm font-semibold text-slate-800">Class / grade{isMandatory ? ' *' : ''}</span>
+                          <input
+                            value={entry.className}
+                            onChange={(event) => updateEducation(index, 'className', event.target.value)}
+                            className={APPLICATION_INPUT_CLASS_NAME}
+                            placeholder={isMandatory ? 'Required' : 'Optional'}
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-sm font-semibold text-slate-800">
+                            Passed month & year{isMandatory ? ' *' : ''}
+                          </span>
+                          <input
+                            value={entry.passedMonthYear}
+                            onChange={(event) => updateEducation(index, 'passedMonthYear', event.target.value)}
+                            className={APPLICATION_INPUT_CLASS_NAME}
+                            placeholder="MM/YYYY"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-sm font-semibold text-slate-800">Passed date{isMandatory ? ' *' : ''}</span>
+                          <input
+                            type="date"
+                            value={entry.passedDate ? entry.passedDate.slice(0, 10) : ''}
+                            onChange={(event) => updateEducation(index, 'passedDate', event.target.value)}
+                            className={APPLICATION_INPUT_CLASS_NAME}
+                          />
+                        </label>
+                      </div>
                     </div>
-                    <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      <input value={entry.institute} onChange={(event) => updateEducation(index, 'institute', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="School / University / Institute" />
-                      <input value={entry.board} onChange={(event) => updateEducation(index, 'board', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Board / University" />
-                      <input value={entry.specialization} onChange={(event) => updateEducation(index, 'specialization', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Specialization" />
-                      <input value={entry.score} onChange={(event) => updateEducation(index, 'score', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Percentage / CGPA" />
-                      <input value={entry.className} onChange={(event) => updateEducation(index, 'className', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Class / Grade" />
-                      <input value={entry.passedMonthYear} onChange={(event) => updateEducation(index, 'passedMonthYear', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Passed month & year" />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {errors.educationEntries ? <p className="text-sm text-rose-600">{errors.educationEntries}</p> : null}
+                {saveStep3Error ? <p className="text-sm text-rose-600">{saveStep3Error}</p> : null}
               </div>
             )}
 
@@ -1078,7 +1302,16 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   <ReviewRow label="Family details" value={`Spouse: ${form.husbandsName} | Mother: ${form.mothersName} | ${form.maritalStatus}`} />
                   <ReviewRow label="Contact" value={`${form.email} | ${form.phone} | Alt: ${form.alternatePhone || 'NA'}`} />
                   <ReviewRow label="Address" value={`${form.addressLine1}, ${form.addressLine2}, ${form.addressLine3}, ${form.taluka}, ${form.district}, ${form.city}, ${form.state}, ${form.country} - ${form.pincode}`} />
-                  <ReviewRow label="Education" value={form.educationEntries.filter((entry) => entry.completed === 'Yes').map((entry) => `${entry.level}: ${entry.score} (${entry.passedMonthYear})`).join(' | ') || 'NA'} />
+                  <ReviewRow
+                    label="Education"
+                    value={form.educationEntries
+                      .filter((entry) =>
+                        [entry.institute, entry.board, entry.specialization, entry.score, entry.className, entry.passedMonthYear, entry.passedDate]
+                          .some((value) => value.trim()),
+                      )
+                      .map((entry) => `${entry.level}: ${entry.institute || entry.board || 'NA'} | ${entry.score || 'NA'}`)
+                      .join(' | ') || 'NA'}
+                  />
                   <ReviewRow label="Experience" value={form.experienceLevel === 'fresher' ? 'Fresher' : form.experienceEntries.map((entry) => `${entry.designation} at ${entry.organization} (${entry.totalService})`).join(' | ')} />
                   <ReviewRow label="Documents" value={`Aadhaar ending ${form.aadhaarNumber.slice(-4)} | PAN ${form.panNumber}`} />
                   <ReviewRow label="Preferences" value={`${form.preferredLocation} | ${form.noticePeriod} | Relocate: ${form.relocate}`} />
@@ -1143,13 +1376,15 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               <button
                 type="button"
                 onClick={goNext}
-                disabled={isStartingOrResuming || isSavingStep1and2}
+                disabled={isStartingOrResuming || isSavingStep1and2 || isSavingStep3}
                 className="inline-flex items-center justify-center rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isStartingOrResuming
                   ? 'Starting...'
                   : isSavingStep1and2
                     ? 'Saving...'
+                    : isSavingStep3
+                      ? 'Saving...'
                     : currentStep === 6
                       ? 'Continue to payment'
                       : 'Continue to next step'}
