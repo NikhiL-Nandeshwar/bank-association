@@ -98,6 +98,7 @@ export default function RecruitmentApplyPage() {
         name: query.name ?? 'Kolhapur District Urban Banks Association Recruitment',
         postName: selectedVacancy?.postName || query.post,
         bankName: selectedVacancy?.bankName || query.bankName,
+        eligibilityCriteria: selectedVacancy?.eligibilityCriteria ?? [],
       }}
     />
   );

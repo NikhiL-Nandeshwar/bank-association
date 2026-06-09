@@ -13,6 +13,49 @@ import { calculateAgeAsOn, ChoiceButtons, ErrorMap, FormField, generateTransacti
 import { saveStep1and2, startOrResumeApplication } from '@/actions/api/application.actions';
 import { toast } from 'sonner';
 
+function normalizeEligibilityCriteriaResponse(data: unknown): EligibilityCriteria[] {
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (data && typeof data === 'object') {
+    const nested = data as {
+      items?: unknown;
+      eligibilityCriteria?: unknown;
+      declarations?: unknown;
+    };
+
+    if (Array.isArray(nested.items)) {
+      return nested.items as EligibilityCriteria[];
+    }
+
+    if (Array.isArray(nested.eligibilityCriteria)) {
+      return nested.eligibilityCriteria as EligibilityCriteria[];
+    }
+
+    if (Array.isArray(nested.declarations)) {
+      return nested.declarations.map((item) => {
+        const declaration = item as Partial<EligibilityCriteria> & {
+          criteriaId?: number;
+          requiredDocumentType?: string;
+          requiredDocument?: boolean;
+        };
+
+        return {
+          criteriaType: declaration.criteriaType ?? '',
+          criteriaValue: declaration.criteriaValue ?? '',
+          groupTag: declaration.groupTag ?? '',
+          isMandatory: Boolean(declaration.isMandatory),
+          declarationEng: declaration.declarationEng ?? '',
+          declarationMrt: declaration.declarationMrt ?? '',
+          sortOrder: Number(declaration.sortOrder ?? 0),
+        };
+      });
+    }
+  }
+
+  return [];
+}
 
 export default function ApplicationWizard({ initialRecruitment }: ApplicationWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
@@ -68,7 +111,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       try {
         const response = await getEligibilityCriteria(initialRecruitment.vacancyId);
         if (!isActive) return;
-        setEligibilityCriteria(response.data ?? []);
+        setEligibilityCriteria(normalizeEligibilityCriteriaResponse(response.data));
       } catch {
         if (!isActive) return;
         setEligibilityCriteria(initialRecruitment.eligibilityCriteria ?? []);
