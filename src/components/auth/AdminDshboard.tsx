@@ -17,38 +17,38 @@ import { toast } from 'sonner';
 
 const ELIGIBILITY_CRITERIA_TYPES = ['EDUCATION', 'COURSE'] as const;
 const ELIGIBILITY_CRITERIA_VALUES = {
-  EDUCATION: [
-    'SSC_10TH',
-    'HSC_12TH',
-    'GRADUATION',
-  ] as const,
-  COURSE: [
-    'MSCIT',
-    'CCC',
-  ] as const,
+    EDUCATION: [
+        'SSC_10TH',
+        'HSC_12TH',
+        'GRADUATION',
+    ] as const,
+    COURSE: [
+        'MSCIT',
+        'CCC',
+    ] as const,
 };
 
 const ELIGIBILITY_CRITERIA_DEFAULT_DECLARATIONS: Record<string, { declarationEng: string; declarationMrt: string }> = {
-  SSC_10TH: {
-    declarationEng: 'I have passed Secondary School Certificate (10th) examination.',
-    declarationMrt: 'मी माध्यमिक शालान्त प्रमाणपत्र (१०वी) परीक्षा उत्तीर्ण केली आहे.',
-  },
-  HSC_12TH: {
-    declarationEng: 'I have passed Higher Secondary Certificate (12th) examination.',
-    declarationMrt: 'मी उच्च माध्यमिक शालान्त प्रमाणपत्र (१२वी) परीक्षा उत्तीर्ण केली आहे.',
-  },
-  GRADUATION: {
-    declarationEng: 'I have completed Graduation from a recognized university.',
-    declarationMrt: 'मी मान्यताप्राप्त विद्यापीठातून पदवी पूर्ण केली आहे.',
-  },
-  MSCIT: {
-    declarationEng: 'I have completed MS-CIT or equivalent computer course.',
-    declarationMrt: 'मी एमएस-सीआयटी किंवा समकक्ष संगणक अभ्यासक्रम पूर्ण केला आहे.',
-  },
-  CCC: {
-    declarationEng: 'I have completed CCC (Course on Computer Concepts).',
-    declarationMrt: 'मी सीसीसी (कोर्स ऑन कंप्यूटर कॉन्सेप्ट्स) पूर्ण केला आहे.',
-  },
+    SSC_10TH: {
+        declarationEng: 'I have passed Secondary School Certificate (10th) examination.',
+        declarationMrt: 'मी माध्यमिक शालान्त प्रमाणपत्र (१०वी) परीक्षा उत्तीर्ण केली आहे.',
+    },
+    HSC_12TH: {
+        declarationEng: 'I have passed Higher Secondary Certificate (12th) examination.',
+        declarationMrt: 'मी उच्च माध्यमिक शालान्त प्रमाणपत्र (१२वी) परीक्षा उत्तीर्ण केली आहे.',
+    },
+    GRADUATION: {
+        declarationEng: 'I have completed Graduation from a recognized university.',
+        declarationMrt: 'मी मान्यताप्राप्त विद्यापीठातून पदवी पूर्ण केली आहे.',
+    },
+    MSCIT: {
+        declarationEng: 'I have completed MS-CIT or equivalent computer course.',
+        declarationMrt: 'मी एमएस-सीआयटी किंवा समकक्ष संगणक अभ्यासक्रम पूर्ण केला आहे.',
+    },
+    CCC: {
+        declarationEng: 'I have completed CCC (Course on Computer Concepts).',
+        declarationMrt: 'मी सीसीसी (कोर्स ऑन कंप्यूटर कॉन्सेप्ट्स) पूर्ण केला आहे.',
+    },
 };
 
 /**
@@ -392,22 +392,22 @@ export default function AdminDashboardPage() {
 
                                     <AdminInput
                                         label="Required city / district"
-                                        value={recruitment.form.requiredCityDistrict}
+                                        value={String(recruitment.form.requiredCityDistrict)}
                                         onChange={(v) =>
                                             recruitment.setForm((p) => ({
                                                 ...p,
-                                                requiredCityDistrict: v,
+                                                requiredCityDistrict: Number(v) || 0,
                                             }))
                                         }
                                     />
 
                                     <AdminInput
                                         label="Required state"
-                                        value={recruitment.form.requiredStateId}
+                                        value={String(recruitment.form.requiredStateId)}
                                         onChange={(v) =>
                                             recruitment.setForm((p) => ({
                                                 ...p,
-                                                requiredStateId: v,
+                                                requiredStateId: Number(v) || 0,
                                             }))
                                         }
                                     />
@@ -444,7 +444,9 @@ export default function AdminDashboardPage() {
                                                                 declarationEng: '',
                                                                 declarationMrt: '',
                                                                 sortOrder: 0,
-                                                            },
+                                                                requiredDocumentType: '',
+                                                                requiredDocument: false,
+                                                            }
                                                         ],
                                                     }))
                                                 }
@@ -604,6 +606,44 @@ export default function AdminDashboardPage() {
                                                                 })
                                                             }
                                                         />
+
+                                                        <div></div>
+
+                                                        <AdminInput
+                                                            label="Required Document Type"
+                                                            value={recruitment.form.eligibilityCriteria[0]?.requiredDocumentType || ''}
+                                                            onChange={(value) =>
+                                                                recruitment.setForm((p) => {
+                                                                    const updated = [...p.eligibilityCriteria];
+                                                                    updated[0] = {
+                                                                        ...updated[0],
+                                                                        requiredDocumentType: value,
+                                                                    };
+                                                                    return { ...p, eligibilityCriteria: updated };
+                                                                })
+                                                            }
+                                                        />
+
+                                                        <div className="flex items-end">
+                                                            <label className="flex items-center gap-2 text-sm text-slate-800 pb-3">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={recruitment.form.eligibilityCriteria[0]?.requiredDocument}
+                                                                    onChange={(e) =>
+                                                                        recruitment.setForm((p) => {
+                                                                            const updated = [...p.eligibilityCriteria];
+                                                                            updated[0] = {
+                                                                                ...updated[0],
+                                                                                requiredDocument: e.target.checked,
+                                                                            };
+                                                                            return { ...p, eligibilityCriteria: updated };
+                                                                        })
+                                                                    }
+                                                                    className="h-4 w-4"
+                                                                />
+                                                                Required Document
+                                                            </label>
+                                                        </div>
                                                     </div>
 
                                                     <div className="mt-4 flex justify-end">
@@ -624,6 +664,8 @@ export default function AdminDashboardPage() {
                                                 </div>
                                             ))}
                                         </div>
+
+
                                     </div>
 
                                     <AdminInput
@@ -647,6 +689,7 @@ export default function AdminDashboardPage() {
                                             }))
                                         }
                                     />
+
 
                                     {/* Buttons */}
                                     <div className="col-span-full">

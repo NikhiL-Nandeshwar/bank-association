@@ -24,6 +24,8 @@ const eligibilityCriteriaSchema = z.object({
   declarationEng: z.string().trim().min(1, 'English declaration is required.'),
   declarationMrt: z.string().trim().min(1, 'Marathi declaration is required.'),
   sortOrder: z.coerce.number().int('Sort order must be a whole number.').nonnegative('Sort order must be non-negative.'),
+  requiredDocumentType: z.string().optional(),
+  requiredDocument: z.boolean().default(false),
 });
 
 export const createVacancySchema = z
@@ -38,8 +40,8 @@ export const createVacancySchema = z
     minAge: optionalPositiveNumberSchema,
     maxAge: optionalPositiveNumberSchema,
     ageAsOnDate: z.string().trim().min(1, 'Age as on date is required.'),
-    requiredCityDistrict: z.string().trim().optional(),
-    requiredStateId: optionalPositiveNumberSchema,
+    requiredCityDistrict: z.coerce.number().optional(),
+    requiredStateId: z.coerce.number().optional(),
     requiredEducation: z.string().trim().min(1, 'Required education is required.'),
     isDomicileRequired: z.boolean(),
     isNCLRequired: z.boolean(),

@@ -27,8 +27,8 @@ export type AdminRecruitment = {
     minAge?: string;
     maxAge?: string;
     ageAsOnDate: string;
-    requiredCityDistrict?: string;
-    requiredStateId?: string;
+    requiredCityDistrict?: number;
+    requiredStateId?: number;
     requiredEducation: string;
     isDomicileRequired: boolean;
     isNCLRequired: boolean;

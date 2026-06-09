@@ -19,8 +19,8 @@ export const emptyRecruitmentForm = {
   minAge: '',
   maxAge: '',
   ageAsOnDate: '',
-  requiredCityDistrict: '',
-  requiredStateId: '',
+  requiredCityDistrict: 0,
+  requiredStateId: 0,
   requiredEducation: '',
   isDomicileRequired: false,
   isNCLRequired: false,
@@ -34,6 +34,8 @@ export const emptyRecruitmentForm = {
     declarationEng: string;
     declarationMrt: string;
     sortOrder: number;
+    requiredDocumentType?: string;
+    requiredDocument?: boolean;
   }>,
 };
 

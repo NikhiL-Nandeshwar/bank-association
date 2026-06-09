@@ -90,6 +90,8 @@ export type EligibilityCriteria = {
   declarationEng: string;
   declarationMrt: string;
   sortOrder: number;
+  requiredDocumentType?: string;
+  requiredDocument?: boolean;
 };
 
 export type Vacancy = {
@@ -107,7 +109,7 @@ export type Vacancy = {
   minAge?: number | null;
   maxAge?: number | null;
   ageAsOnDate: string;
-  requiredCityDistrict?: string | null;
+  requiredCityDistrict?: number | null;
   requiredStateId?: number | null;
   requiredEducation: string;
   isDomicileRequired: boolean;
