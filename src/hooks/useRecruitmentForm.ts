@@ -10,6 +10,8 @@ import { getErrorMessage } from "@/utils/api-error";
 import { useState } from "react";
 import { toast } from "sonner";
 import { getZodFieldErrors } from "@/utils/validation";
+import { translateToMarathi } from "@/utils/translation";
+
 
 export function useRecruitmentForm(loadRecruitments: () => Promise<void>) {
   const [form, setForm] = useState(emptyRecruitmentForm);
@@ -17,6 +19,26 @@ export function useRecruitmentForm(loadRecruitments: () => Promise<void>) {
   const [message, setMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  const autoTranslate = async () => {
+    if (!form.postName.trim()) {
+      toast.error('Please enter English text first');
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const translated = await translateToMarathi(form.postName);
+      setForm(prev => ({ ...prev, postNameMarathi: translated }));
+      toast.success('Translation suggestion provided. Please review and edit if needed.');
+    } catch (error) {
+      toast.error('Translation failed. Please enter Marathi text manually.');
+      console.error('Translation error:', error);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   const submit = async () => {
     setMessage('');
@@ -116,5 +138,7 @@ export function useRecruitmentForm(loadRecruitments: () => Promise<void>) {
     submit,
     startEdit,
     cancelEdit,
+    autoTranslate,
+    isTranslating,
   };
 }

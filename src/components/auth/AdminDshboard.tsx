@@ -14,6 +14,10 @@ import { useRecruitmentForm } from '@/hooks/useRecruitmentForm';
 import { useNewsForm } from '@/hooks/useNewsForm';
 import { useRecruitmentActions } from '@/hooks/useRecruitmentActions';
 import { toast } from 'sonner';
+import { documentTypeOptions } from '@/constants/vacancy.constants';
+import { MasterOption } from '@/types/applicationSteps';
+import { getStates } from '@/actions/api';
+import { toMasterOptions } from '../recruitment/helper/applicationStepsHelper';
 
 const ELIGIBILITY_CRITERIA_TYPES = ['EDUCATION', 'COURSE'] as const;
 const ELIGIBILITY_CRITERIA_VALUES = {
@@ -63,7 +67,7 @@ export default function AdminDashboardPage() {
     const bank = useBankForm(banks, setBanks);
     const [recruitments, setRecruitments] = useState<AdminRecruitment[]>([]);
     const [news, setNews] = useState<AdminNews[]>([]);
-
+    const [stateOptions, setStateOptions] = useState<MasterOption[]>([]);
     const { user, status } = useAuth();
     const router = useRouter();
     const isAdmin =
@@ -101,6 +105,19 @@ export default function AdminDashboardPage() {
     const newsForm = useNewsForm(news, setNews);
 
     useEffect(() => {
+        async function loadStates() {
+            try {
+                const response = await getStates({ countryId: 1 }); // India
+                setStateOptions(toMasterOptions(response?.data));
+            } catch {
+                setStateOptions([]);
+            }
+        }
+
+        loadStates();
+    }, []);
+
+    useEffect(() => {
         if (status !== 'authenticated' || !isAdmin) return;
 
         loadBanks();
@@ -119,8 +136,6 @@ export default function AdminDashboardPage() {
 
     // Load initial data on mount
     if (status === 'loading' || !user || !isAdmin) return null;
-
-
 
     return (
         <section className="bg-slate-100 px-4 py-8">
@@ -308,17 +323,36 @@ export default function AdminDashboardPage() {
                                         error={recruitment.errors.postName}
                                     />
 
-                                    <AdminInput
-                                        label="Post name Marathi"
-                                        value={recruitment.form.postNameMarathi}
-                                        onChange={(v) =>
-                                            recruitment.setForm((p) => ({
-                                                ...p,
-                                                postNameMarathi: v,
-                                            }))
-                                        }
-                                    />
+                                    <div className="flex gap-2">
+                                        <div className="flex-1">
+                                            <AdminInput
+                                                label="Post name Marathi"
+                                                value={recruitment.form.postNameMarathi}
+                                                onChange={(v) =>
+                                                    recruitment.setForm((p) => ({
+                                                        ...p,
+                                                        postNameMarathi: v,
+                                                    }))
+                                                }
+                                            />
+                                        </div>
 
+                                        <div className="flex items-end">
+                                            <button
+                                                type="button"
+                                                onClick={recruitment.autoTranslate}
+                                                disabled={
+                                                    recruitment.isTranslating ||
+                                                    !recruitment.form.postName.trim()
+                                                }
+                                                className="rounded-md border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-60"
+                                            >
+                                                {recruitment.isTranslating
+                                                    ? 'Translating...'
+                                                    : 'Auto Translate'}
+                                            </button>
+                                        </div>
+                                    </div>
                                     <AdminInput
                                         label="Total seats"
                                         value={recruitment.form.totalSeats}
@@ -401,16 +435,30 @@ export default function AdminDashboardPage() {
                                         }
                                     />
 
-                                    <AdminInput
-                                        label="Required state"
-                                        value={String(recruitment.form.requiredStateId)}
-                                        onChange={(v) =>
-                                            recruitment.setForm((p) => ({
-                                                ...p,
-                                                requiredStateId: Number(v) || 0,
-                                            }))
-                                        }
-                                    />
+                                    <label className="block">
+                                        <span className="text-sm font-semibold text-slate-800">
+                                            Required State
+                                        </span>
+
+                                        <select
+                                            value={recruitment.form.requiredStateId || ''}
+                                            onChange={(e) =>
+                                                recruitment.setForm((p) => ({
+                                                    ...p,
+                                                    requiredStateId: Number(e.target.value) || 0,
+                                                }))
+                                            }
+                                            className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+                                        >
+                                            <option value="">Select State</option>
+
+                                            {stateOptions.map((state) => (
+                                                <option key={state.value} value={state.value}>
+                                                    {state.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>
 
                                     <AdminInput
                                         label="Required education"
@@ -609,20 +657,39 @@ export default function AdminDashboardPage() {
 
                                                         <div></div>
 
-                                                        <AdminInput
-                                                            label="Required Document Type"
-                                                            value={recruitment.form.eligibilityCriteria[0]?.requiredDocumentType || ''}
-                                                            onChange={(value) =>
-                                                                recruitment.setForm((p) => {
-                                                                    const updated = [...p.eligibilityCriteria];
-                                                                    updated[0] = {
-                                                                        ...updated[0],
-                                                                        requiredDocumentType: value,
-                                                                    };
-                                                                    return { ...p, eligibilityCriteria: updated };
-                                                                })
-                                                            }
-                                                        />
+                                                        <label className="block">
+                                                            <span className="text-sm font-semibold text-slate-800">
+                                                                Required Document Type
+                                                            </span>
+
+                                                            <select
+                                                                value={criteria.requiredDocumentType || ''}
+                                                                onChange={(e) =>
+                                                                    recruitment.setForm((p) => {
+                                                                        const updated = [...p.eligibilityCriteria];
+
+                                                                        updated[criteriaIndex] = {
+                                                                            ...updated[criteriaIndex],
+                                                                            requiredDocumentType: e.target.value,
+                                                                        };
+
+                                                                        return {
+                                                                            ...p,
+                                                                            eligibilityCriteria: updated,
+                                                                        };
+                                                                    })
+                                                                }
+                                                                className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+                                                            >
+                                                                <option value="">Select document type</option>
+
+                                                                {documentTypeOptions.map((option) => (
+                                                                    <option key={option.value} value={option.value}>
+                                                                        {option.label}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </label>
 
                                                         <div className="flex items-end">
                                                             <label className="flex items-center gap-2 text-sm text-slate-800 pb-3">
