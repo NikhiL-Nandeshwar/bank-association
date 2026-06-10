@@ -20,11 +20,19 @@ export type ApiPagedResult<T> = {
 export type LoginResponse = {
   token: string;
   refreshToken?: string;
-  expiresAt?: string;
+
+  role?: string;
   userId?: number;
   candidateId?: number | null;
+  fullName?: string;
   email?: string;
-  role?: string;
+  isEmailVerified?: boolean;
+
+  tokenExpiry?: string;
+  tokenExpiryUnix?: number;
+
+  accessTokenExpiryMinutes?: number;
+  refreshTokenExpiryDays?: number;
 };
 
 export type CurrentUser = {

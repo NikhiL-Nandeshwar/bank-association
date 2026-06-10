@@ -1,11 +1,11 @@
-import { getPublicList } from "@/actions/api";
-
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://kopbnkasso.runasp.net/restapi/v1.0';
 
 export const API_ENDPOINTS = {
   auth: {
     login: 'Auth/Login',
+    refresh: 'Auth/Refresh',
+
     signup: 'Auth/Signup',
     sendOtp: 'Auth/SendOtp',
     verifyOtp: 'Auth/VerifyOtp',

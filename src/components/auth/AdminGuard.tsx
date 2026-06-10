@@ -15,16 +15,27 @@ type AdminGuardProps = {
  * @returns 
  */
 export function AdminGuard({ children }: AdminGuardProps) {
-    const { user, status } = useAuth();
+    const { user, status, sessionExpired } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
         if (status === 'loading') return;
 
-        if (status === 'unauthenticated' || user?.role !== 'ADMIN') {
+        if (
+            status === 'unauthenticated' &&
+            !sessionExpired
+        ) {
+            router.replace(ROUTES.login);
+            return;
+        }
+
+        if (
+            status === 'authenticated' &&
+            user?.role !== 'ADMIN'
+        ) {
             router.replace(ROUTES.login);
         }
-    }, [status, user, router]);
+    }, [status, user, router, sessionExpired]);
 
     if (status === 'loading') return null;
     if (!user || user.role !== 'ADMIN') return null;

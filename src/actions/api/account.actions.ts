@@ -27,7 +27,7 @@ export function changePassword(payload: ChangePasswordRequest) {
 }
 
 export type LogoutRequest = {
-  userId?: number;
+  refreshToken: string;
 };
 
 export function logout(payload?: LogoutRequest) {

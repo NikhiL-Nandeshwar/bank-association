@@ -1,20 +1,24 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
 // API
 import { getCurrentUser, changePassword, logout as logoutApi, type ChangePasswordRequest } from '@/actions/api';
 
 // Types
-import type { CurrentUser } from '@/types/api.types';
+import type { CurrentUser, LoginResponse } from '@/types/api.types';
+import { clearAuthSession, getRefreshToken, saveAuthSession } from '@/lib/auth-storage';
+import { useRouter } from 'next/navigation';
+import SessionExpiredModal from '@/components/common/SessionExpiredModal';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
 type AuthContextType = {
   user: CurrentUser | null;
   status: AuthStatus;
-  login: () => Promise<void>; // note: no user param now
+  sessionExpired: boolean;
+  login: (session: LoginResponse) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (payload: ChangePasswordRequest) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -31,6 +35,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [status, setStatus] = useState<AuthStatus>('loading');
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const router = useRouter();
 
   // Function to refresh current user data and update auth status
   const refreshUser = async () => {
@@ -44,14 +50,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const statusRef = useRef(status);
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      console.log('session-expired event received');
+      if (statusRef.current !== 'authenticated') {
+        return;
+      }
+
+      setUser(null);
+      setStatus('unauthenticated');
+      setSessionExpired(true);
+    };
+
+    window.addEventListener(
+      'session-expired',
+      handleSessionExpired
+    );
+
+    return () => {
+      window.removeEventListener(
+        'session-expired',
+        handleSessionExpired
+      );
+    };
+  }, []);
+
   // On mount, check if user is authenticated by calling refreshUser
   useEffect(() => {
     void refreshUser();
   }, []);
 
   // LOGIN
-  const login = async () => {
-    // Backend should set HttpOnly cookie on login
+  const login = async (session: LoginResponse) => {
+    saveAuthSession(session);
+    setSessionExpired(false);
     await refreshUser();
     toast.success('Logged in successfully.');
   };
@@ -61,7 +99,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('loading');
 
     try {
-      await logoutApi();
+      const refreshToken = getRefreshToken();
+
+      if (refreshToken) {
+        await logoutApi({
+          refreshToken,
+        });
+      }
+      clearAuthSession();
 
       setUser(null);
       setStatus('unauthenticated');
@@ -70,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       toast.error('Logout failed.');
     } finally {
+      clearAuthSession();
       setUser(null);
       setStatus('unauthenticated');
       // toast.success('Logged out successfully.');
@@ -81,7 +127,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await changePassword(payload);
     toast.success('Password changed successfully.');
   };
-
   return (
     <AuthContext.Provider
       value={{
@@ -91,9 +136,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         changePassword: handleChangePassword,
         refreshUser,
+        sessionExpired,
       }}
     >
       {children}
+
+      <SessionExpiredModal
+        open={sessionExpired} // make sure the user cannot dismiss it by clicking outside or pressing Escape.
+        onLogin={() => {
+          console.log('clicked');
+
+          setSessionExpired(false);
+
+          router.push('/auth/login');
+        }}
+      />
     </AuthContext.Provider>
   );
 }

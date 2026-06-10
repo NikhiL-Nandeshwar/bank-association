@@ -59,3 +59,12 @@ export function resetPassword(payload: ResetPasswordRequest) {
     body: payload,
   });
 }
+
+export function refreshToken(refreshToken: string) {
+  return apiRequest<LoginResponse>(API_ENDPOINTS.auth.refresh, {
+    method: 'POST',
+    body: {
+      refreshToken,
+    },
+  });
+}

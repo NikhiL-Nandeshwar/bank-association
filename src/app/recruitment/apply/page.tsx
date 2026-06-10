@@ -24,7 +24,7 @@ function getVacancyCode(vacancy: Vacancy): string {
 
 export default function RecruitmentApplyPage() {
   const router = useRouter();
-  const { status, user } = useAuth();
+  const { status, user, sessionExpired } = useAuth();
   const [query, setQuery] = useState<RecruitmentApplyPageQuery>({});
   const [selectedVacancy, setSelectedVacancy] = useState<Vacancy | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,7 +68,10 @@ export default function RecruitmentApplyPage() {
     const params = new URLSearchParams(window.location.search);
     const applyPath = `${ROUTES.apply}${params.toString() ? `?${params.toString()}` : ''}`;
 
-    if (status === 'unauthenticated') {
+    if (
+      status === 'unauthenticated' &&
+      !sessionExpired
+    ) {
       router.replace(`${ROUTES.signup}?redirect=${encodeURIComponent(applyPath)}`);
       return;
     }
@@ -76,7 +79,7 @@ export default function RecruitmentApplyPage() {
     if (!user?.role?.toLowerCase().includes('candidate')) {
       router.replace(ROUTES.recruitment);
     }
-  }, [status, user, router]);
+  }, [status, user, router, sessionExpired]);
 
   if (status !== 'authenticated' || !user?.role?.toLowerCase().includes('candidate')) {
     return null;

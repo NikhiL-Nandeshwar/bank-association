@@ -61,7 +61,7 @@ export default function LoginPage() {
       setIsSubmitting(true);
       const response = await login(loginPayload.data);
 
-      await authLogin();
+      await authLogin(response.data);
 
       const userRole = response.data.role?.toLowerCase() ?? '';
       const destination = userRole.includes('admin')

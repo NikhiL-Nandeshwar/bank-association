@@ -68,7 +68,7 @@ export default function AdminDashboardPage() {
     const [recruitments, setRecruitments] = useState<AdminRecruitment[]>([]);
     const [news, setNews] = useState<AdminNews[]>([]);
     const [stateOptions, setStateOptions] = useState<MasterOption[]>([]);
-    const { user, status } = useAuth();
+    const { user, status, sessionExpired } = useAuth();
     const router = useRouter();
     const isAdmin =
         user?.role?.toLowerCase?.().includes('admin') ?? false;
@@ -129,10 +129,21 @@ export default function AdminDashboardPage() {
     useEffect(() => {
         if (status === 'loading') return;
 
-        if (status === 'unauthenticated' || !isAdmin) {
+        if (
+            status === 'unauthenticated' &&
+            !sessionExpired
+        ) {
+            router.replace(ROUTES.login);
+            return;
+        }
+
+        if (
+            status === 'authenticated' &&
+            !isAdmin
+        ) {
             router.replace(ROUTES.login);
         }
-    }, [status, isAdmin, router]);
+    }, [status, isAdmin, router, sessionExpired]);
 
     // Load initial data on mount
     if (status === 'loading' || !user || !isAdmin) return null;
