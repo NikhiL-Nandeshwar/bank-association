@@ -50,19 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const statusRef = useRef(status);
 
-  useEffect(() => {
-    statusRef.current = status;
-  }, [status]);
 
   useEffect(() => {
     const handleSessionExpired = () => {
-      console.log('session-expired event received');
-      if (statusRef.current !== 'authenticated') {
-        return;
-      }
-
       setUser(null);
       setStatus('unauthenticated');
       setSessionExpired(true);
@@ -127,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await changePassword(payload);
     toast.success('Password changed successfully.');
   };
+
   return (
     <AuthContext.Provider
       value={{
@@ -144,10 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       <SessionExpiredModal
         open={sessionExpired} // make sure the user cannot dismiss it by clicking outside or pressing Escape.
         onLogin={() => {
-          console.log('clicked');
-
           setSessionExpired(false);
-
           router.push('/auth/login');
         }}
       />

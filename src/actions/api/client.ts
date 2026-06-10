@@ -28,8 +28,6 @@ function buildUrl(path: string) {
 
 function expireSession() {
   const hadToken = !!getAuthToken();
-  console.log('expireSession called');
-  console.log('hadToken:', hadToken);
   clearAuthSession();
 
   if (

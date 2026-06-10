@@ -144,8 +144,6 @@ export default function Signup() {
 
             toast.success(content.otpSent(email));
         } catch (caughtError) {
-            console.log('Send OTP error:', caughtError);
-
             const errorMessage = getErrorMessage(
                 caughtError,
                 content.sendingError

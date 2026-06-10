@@ -146,7 +146,14 @@ export default function AdminDashboardPage() {
     }, [status, isAdmin, router, sessionExpired]);
 
     // Load initial data on mount
-    if (status === 'loading' || !user || !isAdmin) return null;
+    if (status === 'loading') return null;
+
+    if (
+        !sessionExpired &&
+        (!user || !isAdmin)
+    ) {
+        return null;
+    }
 
     return (
         <section className="bg-slate-100 px-4 py-8">

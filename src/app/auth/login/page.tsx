@@ -72,7 +72,6 @@ export default function LoginPage() {
 
       router.replace(destination);
     } catch (caughtError) {
-      console.log('Login error:', caughtError);
       const errorMessage = getErrorMessage(caughtError, 'Unable to login right now. Please try again.');
       setError(errorMessage);
       toast.error(errorMessage);
