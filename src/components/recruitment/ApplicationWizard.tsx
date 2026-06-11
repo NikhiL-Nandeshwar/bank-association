@@ -627,7 +627,21 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       setStartOrResumeError(null);
 
       try {
+        
         const response = await startOrResumeApplication(initialRecruitment.vacancyId);
+        const applicationId = extractApplicationId(response.data);
+
+        console.log(
+          'START OR RESUME RESPONSE',
+          response.data
+        );
+
+        console.log(
+          'EXTRACTED APPLICATION ID',
+          applicationId
+        );
+
+        setApplicationRecordId(applicationId);
         setApplicationRecordId(extractApplicationId(response.data));
       } catch {
         setStartOrResumeError('Could not start or resume your application. Please try again.');
@@ -656,6 +670,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       setSaveStep3Error(null);
 
       const payload = buildSaveStep3Payload(form, applicationRecordId);
+      console.log('SaveStep2 payload', payload);
       const parsedPayload = saveStep3Schema.safeParse(payload);
 
       if (!parsedPayload.success) {
@@ -897,10 +912,10 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
             {currentStep === 1 && (
               <div className="grid gap-6 md:grid-cols-2">
                 <FormField label="First name" error={errors.firstName}>
-                  <input value={form.firstName} readOnly placeholder='Enter your first name' onChange={(event) => updateField('firstName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                  <input value={form.firstName} placeholder='Enter your first name' onChange={(event) => updateField('firstName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Last name" error={errors.lastName}>
-                  <input value={form.lastName} readOnly placeholder='Enter your last name' onChange={(event) => updateField('lastName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                  <input value={form.lastName} placeholder='Enter your last name' onChange={(event) => updateField('lastName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Date of birth" error={errors.dateOfBirth}>
                   <input type="date" value={form.dateOfBirth} onChange={(event) => updateDateOfBirth(event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
@@ -1017,7 +1032,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               <div className="space-y-8">
                 <div className="grid gap-6 md:grid-cols-2">
                   <FormField label="Email address" error={errors.email}>
-                    <input readOnly type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                    <input type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                   <FormField label="Mobile number" error={errors.phone}>
                     <input value={form.phone} onChange={(event) => updateField('phone', event.target.value.replace(/\D/g, '').slice(0, 10))} className={APPLICATION_INPUT_CLASS_NAME} placeholder="10-digit number" />
@@ -1126,9 +1141,8 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   return (
                     <div
                       key={entry.level}
-                      className={`rounded-[1.5rem] border p-5 ${
-                        isMandatory ? 'border-amber-300 bg-amber-50/60' : 'border-slate-200 bg-white'
-                      }`}
+                      className={`rounded-[1.5rem] border p-5 ${isMandatory ? 'border-amber-300 bg-amber-50/60' : 'border-slate-200 bg-white'
+                        }`}
                     >
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
@@ -1140,9 +1154,8 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                           </p>
                         </div>
                         <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
-                            isMandatory ? 'bg-amber-200/80 text-amber-900' : 'bg-slate-100 text-slate-500'
-                          }`}
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${isMandatory ? 'bg-amber-200/80 text-amber-900' : 'bg-slate-100 text-slate-500'
+                            }`}
                         >
                           {isMandatory ? 'Mandatory' : 'Optional'}
                         </span>
@@ -1385,9 +1398,9 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                     ? 'Saving...'
                     : isSavingStep3
                       ? 'Saving...'
-                    : currentStep === 6
-                      ? 'Continue to payment'
-                      : 'Continue to next step'}
+                      : currentStep === 6
+                        ? 'Continue to payment'
+                        : 'Continue to next step'}
               </button>
             ) : null}
           </div>
