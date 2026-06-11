@@ -112,21 +112,12 @@ export const saveStepExperienceItemSchema = z
     }
   });
 
-export function createSaveStepExperienceSchema(isFresher: boolean) {
+export function createSaveStepExperienceSchema() {
   return z
     .object({
       applicationId: z.coerce.number().int('Application ID must be a whole number.').positive('Application ID is required.'),
       experiences: z.array(saveStepExperienceItemSchema),
     })
-    .superRefine((value, ctx) => {
-      if (!isFresher && value.experiences.length === 0) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['experiences'],
-          message: 'Add at least one complete experience row.',
-        });
-      }
-    });
 }
 
 export type SaveStepExperienceItemPayload = z.infer<typeof saveStepExperienceItemSchema>;

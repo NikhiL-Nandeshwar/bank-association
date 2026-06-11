@@ -10,7 +10,17 @@ const EDUCATION_CRITERION_LEVEL_MAP: Record<string, string> = {
     DIPLOMA: 'Diploma',
 };
 
-export type ErrorMap = Partial<Record<keyof FormState, string>>;
+export type ErrorMap =
+  Partial<Record<keyof FormState, string>> & {
+    photo?: string;
+    signature?: string;
+    aadhaar?: string;
+    sscMarksheet?: string;
+    hscMarksheet?: string;
+    degree?: string;
+    mscitCertificate?: string;
+    cccCertificate?: string;
+  };
 
 export const initialState = (recruitment: ApplicationWizardProps['initialRecruitment']): FormState => ({
     recruitmentCode: recruitment.code,
@@ -48,16 +58,19 @@ export const initialState = (recruitment: ApplicationWizardProps['initialRecruit
     pincode: '',
     languageSkills: structuredClone(EMPTY_LANGUAGE_SKILLS),
     educationEntries: structuredClone(EDUCATION_TEMPLATE),
-    experienceLevel: '',
+    // experienceLevel: '',
     experienceEntries: [{ organization: '', designation: '', location: '', fromDate: '', toDate: '', isCurrentJob: false }],
-    keySkills: '',
-    aadhaarNumber: '',
-    panNumber: '',
-    resumeLink: '',
-    portfolioLink: '',
-    preferredLocation: '',
-    noticePeriod: '',
-    relocate: '',
+    // keySkills: '',
+    documents: {
+        photo: null,
+        signature: null,
+        aadhaar: null,
+        sscMarksheet: null,
+        hscMarksheet: null,
+        degree: null,
+        mscitCertificate: null,
+        cccCertificate: null,
+    },
     acceptedEligibilityCriteria: {},
     declarationAccepted: false,
     paymentMethod: 'UPI',
@@ -136,14 +149,10 @@ export function buildSaveStep3Payload(form: FormState, applicationId: number): S
     };
 }
 
-export function buildSaveStepExperiencePayload(form: FormState, applicationId: number): SaveStepExperiencePayload {
-    if (form.experienceLevel === 'fresher') {
-        return {
-            applicationId,
-            experiences: [],
-        };
-    }
-
+export function buildSaveStepExperiencePayload(
+    form: FormState,
+    applicationId: number,
+): SaveStepExperiencePayload {
     return {
         applicationId,
         experiences: form.experienceEntries
@@ -154,7 +163,9 @@ export function buildSaveStepExperiencePayload(form: FormState, applicationId: n
                 designation: fieldValue(entry.designation).trim(),
                 location: fieldValue(entry.location).trim(),
                 fromDate: toIsoDateString(fieldValue(entry.fromDate)) ?? '',
-                toDate: entry.isCurrentJob ? null : toIsoDateString(fieldValue(entry.toDate)),
+                toDate: entry.isCurrentJob
+                    ? null
+                    : toIsoDateString(fieldValue(entry.toDate)),
                 isCurrentJob: entry.isCurrentJob,
             })),
     };
@@ -348,29 +359,40 @@ export function validateStep(step: number, form: FormState, eligibilityCriteria?
     }
 
     if (step === 4) {
-        if (!form.experienceLevel) errors.experienceLevel = 'Please select your experience level.';
-        if (form.experienceLevel !== 'fresher' && !hasExperienceDetails(form.experienceEntries)) {
-            errors.experienceEntries = 'Add at least one complete experience row.';
+        const filledEntries = form.experienceEntries.filter(
+            (entry) =>
+                fieldValue(entry.organization).trim() ||
+                fieldValue(entry.designation).trim() ||
+                fieldValue(entry.location).trim() ||
+                fieldValue(entry.fromDate).trim() ||
+                fieldValue(entry.toDate).trim(),
+        );
+
+        if (
+            filledEntries.length > 0 &&
+            !hasExperienceDetails(form.experienceEntries)
+        ) {
+            errors.experienceEntries =
+                'Please complete all required fields for the experience entry.';
         }
-        if (!fieldValue(form.keySkills).trim()) errors.keySkills = 'Key skills are required.';
     }
 
     if (step === 5) {
-        if (!/^\d{12}$/.test(fieldValue(form.aadhaarNumber))) errors.aadhaarNumber = 'Enter a valid 12-digit Aadhaar number.';
-        if (!/^[A-Z]{5}\d{4}[A-Z]$/i.test(fieldValue(form.panNumber))) errors.panNumber = 'Enter a valid PAN number.';
-        if (!fieldValue(form.resumeLink).trim()) {
-            errors.resumeLink = 'Resume link is required.';
-        } else if (!/^https?:\/\//.test(fieldValue(form.resumeLink))) {
-            errors.resumeLink = 'Resume link should start with http:// or https://';
+        if (!form.documents.photo) {
+            errors.photo = 'Photo is required.';
         }
 
-        if (form.portfolioLink && !/^https?:\/\//.test(fieldValue(form.portfolioLink))) {
-            errors.portfolioLink = 'Portfolio link should start with http:// or https://';
+        if (!form.documents.signature) {
+            errors.signature = 'Signature is required.';
         }
 
-        if (!fieldValue(form.preferredLocation).trim()) errors.preferredLocation = 'Preferred location is required.';
-        if (!fieldValue(form.noticePeriod).trim()) errors.noticePeriod = 'Notice period is required.';
-        if (!form.relocate) errors.relocate = 'Please choose a relocation preference.';
+        if (!form.documents.aadhaar) {
+            errors.aadhaar = 'Aadhaar document is required.';
+        }
+
+        if (!form.documents.sscMarksheet) {
+            errors.sscMarksheet = 'SSC marksheet is required.';
+        }
     }
 
     if (step === 6 && !form.declarationAccepted) {
@@ -550,9 +572,6 @@ export function HallTicketPreview({ form, fullName }: { form: FormState; fullNam
     const examDate = '18 May 2026';
     const examTime = '10:30 AM to 12:30 PM';
     const reportingTime = '09:30 AM';
-    const venue = form.preferredLocation
-        ? `District Cooperative Training Centre, ${form.preferredLocation}`
-        : 'District Cooperative Training Centre, Kolhapur';
 
     return (
         <div className="mt-8 overflow-hidden rounded-[1.5rem] border border-amber-300 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
@@ -584,12 +603,12 @@ export function HallTicketPreview({ form, fullName }: { form: FormState; fullNam
                         <TicketDetail label="Reporting" value={reportingTime} />
                     </div>
 
-                    <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+                    {/* <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
                         <TicketDetail label="Exam venue" value={venue} />
                         <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-6 text-slate-500">
                             Carry a printed hall ticket, original photo ID, and one passport-size photograph. Entry closes 15 minutes before exam time.
                         </p>
-                    </div>
+                    </div> */}
                 </div>
 
                 <div className="border-t border-slate-200 bg-slate-50 p-6 md:border-l md:border-t-0">

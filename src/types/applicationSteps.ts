@@ -45,6 +45,7 @@ export type FormState = {
   bankName: string;
   postName: string;
   employmentType: string;
+  aadhaarNumber?: string;
   firstName: string;
   aadharNo?: string;
   lastName: string;
@@ -77,16 +78,17 @@ export type FormState = {
   pincode: string;
   languageSkills: LanguageSkills;
   educationEntries: EducationEntry[];
-  experienceLevel: string;
   experienceEntries: ExperienceEntry[];
-  keySkills: string;
-  aadhaarNumber: string;
-  panNumber: string;
-  resumeLink: string;
-  portfolioLink: string;
-  preferredLocation: string;
-  noticePeriod: string;
-  relocate: string;
+  documents: {
+    photo: File | null;
+    signature: File | null;
+    aadhaar: File | null;
+    sscMarksheet: File | null;
+    hscMarksheet: File | null;
+    degree: File | null;
+    mscitCertificate: File | null;
+    cccCertificate: File | null;
+  }
   acceptedEligibilityCriteria: Record<number, boolean>;
   declarationAccepted: boolean;
   paymentMethod: string;

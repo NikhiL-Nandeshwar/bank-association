@@ -10,10 +10,11 @@ import { getEligibilityCriteria } from '@/actions/api/vacancy.actions';
 import { useEffect, useMemo, useState } from 'react';
 import type { EligibilityCriteria } from '@/types/api.types';
 import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep1and2Payload } from '@/types/applicationSteps';
-import { calculateAgeAsOn, buildSaveStep3Payload, buildSaveStepExperiencePayload, ChoiceButtons, ErrorMap, FormField, generateTransactionNumber, getMandatoryEducationLevels, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons } from './helper/applicationStepsHelper';
+import { calculateAgeAsOn, buildSaveStep3Payload, buildSaveStepExperiencePayload, ChoiceButtons, ErrorMap, FormField, generateTransactionNumber, getMandatoryEducationLevels, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons, hasExperienceDetails } from './helper/applicationStepsHelper';
 import { getResumeData, saveStep1and2, saveStep3, saveStepExperience, startOrResumeApplication } from '@/actions/api/application.actions';
 import { createSaveStep3Schema, createSaveStepExperienceSchema } from '@/schemas/application.schema';
 import { useAuth } from '@/lib/useAuth';
+import { CheckCircle2, Upload } from 'lucide-react';
 
 function normalizeEligibilityCriteriaResponse(data: unknown): EligibilityCriteria[] {
   if (Array.isArray(data)) {
@@ -150,6 +151,48 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [saveStep3Error, setSaveStep3Error] = useState<string | null>(null);
   const [saveStepExperienceError, setSaveStepExperienceError] = useState<string | null>(null);
   const [applicationRecordId, setApplicationRecordId] = useState<number>(0);
+  const [uploadedDocuments, setUploadedDocuments] = useState<{
+    photo?: {
+      documentId: number;
+      documentName: string;
+      fileUrl: string;
+    };
+    signature?: {
+      documentId: number;
+      documentName: string;
+      fileUrl: string;
+    };
+    aadhaar?: {
+      documentId: number;
+      documentName: string;
+      fileUrl: string;
+    };
+    sscMarksheet?: {
+      documentId: number;
+      documentName: string;
+      fileUrl: string;
+    };
+    hscMarksheet?: {
+      documentId: number;
+      documentName: string;
+      fileUrl: string;
+    };
+    degree?: {
+      documentId: number;
+      documentName: string;
+      fileUrl: string;
+    };
+    mscitCertificate?: {
+      documentId: number;
+      documentName: string;
+      fileUrl: string;
+    };
+    cccCertificate?: {
+      documentId: number;
+      documentName: string;
+      fileUrl: string;
+    };
+  }>({});
 
   useEffect(() => {
     setForm(initialState(initialRecruitment));
@@ -264,13 +307,54 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     [eligibilityCriteria],
   );
 
+  console.log('eligibilityCriteria', eligibilityCriteria)
+
+  const mandatoryDocuments = useMemo<string[]>(() => {
+    return eligibilityCriteria
+      .filter(
+        (item) =>
+          item.criteriaType === 'EDUCATION' &&
+          item.isMandatory,
+      )
+      .map((item) => {
+        switch (item.criteriaValue) {
+          case 'SSC_10TH':
+            return 'SSC_MARKSHEET';
+
+          case 'HSC_12TH':
+            return 'HSC_MARKSHEET';
+
+          case 'GRADUATION':
+            return 'DEGREE';
+
+          case 'MSCIT':
+            return 'MSCIT_CERTIFICATE';
+
+          case 'CCC':
+            return 'CCC_CERTIFICATE';
+
+          default:
+            return '';
+        }
+      })
+      .filter(Boolean);
+  }, [eligibilityCriteria]);
+
+  const isMandatoryDocument = (documentType: string) =>
+    mandatoryDocuments.includes(documentType);
+
+  console.log('isMandatoryDocument', isMandatoryDocument)
+
+  console.log('mandatoryDocuments', mandatoryDocuments)
+
   const saveStep3Schema = useMemo(
     () => createSaveStep3Schema(mandatoryEducationLevels),
     [mandatoryEducationLevels],
   );
+
   const saveStepExperienceSchema = useMemo(
-    () => createSaveStepExperienceSchema(form.experienceLevel === 'fresher'),
-    [form.experienceLevel],
+    () => createSaveStepExperienceSchema(),
+    [],
   );
 
   useEffect(() => {
@@ -614,6 +698,67 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     };
   }
 
+  function DocumentUploadCard({
+    label,
+    file,
+    onChange,
+    required = false,
+  }: {
+    label: string;
+    file: File | null;
+    onChange: (file: File | null) => void;
+    required?: boolean;
+  }) {
+    return (
+      <div className="rounded-2xl border border-slate-200 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="font-medium text-slate-800">
+            {label}
+            {required && (
+              <span className="ml-1 text-rose-500">*</span>
+            )}
+          </p>
+
+          {file ? (
+            <div className="flex items-center gap-2 text-emerald-600">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>{file.name}</span>
+            </div>
+          ) : (
+            <Upload className="mx-auto h-5 w-5 text-slate-400" />
+          )}
+        </div>
+
+        <input
+          type="file"
+          onChange={(e) =>
+            onChange(e.target.files?.[0] ?? null)
+          }
+          className="block w-full text-sm"
+        />
+
+        {file && (
+          <p className="mt-2 truncate text-xs text-slate-500">
+            {file.name}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  const updateDocument = (
+    field: keyof FormState['documents'],
+    file: File | null,
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      documents: {
+        ...prev.documents,
+        [field]: file,
+      },
+    }));
+  };
+
   const goNext = async () => {
     if (currentStep === 0 && isEligibilityLoading) {
       setErrors({ acceptedEligibilityCriteria: 'Please wait for the eligibility criteria to load.' });
@@ -657,12 +802,63 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
           data?: {
             step1?: any;
             step2?: any[];
+            step3?: any[];
+            step4?: any[]
           };
         };
 
+        console.log('RESUME DATA', responseData.data);
+
         const step1 = responseData.data?.step1;
         const educationStep = responseData.data?.step2;
-        console.log('educationStep', educationStep)
+        const experienceStep = responseData.data?.step3;
+        const documentStep = responseData.data?.step4;
+        console.log('DOCUMENT STEP', documentStep);
+
+        if (documentStep?.length) {
+          const mappedDocuments: typeof uploadedDocuments = {};
+
+          documentStep.forEach((doc) => {
+            switch (doc.documentType) {
+              case 'Photo':
+                mappedDocuments.photo = doc;
+                break;
+
+              case 'Signature':
+                mappedDocuments.signature = doc;
+                break;
+
+              case 'Aadhaar':
+                mappedDocuments.aadhaar = doc;
+                break;
+
+              case 'SSC_MARKSHEET':
+                mappedDocuments.sscMarksheet = doc;
+                break;
+
+              case 'HSC_MARKSHEET':
+                mappedDocuments.hscMarksheet = doc;
+                break;
+
+              case 'DEGREE':
+                mappedDocuments.degree = doc;
+                break;
+
+              case 'MSCIT_CERTIFICATE':
+                mappedDocuments.mscitCertificate = doc;
+                break;
+
+              case 'CCC_CERTIFICATE':
+                mappedDocuments.cccCertificate = doc;
+                break;
+            }
+          });
+
+          console.log('MAPPED DOCUMENTS', mappedDocuments);
+
+          setUploadedDocuments(mappedDocuments);
+          console.log(uploadedDocuments)
+        }
 
         if (step1) {
           const [firstName = '', ...rest] = step1.fullName.split(' ');
@@ -739,6 +935,22 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               };
             });
 
+            const experienceEntries =
+              experienceStep?.length
+                ? experienceStep.map((item) => ({
+                  organization: item.organizationName ?? '',
+                  designation: item.designation ?? '',
+                  location: item.location ?? '',
+                  fromDate: item.fromDate
+                    ? item.fromDate.split('T')[0]
+                    : '',
+                  toDate: item.toDate
+                    ? item.toDate.split('T')[0]
+                    : '',
+                  isCurrentJob: item.isCurrentJob ?? false,
+                }))
+                : prev.experienceEntries;
+
             return {
               ...prev,
 
@@ -779,6 +991,9 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
 
               // Education
               educationEntries,
+
+              // Experiences
+              experienceEntries
             };
           });
         }
@@ -1407,146 +1622,208 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
 
             {currentStep === 4 && (
               <div className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                  <FormField label="Experience level" error={errors.experienceLevel}>
-                    <select value={form.experienceLevel} onChange={(event) => updateField('experienceLevel', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
-                      <option value="">Select experience level</option>
-                      <option value="fresher">Fresher</option>
-                      <option value="junior">0-2 years</option>
-                      <option value="mid">3-5 years</option>
-                      <option value="senior">6+ years</option>
-                    </select>
-                  </FormField>
-                  <FormField label="Key banking or operational skills" error={errors.keySkills}>
-                    <textarea value={form.keySkills} onChange={(event) => updateField('keySkills', event.target.value)} className={`${APPLICATION_INPUT_CLASS_NAME} min-h-32`} placeholder="Core banking, audit support, branch operations, MIS, customer handling..." />
-                  </FormField>
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm font-semibold text-slate-800">
+                    Experience details (Optional)
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={addExperienceRow}
+                    className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                  >
+                    Add row
+                  </button>
                 </div>
 
-                {form.experienceLevel !== 'fresher' ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <p className="text-sm font-semibold text-slate-800">Experience details</p>
-                      <button type="button" onClick={addExperienceRow} className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
-                        Add row
-                      </button>
-                    </div>
-                    {form.experienceEntries.map((entry, index) => (
-                      <div key={index} className="grid gap-4 rounded-[1.5rem] border border-slate-200 p-5 md:grid-cols-2">
+                {form.experienceEntries.map((entry, index) => (
+                  <div
+                    key={index}
+                    className="grid gap-4 rounded-[1.5rem] border border-slate-200 p-5 md:grid-cols-2"
+                  >
+                    <FormField label="Organization Name">
+                      <input
+                        value={entry.organization}
+                        onChange={(event) =>
+                          updateExperience(index, 'organization', event.target.value)
+                        }
+                        className={APPLICATION_INPUT_CLASS_NAME}
+                        placeholder="Enter organization name"
+                      />
+                    </FormField>
 
-                        <FormField label="Organization Name">
-                          <input
-                            value={entry.organization}
-                            onChange={(event) => updateExperience(index, 'organization', event.target.value)}
-                            className={APPLICATION_INPUT_CLASS_NAME}
-                            placeholder="Enter organization name"
-                          />
-                        </FormField>
+                    <FormField label="Designation">
+                      <input
+                        value={entry.designation}
+                        onChange={(event) =>
+                          updateExperience(index, 'designation', event.target.value)
+                        }
+                        className={APPLICATION_INPUT_CLASS_NAME}
+                        placeholder="Enter designation"
+                      />
+                    </FormField>
 
-                        <FormField label="Designation">
-                          <input
-                            value={entry.designation}
-                            onChange={(event) => updateExperience(index, 'designation', event.target.value)}
-                            className={APPLICATION_INPUT_CLASS_NAME}
-                            placeholder="Enter designation"
-                          />
-                        </FormField>
+                    <FormField label="Location">
+                      <input
+                        value={entry.location}
+                        onChange={(event) =>
+                          updateExperience(index, 'location', event.target.value)
+                        }
+                        className={APPLICATION_INPUT_CLASS_NAME}
+                        placeholder="Enter location"
+                      />
+                    </FormField>
 
-                        <FormField label="Location">
-                          <input
-                            value={entry.location}
-                            onChange={(event) => updateExperience(index, 'location', event.target.value)}
-                            className={APPLICATION_INPUT_CLASS_NAME}
-                            placeholder="Enter location"
-                          />
-                        </FormField>
+                    <FormField label="From Date">
+                      <input
+                        type="date"
+                        value={entry.fromDate}
+                        onChange={(event) =>
+                          updateExperience(index, 'fromDate', event.target.value)
+                        }
+                        className={APPLICATION_INPUT_CLASS_NAME}
+                      />
+                    </FormField>
 
-                        <FormField label="From Date">
-                          <input
-                            type="date"
-                            value={entry.fromDate}
-                            onChange={(event) => updateExperience(index, 'fromDate', event.target.value)}
-                            className={APPLICATION_INPUT_CLASS_NAME}
-                          />
-                        </FormField>
+                    <FormField label="To Date">
+                      <input
+                        type="date"
+                        value={entry.toDate}
+                        onChange={(event) =>
+                          updateExperience(index, 'toDate', event.target.value)
+                        }
+                        disabled={entry.isCurrentJob}
+                        className={`${APPLICATION_INPUT_CLASS_NAME} disabled:cursor-not-allowed disabled:bg-slate-100`}
+                      />
+                    </FormField>
 
-                        <FormField label="To Date">
-                          <input
-                            type="date"
-                            value={entry.toDate}
-                            onChange={(event) => updateExperience(index, 'toDate', event.target.value)}
-                            disabled={entry.isCurrentJob}
-                            className={`${APPLICATION_INPUT_CLASS_NAME} disabled:cursor-not-allowed disabled:bg-slate-100`}
-                          />
-                        </FormField>
+                    <FormField label="Current Job">
+                      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800">
+                        <input
+                          type="checkbox"
+                          checked={entry.isCurrentJob}
+                          onChange={(event) => {
+                            const isCurrentJob = event.target.checked;
 
-                        <FormField label="Current Job">
-                          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800">
-                            <input
-                              type="checkbox"
-                              checked={entry.isCurrentJob}
-                              onChange={(event) => {
-                                const isCurrentJob = event.target.checked;
+                            setForm((prev) => ({
+                              ...prev,
+                              experienceEntries: prev.experienceEntries.map(
+                                (row, entryIndex) =>
+                                  entryIndex === index
+                                    ? {
+                                      ...row,
+                                      isCurrentJob,
+                                      toDate: isCurrentJob ? '' : row.toDate,
+                                    }
+                                    : row,
+                              ),
+                            }));
 
-                                setForm((prev) => ({
-                                  ...prev,
-                                  experienceEntries: prev.experienceEntries.map((row, entryIndex) =>
-                                    entryIndex === index
-                                      ? {
-                                        ...row,
-                                        isCurrentJob,
-                                        toDate: isCurrentJob ? '' : row.toDate,
-                                      }
-                                      : row,
-                                  ),
-                                }));
-
-                                setErrors((prev) => ({
-                                  ...prev,
-                                  experienceEntries: undefined,
-                                }));
-                              }}
-                              className="h-4 w-4 rounded border-slate-300"
-                            />
-                            Current job
-                          </label>
-                        </FormField>
-
-                      </div>
-                    ))}
+                            setErrors((prev) => ({
+                              ...prev,
+                              experienceEntries: undefined,
+                            }));
+                          }}
+                          className="h-4 w-4 rounded border-slate-300"
+                        />
+                        Current job
+                      </label>
+                    </FormField>
                   </div>
-                ) : (
-                  <p className="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
-                    No work experience rows are required for fresher applicants.
+                ))}
+
+                {errors.experienceEntries ? (
+                  <p className="text-sm text-rose-600">
+                    {errors.experienceEntries}
                   </p>
-                )}
-                {errors.experienceEntries ? <p className="text-sm text-rose-600">{errors.experienceEntries}</p> : null}
-                {saveStepExperienceError ? <p className="text-sm text-rose-600">{saveStepExperienceError}</p> : null}
+                ) : null}
+
+                {saveStepExperienceError ? (
+                  <p className="text-sm text-rose-600">
+                    {saveStepExperienceError}
+                  </p>
+                ) : null}
               </div>
             )}
 
             {currentStep === 5 && (
-              <div className="grid gap-6 md:grid-cols-2">
-                <FormField label="Aadhaar number" error={errors.aadhaarNumber}>
-                  <input value={form.aadhaarNumber} onChange={(event) => updateField('aadhaarNumber', event.target.value.replace(/\D/g, '').slice(0, 12))} className={APPLICATION_INPUT_CLASS_NAME} />
-                </FormField>
-                <FormField label="PAN number" error={errors.panNumber}>
-                  <input value={form.panNumber} onChange={(event) => updateField('panNumber', event.target.value.toUpperCase().slice(0, 10))} className={APPLICATION_INPUT_CLASS_NAME} />
-                </FormField>
-                <FormField label="Resume link" error={errors.resumeLink}>
-                  <input value={form.resumeLink} onChange={(event) => updateField('resumeLink', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="https://..." />
-                </FormField>
-                <FormField label="Portfolio / LinkedIn link" error={errors.portfolioLink}>
-                  <input value={form.portfolioLink} onChange={(event) => updateField('portfolioLink', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Optional" />
-                </FormField>
-                <FormField label="Preferred location" error={errors.preferredLocation}>
-                  <input value={form.preferredLocation} onChange={(event) => updateField('preferredLocation', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                </FormField>
-                <FormField label="Notice period" error={errors.noticePeriod}>
-                  <input value={form.noticePeriod} onChange={(event) => updateField('noticePeriod', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Immediate / 30 days / 60 days" />
-                </FormField>
-                <FormField label="Willing to relocate?" error={errors.relocate}>
-                  <ChoiceButtons choices={['Yes', 'No', 'Open to discussion']} value={form.relocate} onChange={(value) => updateField('relocate', value)} />
-                </FormField>
+              <div className="space-y-8">
+
+                <div>
+                  <h3 className="mb-4 text-lg font-semibold text-slate-900">
+                    Mandatory Documents
+                  </h3>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <DocumentUploadCard
+                      label="Photo"
+                      required
+                      file={form.documents.photo}
+                      onChange={(file) => updateDocument('photo', file)}
+                    />
+
+                    <DocumentUploadCard
+                      label="Signature"
+                      required
+                      file={form.documents.signature}
+                      onChange={(file) => updateDocument('signature', file)}
+                    />
+
+                    <DocumentUploadCard
+                      label="Aadhaar"
+                      required
+                      file={form.documents.aadhaar}
+                      onChange={(file) => updateDocument('aadhaar', file)}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-2 py-2 text-sm text-amber-800">
+                    Upload all documents marked with * as they are required based on eligibility criteria.
+                  </div>
+                  <h3 className="my-4 text-lg font-semibold text-slate-900">
+                    Educational Documents
+                  </h3>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <DocumentUploadCard
+                      label="SSC Marksheet"
+                      required={isMandatoryDocument('SSC_MARKSHEET')}
+                      file={form.documents.sscMarksheet}
+                      onChange={(file) => updateDocument('sscMarksheet', file)}
+                    />
+
+                    <DocumentUploadCard
+                      label="HSC Marksheet"
+                      file={form.documents.hscMarksheet}
+                      required={isMandatoryDocument('HSC_MARKSHEET')}
+                      onChange={(file) => updateDocument('hscMarksheet', file)}
+                    />
+
+                    <DocumentUploadCard
+                      label="Graduation Marksheet"
+                      file={form.documents.degree}
+                      required={isMandatoryDocument('DEGREE')}
+                      onChange={(file) => updateDocument('degree', file)}
+                    />
+
+                    <DocumentUploadCard
+                      label="MSCIT Certificate"
+                      file={form.documents.mscitCertificate}
+                      required={isMandatoryDocument('MSCIT_CERTIFICATE')}
+                      onChange={(file) => updateDocument('mscitCertificate', file)}
+                    />
+
+                    <DocumentUploadCard
+                      label="CCC Certificate"
+                      file={form.documents.cccCertificate}
+                      required={isMandatoryDocument('CCC_CERTIFICATE')}
+                      onChange={(file) => updateDocument('cccCertificate', file)}
+                    />
+                  </div>
+                </div>
+
               </div>
             )}
 
@@ -1570,9 +1847,19 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                       .map((entry) => `${entry.level}: ${entry.institute || entry.educationLevel || 'NA'} | ${entry.score || 'NA'}`)
                       .join(' | ') || 'NA'}
                   />
-                  <ReviewRow label="Experience" value={form.experienceLevel === 'fresher' ? 'Fresher' : form.experienceEntries.map((entry) => `${entry.designation} at ${entry.organization}${entry.isCurrentJob ? ' (current)' : entry.toDate ? ` (${entry.fromDate} - ${entry.toDate})` : ''}`).join(' | ')} />
-                  <ReviewRow label="Documents" value={`Aadhaar ending ${form.aadhaarNumber.slice(-4)} | PAN ${form.panNumber}`} />
-                  <ReviewRow label="Preferences" value={`${form.preferredLocation} | ${form.noticePeriod} | Relocate: ${form.relocate}`} />
+                  <ReviewRow
+                    label="Experience"
+                    value={
+                      hasExperienceDetails(form.experienceEntries)
+                        ? form.experienceEntries
+                          .map(
+                            (entry) =>
+                              `${entry.designation} at ${entry.organization}`,
+                          )
+                          .join(' | ')
+                        : 'Fresher'
+                    }
+                  />
                 </div>
 
                 <div className="rounded-[1.75rem] bg-slate-800 p-6 text-white">

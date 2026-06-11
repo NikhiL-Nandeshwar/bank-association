@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
-import { STORAGE_KEYS } from '@/constants/storage.constants';
 import { useAuth } from '@/lib/useAuth';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes.constants';
