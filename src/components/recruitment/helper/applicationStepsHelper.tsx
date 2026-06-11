@@ -1,6 +1,6 @@
 import { APPLICATION_INPUT_CLASS_NAME, EDUCATION_TEMPLATE, EMPTY_LANGUAGE_SKILLS, LanguageSkills, SUMMARY_TONE_CLASS_NAMES, SummaryTone } from "@/constants/application-wizard.constants";
 import { EligibilityCriteria, MasterItem, MasterListResponse } from "@/types/api.types";
-import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep3Payload } from "@/types/applicationSteps";
+import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep3Payload, SaveStepExperiencePayload } from "@/types/applicationSteps";
 
 const EDUCATION_CRITERION_LEVEL_MAP: Record<string, string> = {
     SSC_10TH: 'SSC / 10th',
@@ -50,7 +50,7 @@ export const initialState = (recruitment: ApplicationWizardProps['initialRecruit
     languageSkills: structuredClone(EMPTY_LANGUAGE_SKILLS),
     educationEntries: structuredClone(EDUCATION_TEMPLATE),
     experienceLevel: '',
-    experienceEntries: [{ organization: '', designation: '', location: '', totalService: '' }],
+    experienceEntries: [{ organization: '', designation: '', location: '', fromDate: '', toDate: '', isCurrentJob: false }],
     keySkills: '',
     aadhaarNumber: '',
     panNumber: '',
@@ -127,13 +127,38 @@ export function buildSaveStep3Payload(form: FormState, applicationId: number): S
     };
 }
 
+export function buildSaveStepExperiencePayload(form: FormState, applicationId: number): SaveStepExperiencePayload {
+    if (form.experienceLevel === 'fresher') {
+        return {
+            applicationId,
+            experiences: [],
+        };
+    }
+
+    return {
+        applicationId,
+        experiences: form.experienceEntries
+            .filter((entry) => hasExperienceDetails([entry]))
+            .map((entry) => ({
+                experienceId: entry.experienceId ?? 0,
+                organizationName: fieldValue(entry.organization).trim(),
+                designation: fieldValue(entry.designation).trim(),
+                location: fieldValue(entry.location).trim(),
+                fromDate: toIsoDateString(fieldValue(entry.fromDate)) ?? '',
+                toDate: entry.isCurrentJob ? null : toIsoDateString(fieldValue(entry.toDate)),
+                isCurrentJob: entry.isCurrentJob,
+            })),
+    };
+}
+
 export function hasExperienceDetails(entries: ExperienceEntry[]) {
     return (entries ?? []).some(
         (entry) =>
             fieldValue(entry.organization).trim() &&
             fieldValue(entry.designation).trim() &&
             fieldValue(entry.location).trim() &&
-            fieldValue(entry.totalService).trim(),
+            fieldValue(entry.fromDate).trim() &&
+            (entry.isCurrentJob || fieldValue(entry.toDate).trim()),
     );
 }
 
@@ -150,14 +175,14 @@ export function getMasterOptionValue(item: MasterItem, fallbackIndex: number) {
     const rawId =
         item.id ??
         item.masterId ??
+        item.talukaId ??
+        item.districtId ??
         item.casteId ??
         item.subCasteId ??
         item.categoryId ??
         item.religionId ??
         item.stateId ??
-        item.countryId ??
-        item.districtId ??
-        item.talukaId;
+        item.countryId;
 
     if (typeof rawId === 'number' && Number.isFinite(rawId)) {
         return String(rawId);
@@ -400,10 +425,13 @@ export function normalizeFormState(
             passedDate: fieldValue(entry.passedDate),
         })),
         experienceEntries: experienceEntries.map((entry) => ({
+            experienceId: entry.experienceId,
             organization: fieldValue(entry.organization),
             designation: fieldValue(entry.designation),
             location: fieldValue(entry.location),
-            totalService: fieldValue(entry.totalService),
+            fromDate: fieldValue(entry.fromDate),
+            toDate: fieldValue(entry.toDate),
+            isCurrentJob: entry.isCurrentJob ?? false,
         })),
     };
 }

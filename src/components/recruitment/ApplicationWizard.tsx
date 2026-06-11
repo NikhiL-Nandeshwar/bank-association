@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import {
@@ -9,9 +10,9 @@ import { getEligibilityCriteria } from '@/actions/api/vacancy.actions';
 import { useEffect, useMemo, useState } from 'react';
 import type { EligibilityCriteria } from '@/types/api.types';
 import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep1and2Payload } from '@/types/applicationSteps';
-import { calculateAgeAsOn, buildSaveStep3Payload, ChoiceButtons, ErrorMap, FormField, generateTransactionNumber, getMandatoryEducationLevels, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons } from './helper/applicationStepsHelper';
-import { saveStep1and2, saveStep3, startOrResumeApplication } from '@/actions/api/application.actions';
-import { createSaveStep3Schema } from '@/schemas/application.schema';
+import { calculateAgeAsOn, buildSaveStep3Payload, buildSaveStepExperiencePayload, ChoiceButtons, ErrorMap, FormField, generateTransactionNumber, getMandatoryEducationLevels, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons } from './helper/applicationStepsHelper';
+import { getResumeData, saveStep1and2, saveStep3, saveStepExperience, startOrResumeApplication } from '@/actions/api/application.actions';
+import { createSaveStep3Schema, createSaveStepExperienceSchema } from '@/schemas/application.schema';
 import { useAuth } from '@/lib/useAuth';
 
 function normalizeEligibilityCriteriaResponse(data: unknown): EligibilityCriteria[] {
@@ -133,6 +134,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [countryOptions, setCountryOptions] = useState<MasterOption[]>([]);
   const [stateOptions, setStateOptions] = useState<MasterOption[]>([]);
   const [districtOptions, setDistrictOptions] = useState<MasterOption[]>([]);
+  console.log('DISTRICTS', districtOptions);
   const [talukaOptions, setTalukaOptions] = useState<MasterOption[]>([]);
   const [isMasterLoading, setIsMasterLoading] = useState(false);
   const [isCasteLoading, setIsCasteLoading] = useState(false);
@@ -143,9 +145,11 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [isStartingOrResuming, setIsStartingOrResuming] = useState(false);
   const [isSavingStep1and2, setIsSavingStep1and2] = useState(false);
   const [isSavingStep3, setIsSavingStep3] = useState(false);
+  const [isSavingStepExperience, setIsSavingStepExperience] = useState(false);
   const [startOrResumeError, setStartOrResumeError] = useState<string | null>(null);
   const [saveStep1and2Error, setSaveStep1and2Error] = useState<string | null>(null);
   const [saveStep3Error, setSaveStep3Error] = useState<string | null>(null);
+  const [saveStepExperienceError, setSaveStepExperienceError] = useState<string | null>(null);
   const [applicationRecordId, setApplicationRecordId] = useState<number>(0);
 
   useEffect(() => {
@@ -158,6 +162,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     setIsStartingOrResuming(false);
     setStartOrResumeError(null);
     setSaveStep3Error(null);
+    setSaveStepExperienceError(null);
     setApplicationRecordId(0);
   }, [initialRecruitment]); // re-init when recruitment changes
 
@@ -264,6 +269,10 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     () => createSaveStep3Schema(mandatoryEducationLevels),
     [mandatoryEducationLevels],
   );
+  const saveStepExperienceSchema = useMemo(
+    () => createSaveStepExperienceSchema(form.experienceLevel === 'fresher'),
+    [form.experienceLevel],
+  );
 
   useEffect(() => {
     let isActive = true;
@@ -368,6 +377,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     async function loadDistricts() {
       if (!stateId) {
         setDistrictOptions([]);
+
         setTalukaOptions([]);
         setIsDistrictLoading(false);
         setIsTalukaLoading(false);
@@ -380,6 +390,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
         const response = await getDistricts({ stateId }).catch(() => null);
         if (!isActive) return;
         setDistrictOptions(toMasterOptions(response?.data));
+
       } finally {
         if (isActive) setIsDistrictLoading(false);
       }
@@ -533,7 +544,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const addExperienceRow = () => {
     setForm((prev) => ({
       ...prev,
-      experienceEntries: [...prev.experienceEntries, { organization: '', designation: '', location: '', totalService: '' }],
+      experienceEntries: [...prev.experienceEntries, { organization: '', designation: '', location: '', fromDate: '', toDate: '', isCurrentJob: false }],
     }));
   };
 
@@ -627,19 +638,77 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       setStartOrResumeError(null);
 
       try {
-        
+
         const response = await startOrResumeApplication(initialRecruitment.vacancyId);
         const applicationId = extractApplicationId(response.data);
+        const resumeResponse = await getResumeData(applicationId);
 
         console.log(
-          'START OR RESUME RESPONSE',
-          response.data
+          'FULL RESUME RESPONSE',
+          JSON.stringify(resumeResponse, null, 2)
         );
 
-        console.log(
-          'EXTRACTED APPLICATION ID',
-          applicationId
-        );
+        const currentStepFromApi = (
+          resumeResponse as {
+            data?: {
+              currentStep?: number;
+            };
+          }
+        ).data?.currentStep;
+
+        console.log('currentStepFromApi', currentStepFromApi)
+
+        if (currentStepFromApi) {
+          setCurrentStep(Math.max(0, currentStepFromApi - 1));
+        }
+
+        const step1 = (
+          resumeResponse as {
+            data?: {
+              step1?: any;
+            };
+          }
+        ).data?.step1;
+
+        console.log('STEP1 DATA', step1);
+
+        if (step1) {
+          const [firstName = '', ...rest] = step1.fullName.split(' ');
+
+          setForm((prev) => ({
+            ...prev,
+
+            firstName,
+            lastName: rest.join(' '),
+            dateOfBirth: step1.dateOfBirth?.split('T')[0] ?? '',
+            gender: step1.gender ?? '',
+            aadhaarNumber: step1.aadhaarNumber ?? '',
+            category: String(step1.categoryId ?? ''),
+            religion: String(step1.religionId ?? ''),
+            caste: String(step1.casteId ?? ''),
+            subCaste: String(step1.subCasteId ?? ''),
+            maharashtraDomiciled: step1.isMahaDomiciled ? 'Yes' : 'No',
+            nonCreamyLayer: step1.isNonCreamyLayer ? 'Yes' : 'No',
+            nationalityIndian: step1.nationalityId === 1 ? 'Yes' : 'No',
+            maritalStatus: step1.maritalStatus ?? '',
+            fathersName: step1.fathersName ?? '',
+            mothersName: step1.mothersName ?? '',
+            husbandsName: step1.husbandsName ?? '',
+
+            // UI Step 2
+            phone: step1.mobileNumber ?? '',
+            alternatePhone: step1.alternateNumber ?? '',
+            addressLine1: step1.addressLine1 ?? '',
+            addressLine2: step1.addressLine2 ?? '',
+            addressLine3: step1.addressLine3 ?? '',
+            pincode: step1.pinCode ?? '',
+            country: String(step1.countryId ?? ''),
+            state: String(step1.stateId ?? ''),
+            district: String(step1.districtId ?? ''),
+            taluka: String(step1.talukaId ?? ''),
+            email: user?.email ?? '',
+          }));
+        }
 
         setApplicationRecordId(applicationId);
         setApplicationRecordId(extractApplicationId(response.data));
@@ -670,7 +739,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       setSaveStep3Error(null);
 
       const payload = buildSaveStep3Payload(form, applicationRecordId);
-      console.log('SaveStep2 payload', payload);
       const parsedPayload = saveStep3Schema.safeParse(payload);
 
       if (!parsedPayload.success) {
@@ -689,6 +757,32 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
         return;
       } finally {
         setIsSavingStep3(false);
+      }
+    }
+
+    if (currentStep === 4) {
+      setIsSavingStepExperience(true);
+      setSaveStepExperienceError(null);
+
+      const payload = buildSaveStepExperiencePayload(form, applicationRecordId);
+      const parsedPayload = saveStepExperienceSchema.safeParse(payload);
+
+      if (!parsedPayload.success) {
+        setErrors({
+          experienceEntries: parsedPayload.error.issues[0]?.message ?? 'Please complete the required experience details.',
+        });
+        setIsSavingStepExperience(false);
+        return;
+      }
+
+      try {
+        await saveStepExperience(parsedPayload.data);
+      } catch {
+        setSaveStepExperienceError('Could not save your experience details. Please try again.');
+        setIsSavingStepExperience(false);
+        return;
+      } finally {
+        setIsSavingStepExperience(false);
       }
     }
 
@@ -1032,7 +1126,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               <div className="space-y-8">
                 <div className="grid gap-6 md:grid-cols-2">
                   <FormField label="Email address" error={errors.email}>
-                    <input type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                    <input type="email" disabled value={user?.email} onChange={(event) => updateField('email', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                   <FormField label="Mobile number" error={errors.phone}>
                     <input value={form.phone} onChange={(event) => updateField('phone', event.target.value.replace(/\D/g, '').slice(0, 10))} className={APPLICATION_INPUT_CLASS_NAME} placeholder="10-digit number" />
@@ -1259,23 +1353,105 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   </FormField>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="text-sm font-semibold text-slate-800">Experience details</p>
-                    <button type="button" onClick={addExperienceRow} className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
-                      Add row
-                    </button>
-                  </div>
-                  {form.experienceEntries.map((entry, index) => (
-                    <div key={index} className="grid gap-4 rounded-[1.5rem] border border-slate-200 p-5 md:grid-cols-2">
-                      <input value={entry.organization} onChange={(event) => updateExperience(index, 'organization', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Organization name" />
-                      <input value={entry.designation} onChange={(event) => updateExperience(index, 'designation', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Designation" />
-                      <input value={entry.location} onChange={(event) => updateExperience(index, 'location', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Location" />
-                      <input value={entry.totalService} onChange={(event) => updateExperience(index, 'totalService', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Total service" />
+                {form.experienceLevel !== 'fresher' ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="text-sm font-semibold text-slate-800">Experience details</p>
+                      <button type="button" onClick={addExperienceRow} className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
+                        Add row
+                      </button>
                     </div>
-                  ))}
-                  {errors.experienceEntries ? <p className="text-sm text-rose-600">{errors.experienceEntries}</p> : null}
-                </div>
+                    {form.experienceEntries.map((entry, index) => (
+                      <div key={index} className="grid gap-4 rounded-[1.5rem] border border-slate-200 p-5 md:grid-cols-2">
+
+                        <FormField label="Organization Name">
+                          <input
+                            value={entry.organization}
+                            onChange={(event) => updateExperience(index, 'organization', event.target.value)}
+                            className={APPLICATION_INPUT_CLASS_NAME}
+                            placeholder="Enter organization name"
+                          />
+                        </FormField>
+
+                        <FormField label="Designation">
+                          <input
+                            value={entry.designation}
+                            onChange={(event) => updateExperience(index, 'designation', event.target.value)}
+                            className={APPLICATION_INPUT_CLASS_NAME}
+                            placeholder="Enter designation"
+                          />
+                        </FormField>
+
+                        <FormField label="Location">
+                          <input
+                            value={entry.location}
+                            onChange={(event) => updateExperience(index, 'location', event.target.value)}
+                            className={APPLICATION_INPUT_CLASS_NAME}
+                            placeholder="Enter location"
+                          />
+                        </FormField>
+
+                        <FormField label="From Date">
+                          <input
+                            type="date"
+                            value={entry.fromDate}
+                            onChange={(event) => updateExperience(index, 'fromDate', event.target.value)}
+                            className={APPLICATION_INPUT_CLASS_NAME}
+                          />
+                        </FormField>
+
+                        <FormField label="To Date">
+                          <input
+                            type="date"
+                            value={entry.toDate}
+                            onChange={(event) => updateExperience(index, 'toDate', event.target.value)}
+                            disabled={entry.isCurrentJob}
+                            className={`${APPLICATION_INPUT_CLASS_NAME} disabled:cursor-not-allowed disabled:bg-slate-100`}
+                          />
+                        </FormField>
+
+                        <FormField label="Current Job">
+                          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800">
+                            <input
+                              type="checkbox"
+                              checked={entry.isCurrentJob}
+                              onChange={(event) => {
+                                const isCurrentJob = event.target.checked;
+
+                                setForm((prev) => ({
+                                  ...prev,
+                                  experienceEntries: prev.experienceEntries.map((row, entryIndex) =>
+                                    entryIndex === index
+                                      ? {
+                                        ...row,
+                                        isCurrentJob,
+                                        toDate: isCurrentJob ? '' : row.toDate,
+                                      }
+                                      : row,
+                                  ),
+                                }));
+
+                                setErrors((prev) => ({
+                                  ...prev,
+                                  experienceEntries: undefined,
+                                }));
+                              }}
+                              className="h-4 w-4 rounded border-slate-300"
+                            />
+                            Current job
+                          </label>
+                        </FormField>
+
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
+                    No work experience rows are required for fresher applicants.
+                  </p>
+                )}
+                {errors.experienceEntries ? <p className="text-sm text-rose-600">{errors.experienceEntries}</p> : null}
+                {saveStepExperienceError ? <p className="text-sm text-rose-600">{saveStepExperienceError}</p> : null}
               </div>
             )}
 
@@ -1325,7 +1501,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                       .map((entry) => `${entry.level}: ${entry.institute || entry.board || 'NA'} | ${entry.score || 'NA'}`)
                       .join(' | ') || 'NA'}
                   />
-                  <ReviewRow label="Experience" value={form.experienceLevel === 'fresher' ? 'Fresher' : form.experienceEntries.map((entry) => `${entry.designation} at ${entry.organization} (${entry.totalService})`).join(' | ')} />
+                  <ReviewRow label="Experience" value={form.experienceLevel === 'fresher' ? 'Fresher' : form.experienceEntries.map((entry) => `${entry.designation} at ${entry.organization}${entry.isCurrentJob ? ' (current)' : entry.toDate ? ` (${entry.fromDate} - ${entry.toDate})` : ''}`).join(' | ')} />
                   <ReviewRow label="Documents" value={`Aadhaar ending ${form.aadhaarNumber.slice(-4)} | PAN ${form.panNumber}`} />
                   <ReviewRow label="Preferences" value={`${form.preferredLocation} | ${form.noticePeriod} | Relocate: ${form.relocate}`} />
                 </div>
@@ -1389,14 +1565,14 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               <button
                 type="button"
                 onClick={goNext}
-                disabled={isStartingOrResuming || isSavingStep1and2 || isSavingStep3}
+                disabled={isStartingOrResuming || isSavingStep1and2 || isSavingStep3 || isSavingStepExperience}
                 className="inline-flex items-center justify-center rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isStartingOrResuming
                   ? 'Starting...'
                   : isSavingStep1and2
                     ? 'Saving...'
-                    : isSavingStep3
+                    : isSavingStep3 || isSavingStepExperience
                       ? 'Saving...'
                       : currentStep === 6
                         ? 'Continue to payment'

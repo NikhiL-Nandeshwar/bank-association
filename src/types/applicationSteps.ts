@@ -13,10 +13,23 @@ export type ApplicationWizardProps = {
 };
 
 export type ExperienceEntry = {
+  experienceId?: number;
   organization: string;
   designation: string;
   location: string;
-  totalService: string;
+  fromDate: string;
+  toDate: string;
+  isCurrentJob: boolean;
+};
+
+export type SaveStepExperienceItemPayload = {
+  experienceId: number;
+  organizationName: string;
+  designation: string;
+  location: string;
+  fromDate: string;
+  toDate: string | null;
+  isCurrentJob: boolean;
 };
 
 export type MasterOption = {
@@ -129,4 +142,9 @@ export type SaveStep3EducationPayload = {
 export type SaveStep3Payload = {
   applicationId: number;
   educations: SaveStep3EducationPayload[];
+};
+
+export type SaveStepExperiencePayload = {
+  applicationId: number;
+  experiences: SaveStepExperienceItemPayload[];
 };

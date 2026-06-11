@@ -86,3 +86,48 @@ export function createSaveStep3Schema(mandatoryEducationLevels: string[]) {
 
 export type SaveStep3EducationPayload = z.infer<typeof saveStep3EducationSchema>;
 export type SaveStep3Payload = z.infer<ReturnType<typeof createSaveStep3Schema>>;
+
+const experienceIsoDateSchema = z.string().refine(
+  (value) => !Number.isNaN(Date.parse(value)),
+  'Enter a valid date.',
+);
+
+export const saveStepExperienceItemSchema = z
+  .object({
+    experienceId: z.coerce.number().int('Experience ID must be a whole number.').nonnegative('Experience ID cannot be negative.'),
+    organizationName: z.string().trim().min(1, 'Organization name is required.'),
+    designation: z.string().trim().min(1, 'Designation is required.'),
+    location: z.string().trim().min(1, 'Location is required.'),
+    fromDate: experienceIsoDateSchema,
+    toDate: experienceIsoDateSchema.nullable(),
+    isCurrentJob: z.boolean(),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.isCurrentJob && value.toDate === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['toDate'],
+        message: 'End date is required unless this is your current job.',
+      });
+    }
+  });
+
+export function createSaveStepExperienceSchema(isFresher: boolean) {
+  return z
+    .object({
+      applicationId: z.coerce.number().int('Application ID must be a whole number.').positive('Application ID is required.'),
+      experiences: z.array(saveStepExperienceItemSchema),
+    })
+    .superRefine((value, ctx) => {
+      if (!isFresher && value.experiences.length === 0) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['experiences'],
+          message: 'Add at least one complete experience row.',
+        });
+      }
+    });
+}
+
+export type SaveStepExperienceItemPayload = z.infer<typeof saveStepExperienceItemSchema>;
+export type SaveStepExperiencePayload = z.infer<ReturnType<typeof createSaveStepExperienceSchema>>;
