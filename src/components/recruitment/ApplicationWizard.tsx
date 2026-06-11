@@ -134,7 +134,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [countryOptions, setCountryOptions] = useState<MasterOption[]>([]);
   const [stateOptions, setStateOptions] = useState<MasterOption[]>([]);
   const [districtOptions, setDistrictOptions] = useState<MasterOption[]>([]);
-  console.log('DISTRICTS', districtOptions);
   const [talukaOptions, setTalukaOptions] = useState<MasterOption[]>([]);
   const [isMasterLoading, setIsMasterLoading] = useState(false);
   const [isCasteLoading, setIsCasteLoading] = useState(false);
@@ -638,15 +637,9 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       setStartOrResumeError(null);
 
       try {
-
         const response = await startOrResumeApplication(initialRecruitment.vacancyId);
         const applicationId = extractApplicationId(response.data);
         const resumeResponse = await getResumeData(applicationId);
-
-        console.log(
-          'FULL RESUME RESPONSE',
-          JSON.stringify(resumeResponse, null, 2)
-        );
 
         const currentStepFromApi = (
           resumeResponse as {
@@ -656,58 +649,138 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
           }
         ).data?.currentStep;
 
-        console.log('currentStepFromApi', currentStepFromApi)
-
         if (currentStepFromApi) {
           setCurrentStep(Math.max(0, currentStepFromApi - 1));
         }
 
-        const step1 = (
-          resumeResponse as {
-            data?: {
-              step1?: any;
-            };
-          }
-        ).data?.step1;
+        const responseData = resumeResponse as {
+          data?: {
+            step1?: any;
+            step2?: any[];
+          };
+        };
 
-        console.log('STEP1 DATA', step1);
+        const step1 = responseData.data?.step1;
+        const educationStep = responseData.data?.step2;
+        console.log('educationStep', educationStep)
 
         if (step1) {
           const [firstName = '', ...rest] = step1.fullName.split(' ');
 
-          setForm((prev) => ({
-            ...prev,
+          setForm((prev) => {
+            const languageSkills = { ...prev.languageSkills };
 
-            firstName,
-            lastName: rest.join(' '),
-            dateOfBirth: step1.dateOfBirth?.split('T')[0] ?? '',
-            gender: step1.gender ?? '',
-            aadhaarNumber: step1.aadhaarNumber ?? '',
-            category: String(step1.categoryId ?? ''),
-            religion: String(step1.religionId ?? ''),
-            caste: String(step1.casteId ?? ''),
-            subCaste: String(step1.subCasteId ?? ''),
-            maharashtraDomiciled: step1.isMahaDomiciled ? 'Yes' : 'No',
-            nonCreamyLayer: step1.isNonCreamyLayer ? 'Yes' : 'No',
-            nationalityIndian: step1.nationalityId === 1 ? 'Yes' : 'No',
-            maritalStatus: step1.maritalStatus ?? '',
-            fathersName: step1.fathersName ?? '',
-            mothersName: step1.mothersName ?? '',
-            husbandsName: step1.husbandsName ?? '',
+            const dateOfBirth =
+              step1.dateOfBirth?.split('T')[0] ?? '';
 
-            // UI Step 2
-            phone: step1.mobileNumber ?? '',
-            alternatePhone: step1.alternateNumber ?? '',
-            addressLine1: step1.addressLine1 ?? '',
-            addressLine2: step1.addressLine2 ?? '',
-            addressLine3: step1.addressLine3 ?? '',
-            pincode: step1.pinCode ?? '',
-            country: String(step1.countryId ?? ''),
-            state: String(step1.stateId ?? ''),
-            district: String(step1.districtId ?? ''),
-            taluka: String(step1.talukaId ?? ''),
-            email: user?.email ?? '',
-          }));
+            (step1.languages ?? []).forEach(
+              (language: {
+                languageName: string;
+                canRead: boolean;
+                canWrite: boolean;
+                canSpeak: boolean;
+              }) => {
+                const languageName = language.languageName?.toLowerCase();
+
+                if (
+                  languageName === 'marathi' ||
+                  languageName === 'hindi' ||
+                  languageName === 'english'
+                ) {
+                  languageSkills[languageName] = {
+                    read: language.canRead,
+                    write: language.canWrite,
+                    speak: language.canSpeak,
+                  };
+                }
+              },
+            );
+
+            const educationEntries = prev.educationEntries.map((entry) => {
+              const apiEducation = (educationStep ?? []).find(
+                (item: {
+                  educationLevel: string;
+                  specialization?: string;
+                  organizationName?: string;
+                  percentageOrCGPA?: number;
+                  className?: string;
+                  passedMonthYear?: string;
+                  passedDate?: string | null;
+                }) => item.educationLevel === entry.level,
+              );
+
+              console.log('apiEducation', apiEducation)
+
+              if (!apiEducation) {
+                return entry;
+              }
+
+              return {
+                ...entry,
+                institute: apiEducation.organizationName ?? '',
+                educationLevel: apiEducation.educationLevel ?? '',
+                specialization: apiEducation.specialization ?? '',
+                score:
+                  apiEducation.percentageOrCGPA &&
+                    apiEducation.percentageOrCGPA > 0
+                    ? String(apiEducation.percentageOrCGPA)
+                    : '',
+                className: apiEducation.className ?? '',
+                passedMonthYear: apiEducation.passedMonthYear
+                  ? (() => {
+                    const [month, year] =
+                      apiEducation.passedMonthYear.split('/');
+
+                    return `${year}-${month}`;
+                  })()
+                  : '', passedDate: apiEducation.passedDate
+                    ? apiEducation.passedDate.split('T')[0]
+                    : '',
+              };
+            });
+
+            return {
+              ...prev,
+
+              // Step 1
+              firstName,
+              lastName: rest.join(' '),
+              dateOfBirth,
+              ageAsOn: calculateAgeAsOn(dateOfBirth),
+              gender: step1.gender ?? '',
+              aadhaarNumber: step1.aadhaarNumber ?? '',
+              category: String(step1.categoryId ?? ''),
+              religion: String(step1.religionId ?? ''),
+              caste: String(step1.casteId ?? ''),
+              subCaste: String(step1.subCasteId ?? ''),
+              maharashtraDomiciled: step1.isMahaDomiciled ? 'Yes' : 'No',
+              nonCreamyLayer: step1.isNonCreamyLayer ? 'Yes' : 'No',
+              nationalityIndian: step1.nationalityId === 1 ? 'Yes' : 'No',
+              maritalStatus: step1.maritalStatus ?? '',
+              fathersName: step1.fathersName ?? '',
+              mothersName: step1.mothersName ?? '',
+              husbandsName: step1.husbandsName ?? '',
+
+              // Step 2
+              phone: step1.mobileNumber ?? '',
+              alternatePhone: step1.alternateNumber ?? '',
+              addressLine1: step1.addressLine1 ?? '',
+              addressLine2: step1.addressLine2 ?? '',
+              addressLine3: step1.addressLine3 ?? '',
+              pincode: step1.pinCode ?? '',
+              country: String(step1.countryId ?? ''),
+              state: String(step1.stateId ?? ''),
+              district: String(step1.districtId ?? ''),
+              taluka: String(step1.talukaId ?? ''),
+              email: user?.email ?? '',
+
+              // Languages
+              languageSkills,
+
+              // Education
+              educationEntries,
+            };
+          });
         }
 
         setApplicationRecordId(applicationId);
@@ -1182,9 +1255,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                     isLoading={isTalukaLoading}
                     placeholder="Select taluka"
                   />
-                  <FormField label="City" error={errors.city}>
-                    <input value={form.city} onChange={(event) => updateField('city', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                  </FormField>
                 </div>
 
                 <div>
@@ -1268,10 +1338,10 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                           />
                         </label>
                         <label className="block">
-                          <span className="text-sm font-semibold text-slate-800">Board / university{isMandatory ? ' *' : ''}</span>
+                          <span className="text-sm font-semibold text-slate-800">Education Level{isMandatory ? ' *' : ''}</span>
                           <input
-                            value={entry.board}
-                            onChange={(event) => updateEducation(index, 'board', event.target.value)}
+                            value={entry.educationLevel}
+                            onChange={(event) => updateEducation(index, 'educationLevel', event.target.value)}
                             className={APPLICATION_INPUT_CLASS_NAME}
                             placeholder={isMandatory ? 'Required' : 'Optional'}
                           />
@@ -1307,18 +1377,17 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                             placeholder={isMandatory ? 'Required' : 'Optional'}
                           />
                         </label>
-                        <label className="block">
-                          <span className="text-sm font-semibold text-slate-800">
-                            Passed month & year{isMandatory ? ' *' : ''}
-                          </span>
+                        <FormField label={`Passed month & year${isMandatory ? ' *' : ''}`}>
                           <input
+                            type="month"
                             value={entry.passedMonthYear}
-                            onChange={(event) => updateEducation(index, 'passedMonthYear', event.target.value)}
+                            onChange={(event) =>
+                              updateEducation(index, 'passedMonthYear', event.target.value)
+                            }
                             className={APPLICATION_INPUT_CLASS_NAME}
-                            placeholder="MM/YYYY"
                           />
-                        </label>
-                        <label className="block">
+                        </FormField>
+                        {/* <label className="block">
                           <span className="text-sm font-semibold text-slate-800">Passed date{isMandatory ? ' *' : ''}</span>
                           <input
                             type="date"
@@ -1326,7 +1395,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                             onChange={(event) => updateEducation(index, 'passedDate', event.target.value)}
                             className={APPLICATION_INPUT_CLASS_NAME}
                           />
-                        </label>
+                        </label> */}
                       </div>
                     </div>
                   );
@@ -1490,15 +1559,15 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   <ReviewRow label="Birth details" value={`${form.dateOfBirth} | ${form.ageAsOn} | ${form.gender} | ${form.category} | ${form.caste}`} />
                   <ReviewRow label="Family details" value={`Spouse: ${form.husbandsName} | Mother: ${form.mothersName} | ${form.maritalStatus}`} />
                   <ReviewRow label="Contact" value={`${form.email} | ${form.phone} | Alt: ${form.alternatePhone || 'NA'}`} />
-                  <ReviewRow label="Address" value={`${form.addressLine1}, ${form.addressLine2}, ${form.addressLine3}, ${form.taluka}, ${form.district}, ${form.city}, ${form.state}, ${form.country} - ${form.pincode}`} />
+                  <ReviewRow label="Address" value={`${form.addressLine1}, ${form.addressLine2}, ${form.addressLine3}, ${form.taluka}, ${form.district}, ${form.state}, ${form.country} - ${form.pincode}`} />
                   <ReviewRow
                     label="Education"
                     value={form.educationEntries
                       .filter((entry) =>
-                        [entry.institute, entry.board, entry.specialization, entry.score, entry.className, entry.passedMonthYear, entry.passedDate]
-                          .some((value) => value.trim()),
+                        [entry.institute, entry.educationLevel, entry.specialization, entry.score, entry.className, entry.passedMonthYear]
+                          .some((value) => value?.trim()),
                       )
-                      .map((entry) => `${entry.level}: ${entry.institute || entry.board || 'NA'} | ${entry.score || 'NA'}`)
+                      .map((entry) => `${entry.level}: ${entry.institute || entry.educationLevel || 'NA'} | ${entry.score || 'NA'}`)
                       .join(' | ') || 'NA'}
                   />
                   <ReviewRow label="Experience" value={form.experienceLevel === 'fresher' ? 'Fresher' : form.experienceEntries.map((entry) => `${entry.designation} at ${entry.organization}${entry.isCurrentJob ? ' (current)' : entry.toDate ? ` (${entry.fromDate} - ${entry.toDate})` : ''}`).join(' | ')} />

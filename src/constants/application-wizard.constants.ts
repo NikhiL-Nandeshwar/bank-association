@@ -6,7 +6,8 @@ export type EducationEntry = {
   level: string;
   completed: string;
   institute: string;
-  board: string;
+  board?: string;
+  educationLevel: string;
   specialization: string;
   score: string;
   className: string;
@@ -33,11 +34,11 @@ export const APPLICATION_INPUT_CLASS_NAME =
   'mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-amber-100';
 
 export const EDUCATION_TEMPLATE: EducationEntry[] = [
-  { level: 'SSC / 10th', completed: '', institute: '', board: '', specialization: '', score: '', className: '', passedMonthYear: '', passedDate: '' },
-  { level: 'HSC / 12th', completed: '', institute: '', board: '', specialization: '', score: '', className: '', passedMonthYear: '', passedDate: '' },
-  { level: 'Graduation', completed: '', institute: '', board: '', specialization: '', score: '', className: '', passedMonthYear: '', passedDate: '' },
-  { level: 'Post Graduation', completed: '', institute: '', board: '', specialization: '', score: '', className: '', passedMonthYear: '', passedDate: '' },
-  { level: 'Computer Certification', completed: '', institute: '', board: '', specialization: '', score: '', className: '', passedMonthYear: '', passedDate: '' },
+  { level: 'SSC / 10th', completed: '', institute: '', educationLevel: '', specialization: '', score: '', className: '', passedMonthYear: '', passedDate: '' },
+  { level: 'HSC / 12th', completed: '', institute: '', educationLevel: '', specialization: '', score: '', className: '', passedMonthYear: '', passedDate: '' },
+  { level: 'Graduation', completed: '', institute: '', educationLevel: '', specialization: '', score: '', className: '', passedMonthYear: '', passedDate: '' },
+  { level: 'Post Graduation', completed: '', institute: '', educationLevel: '', specialization: '', score: '', className: '', passedMonthYear: '', passedDate: '' },
+  { level: 'Computer Certification', completed: '', institute: '', educationLevel: '', specialization: '', score: '', className: '', passedMonthYear: '', passedDate: '' },
 ];
 
 export const EMPTY_LANGUAGE_SKILLS: LanguageSkills = {

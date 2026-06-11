@@ -43,7 +43,6 @@ export const initialState = (recruitment: ApplicationWizardProps['initialRecruit
     addressLine3: '',
     taluka: '',
     district: '',
-    city: '',
     state: '',
     subCaste: '',
     pincode: '',
@@ -115,12 +114,22 @@ export function buildSaveStep3Payload(form: FormState, applicationId: number): S
         applicationId,
         educations: form.educationEntries.map((entry, index) => ({
             educationId: entry.educationId ?? 0,
-            educationLevel: entry.level,
+            educationLevel: entry.educationLevel ?? '',
             specialization: fieldValue(entry.specialization).trim(),
             organizationName: fieldValue(entry.institute).trim() || fieldValue(entry.board).trim(),
             percentageOrCGPA: Number(fieldValue(entry.score)) || 0,
             className: fieldValue(entry.className).trim(),
-            passedMonthYear: fieldValue(entry.passedMonthYear).trim(),
+            passedMonthYear: (() => {
+                const value = fieldValue(entry.passedMonthYear).trim();
+
+                if (!value) return '';
+
+                const [year, month] = value.split('-');
+
+                return month && year
+                    ? `${month}/${year}`
+                    : value;
+            })(),
             passedDate: toIsoDateString(fieldValue(entry.passedDate)),
             sortOrder: entry.sortOrder ?? index,
         })),
@@ -332,7 +341,7 @@ export function validateStep(step: number, form: FormState, eligibilityCriteria?
         if (!fieldValue(form.country).trim()) errors.country = 'Country is required.';
         if (!fieldValue(form.taluka).trim()) errors.taluka = 'Taluka is required.';
         if (!fieldValue(form.district).trim()) errors.district = 'District is required.';
-        if (!fieldValue(form.city).trim()) errors.city = 'City is required.';
+        // if (!fieldValue(form.city).trim()) errors.city = 'City is required.';
         if (!fieldValue(form.state).trim()) errors.state = 'State is required.';
         if (!/^\d{6}$/.test(fieldValue(form.pincode))) errors.pincode = 'Enter a valid 6-digit pincode.';
         if (!hasLanguageSelected(form.languageSkills)) errors.languageSkills = 'Select at least one language ability.';

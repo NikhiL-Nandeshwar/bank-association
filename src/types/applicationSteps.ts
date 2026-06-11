@@ -72,7 +72,6 @@ export type FormState = {
   addressLine3: string;
   taluka: string;
   district: string;
-  city: string;
   state: string;
   subCaste: string;
   pincode: string;

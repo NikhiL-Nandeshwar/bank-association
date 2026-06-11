@@ -49,13 +49,13 @@ export function createSaveStep3Schema(mandatoryEducationLevels: string[]) {
           });
         }
 
-        if (education.passedDate === null) {
-          ctx.addIssue({
-            code: 'custom',
-            path: [...entryPath, 'passedDate'],
-            message: `${education.educationLevel} passed date is required.`,
-          });
-        }
+        // if (education.passedDate === null) {
+        //   ctx.addIssue({
+        //     code: 'custom',
+        //     path: [...entryPath, 'passedDate'],
+        //     message: `${education.educationLevel} passed date is required.`,
+        //   });
+        // }
 
         if (!education.className.trim()) {
           ctx.addIssue({

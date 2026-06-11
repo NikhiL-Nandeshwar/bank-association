@@ -170,7 +170,11 @@ export async function apiRequest<T>(
     payload = null;
   }
 
-  if (response.status === 401 && !isRetry) {
+  if (
+    response.status === 401 &&
+    !isRetry &&
+    getRefreshToken()
+  ) {
     try {
       await refreshAccessToken();
 
@@ -181,6 +185,7 @@ export async function apiRequest<T>(
       );
     } catch {
       expireSession();
+
       throw new ApiError(
         'Session expired.',
         401,
