@@ -18,108 +18,18 @@ import { useAuth } from '@/lib/useAuth';
 import { CheckCircle2, FileText, Trash2, Upload } from 'lucide-react';
 import { getAuthToken } from '@/lib/auth-storage';
 import { toast } from 'sonner';
+import { normalizeEligibilityCriteriaResponse } from '@/utils/helper/eligibilityCriteriaHelper';
+import { extractApplicationId, getAuthenticatedFileUrl, splitAuthName } from '@/utils/applicationFormHelper';
+import { DOCUMENT_TYPE_MAPPING } from '@/constants/document.constants';
+import { useApplicationMasters } from '@/hooks/useApplicationMasters';
+import { useStates } from '@/hooks/useStates';
+import { useDistricts } from '@/hooks/useDistricts';
+import { useTalukas } from '@/hooks/useTalukas';
+import { useCastes } from '@/hooks/useCastes';
+import { useSubCastes } from '@/hooks/useSubCastes';
 
 
-function normalizeEligibilityCriteriaResponse(data: unknown): EligibilityCriteria[] {
-  if (Array.isArray(data)) {
-    return data;
-  }
 
-  if (data && typeof data === 'object') {
-    const nested = data as {
-      items?: unknown;
-      eligibilityCriteria?: unknown;
-      declarations?: unknown;
-    };
-
-    if (Array.isArray(nested.items)) {
-      return nested.items as EligibilityCriteria[];
-    }
-
-    if (Array.isArray(nested.eligibilityCriteria)) {
-      return nested.eligibilityCriteria as EligibilityCriteria[];
-    }
-
-    if (Array.isArray(nested.declarations)) {
-      return nested.declarations.map((item) => {
-        const declaration = item as Partial<EligibilityCriteria> & {
-          criteriaId?: number;
-          requiredDocumentType?: string;
-          requiredDocument?: boolean;
-        };
-
-        return {
-          criteriaType: declaration.criteriaType ?? '',
-          criteriaValue: declaration.criteriaValue ?? '',
-          groupTag: declaration.groupTag ?? '',
-          isMandatory: Boolean(declaration.isMandatory),
-          declarationEng: declaration.declarationEng ?? '',
-          declarationMrt: declaration.declarationMrt ?? '',
-          sortOrder: Number(declaration.sortOrder ?? 0),
-        };
-      });
-    }
-  }
-
-  return [];
-}
-
-function extractApplicationId(data: unknown): number {
-  if (typeof data === 'number' && Number.isFinite(data)) {
-    return data;
-  }
-
-  if (typeof data === 'string') {
-    const parsed = Number(data);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  if (data && typeof data === 'object') {
-    const record = data as Record<string, unknown>;
-    const application = record.application as Record<string, unknown> | undefined;
-    const candidates = [
-      record.applicationId,
-      record.id,
-      record.applicationID,
-      application?.applicationId,
-      application?.id,
-    ];
-
-    for (const candidate of candidates) {
-      if (typeof candidate === 'number' && Number.isFinite(candidate)) {
-        return candidate;
-      }
-
-      if (typeof candidate === 'string') {
-        const parsed = Number(candidate);
-        if (Number.isFinite(parsed)) {
-          return parsed;
-        }
-      }
-    }
-
-    if ('data' in record) {
-      return extractApplicationId(record.data);
-    }
-  }
-
-  return 0;
-}
-
-function splitAuthName(userName?: string | null) {
-  const trimmed = userName?.trim() ?? '';
-
-  if (!trimmed) {
-    return { firstName: '', lastName: '' };
-  }
-
-  const parts = trimmed.split(/\s+/).filter(Boolean);
-
-  return {
-    firstName: parts[0] ?? '',
-    lastName: parts.slice(1).join(' '),
-  };
-}
 
 export default function ApplicationWizard({ initialRecruitment }: ApplicationWizardProps) {
   const { user, status } = useAuth();
@@ -131,21 +41,14 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [eligibilityCriteria, setEligibilityCriteria] = useState<EligibilityCriteria[]>(
     initialRecruitment.eligibilityCriteria ?? [],
   );
+  const {
+    categoryOptions,
+    religionOptions,
+    countryOptions,
+    isLoading: isMasterLoading,
+  } = useApplicationMasters();
+
   const [isEligibilityLoading, setIsEligibilityLoading] = useState(false);
-  const [categoryOptions, setCategoryOptions] = useState<MasterOption[]>([]);
-  const [casteOptions, setCasteOptions] = useState<MasterOption[]>([]);
-  const [subCasteOptions, setSubCasteOptions] = useState<MasterOption[]>([]);
-  const [religionOptions, setReligionOptions] = useState<MasterOption[]>([]);
-  const [countryOptions, setCountryOptions] = useState<MasterOption[]>([]);
-  const [stateOptions, setStateOptions] = useState<MasterOption[]>([]);
-  const [districtOptions, setDistrictOptions] = useState<MasterOption[]>([]);
-  const [talukaOptions, setTalukaOptions] = useState<MasterOption[]>([]);
-  const [isMasterLoading, setIsMasterLoading] = useState(false);
-  const [isCasteLoading, setIsCasteLoading] = useState(false);
-  const [isSubCasteLoading, setIsSubCasteLoading] = useState(false);
-  const [isStateLoading, setIsStateLoading] = useState(false);
-  const [isDistrictLoading, setIsDistrictLoading] = useState(false);
-  const [isTalukaLoading, setIsTalukaLoading] = useState(false);
   const [isStartingOrResuming, setIsStartingOrResuming] = useState(false);
   const [isSavingStep1and2, setIsSavingStep1and2] = useState(false);
   const [isSavingStep3, setIsSavingStep3] = useState(false);
@@ -197,6 +100,54 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       fileUrl: string;
     };
   }>({});
+
+  const form = useMemo(
+    () => normalizeFormState(initialRecruitment, formState),
+    [formState, initialRecruitment],
+  );
+  const selectedIds = useMemo(
+    () => ({
+      countryId: getSelectedMasterId(form.country),
+      stateId: getSelectedMasterId(form.state),
+      districtId: getSelectedMasterId(form.district),
+      categoryId: getSelectedMasterId(form.category),
+      religionId: getSelectedMasterId(form.religion),
+      casteId: getSelectedMasterId(form.caste),
+    }),
+    [
+      form.country,
+      form.state,
+      form.district,
+      form.category,
+      form.religion,
+      form.caste,
+    ],
+  );
+
+  const {
+    stateOptions,
+    isLoading: isStateLoading,
+  } = useStates(selectedIds.countryId);
+
+  const {
+    districtOptions,
+    isLoading: isDistrictLoading,
+  } = useDistricts(selectedIds.stateId);
+
+  const {
+    talukaOptions,
+    isLoading: isTalukaLoading,
+  } = useTalukas(selectedIds.districtId, selectedIds.stateId);
+
+  const {
+    casteOptions,
+    isLoading: isCasteLoading,
+  } = useCastes(selectedIds.categoryId, selectedIds.religionId);
+
+  const {
+    subCasteOptions,
+    isLoading: isSubCasteLoading,
+  } = useSubCastes(selectedIds.casteId);
 
   useEffect(() => {
     setForm(initialState(initialRecruitment));
@@ -270,41 +221,8 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     };
   }, [initialRecruitment.vacancyId, initialRecruitment.eligibilityCriteria]);
 
-  useEffect(() => {
-    let isActive = true;
-
-    async function loadMasters() {
-      setIsMasterLoading(true);
-
-      try {
-        const [categoriesResponse, religionsResponse, countriesResponse] = await Promise.all([
-          getCategories().catch(() => null),
-          getReligions().catch(() => null),
-          getCountries().catch(() => null),
-        ]);
-
-        if (!isActive) return;
-
-        setCategoryOptions(toCategoryOptions(categoriesResponse?.data));
-        setReligionOptions(toReligionOptions(religionsResponse?.data));
-        setCountryOptions(toMasterOptions(countriesResponse?.data));
-      } finally {
-        if (isActive) setIsMasterLoading(false);
-      }
-    }
-
-    void loadMasters();
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
 
 
-  const form = useMemo(
-    () => normalizeFormState(initialRecruitment, formState),
-    [formState, initialRecruitment],
-  );
 
   const mandatoryEducationLevels = useMemo(
     () => getMandatoryEducationLevels(eligibilityCriteria),
@@ -355,165 +273,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     () => createSaveStepExperienceSchema(),
     [],
   );
-
-  useEffect(() => {
-    let isActive = true;
-    const categoryId = getSelectedMasterId(form.category);
-    const religionId = getSelectedMasterId(form.religion);
-
-    async function loadCastes() {
-      if (!categoryId || !religionId) {
-        setCasteOptions([]);
-        setSubCasteOptions([]);
-        setIsCasteLoading(false);
-        setIsSubCasteLoading(false);
-        return;
-      }
-
-      setIsCasteLoading(true);
-
-      try {
-        const response = await getCastesByCategoryReligion({ categoryId, religionId }).catch(() => null);
-        if (!isActive) return;
-        setCasteOptions(toMasterOptions(response?.data));
-      } finally {
-        if (isActive) setIsCasteLoading(false);
-      }
-    }
-
-    void loadCastes();
-
-    return () => {
-      isActive = false;
-    };
-  }, [form.category, form.religion]);
-
-  useEffect(() => {
-    let isActive = true;
-    const casteId = getSelectedMasterId(form.caste);
-
-    async function loadSubCastes() {
-      if (!casteId) {
-        setSubCasteOptions([]);
-        setIsSubCasteLoading(false);
-        return;
-      }
-
-      setIsSubCasteLoading(true);
-
-      try {
-        const response = await getSubCastes({ casteId }).catch(() => null);
-        if (!isActive) return;
-        setSubCasteOptions(toMasterOptions(response?.data));
-      } finally {
-        if (isActive) setIsSubCasteLoading(false);
-      }
-    }
-
-    void loadSubCastes();
-
-    return () => {
-      isActive = false;
-    };
-  }, [form.caste]);
-
-  useEffect(() => {
-    let isActive = true;
-    const countryId = getSelectedMasterId(form.country);
-
-    async function loadStates() {
-      if (!countryId) {
-        setStateOptions([]);
-        setDistrictOptions([]);
-        setTalukaOptions([]);
-        setIsStateLoading(false);
-        setIsDistrictLoading(false);
-        setIsTalukaLoading(false);
-        return;
-      }
-
-      setIsStateLoading(true);
-
-      try {
-        const response = await getStates({ countryId }).catch(() => null);
-        if (!isActive) return;
-        setStateOptions(toMasterOptions(response?.data));
-      } finally {
-        if (isActive) {
-          setIsStateLoading(false);
-        }
-      }
-    }
-
-    void loadStates();
-
-    return () => {
-      isActive = false;
-    };
-  }, [form.country]);
-
-  useEffect(() => {
-    let isActive = true;
-    const stateId = getSelectedMasterId(form.state);
-
-    async function loadDistricts() {
-      if (!stateId) {
-        setDistrictOptions([]);
-
-        setTalukaOptions([]);
-        setIsDistrictLoading(false);
-        setIsTalukaLoading(false);
-        return;
-      }
-
-      setIsDistrictLoading(true);
-
-      try {
-        const response = await getDistricts({ stateId }).catch(() => null);
-        if (!isActive) return;
-        setDistrictOptions(toMasterOptions(response?.data));
-
-      } finally {
-        if (isActive) setIsDistrictLoading(false);
-      }
-    }
-
-    void loadDistricts();
-
-    return () => {
-      isActive = false;
-    };
-  }, [form.state]);
-
-  useEffect(() => {
-    let isActive = true;
-    const districtId = getSelectedMasterId(form.district);
-    const stateId = getSelectedMasterId(form.state);
-
-    async function loadTalukas() {
-      if (!districtId) {
-        setTalukaOptions([]);
-        setIsTalukaLoading(false);
-        return;
-      }
-
-      setIsTalukaLoading(true);
-
-      try {
-        const response = await getTalukas({ districtId, stateId }).catch(() => null);
-        if (!isActive) return;
-        setTalukaOptions(toMasterOptions(response?.data));
-      } finally {
-        if (isActive) setIsTalukaLoading(false);
-      }
-    }
-
-    void loadTalukas();
-
-    return () => {
-      isActive = false;
-    };
-  }, [form.district, form.state]);
 
   useEffect(() => {
     setForm((prev) => ({
@@ -702,27 +461,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     documentName: string;
     fileUrl: string;
   };
-
-  async function getAuthenticatedFileUrl(
-    fileUrl: string,
-  ): Promise<string> {
-    const token = getAuthToken();
-
-    const response = await fetch(fileUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to load file');
-    }
-
-    const blob = await response.blob();
-
-    return URL.createObjectURL(blob);
-  }
-
 
 
   function DocumentUploadCard({
@@ -990,42 +728,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       [field]: undefined,
     }));
   };
-
-  const DOCUMENT_TYPE_MAPPING = {
-    photo: 'Photo',
-    signature: 'Signature',
-    aadhaar: 'Aadhaar',
-    sscMarksheet: 'SSC_MARKSHEET',
-    hscMarksheet: 'HSC_MARKSHEET',
-    degree: 'DEGREE',
-    mscitCertificate: 'MSCIT_CERTIFICATE',
-    cccCertificate: 'CCC_CERTIFICATE',
-  } as const;
-
-  async function uploadAllDocuments() {
-    const uploads = Object.entries(
-      DOCUMENT_TYPE_MAPPING,
-    )
-      .map(([field, documentType]) => {
-        const file =
-          form.documents[
-          field as keyof typeof form.documents
-          ];
-
-        if (!file) {
-          return null;
-        }
-
-        return uploadDocument(
-          applicationRecordId,
-          documentType,
-          file,
-        );
-      })
-      .filter(Boolean);
-
-    await Promise.all(uploads);
-  }
 
   const goNext = async () => {
     console.log('currentStep', currentStep)

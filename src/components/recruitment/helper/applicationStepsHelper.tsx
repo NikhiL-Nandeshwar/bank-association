@@ -1,6 +1,6 @@
 import { APPLICATION_INPUT_CLASS_NAME, EDUCATION_TEMPLATE, EMPTY_LANGUAGE_SKILLS, LanguageSkills, SUMMARY_TONE_CLASS_NAMES, SummaryTone } from "@/constants/application-wizard.constants";
 import { EligibilityCriteria, MasterItem, MasterListResponse } from "@/types/api.types";
-import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep3Payload, SaveStepExperiencePayload } from "@/types/applicationSteps";
+import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep1and2Payload, SaveStep3Payload, SaveStepExperiencePayload } from "@/types/applicationSteps";
 
 const EDUCATION_CRITERION_LEVEL_MAP: Record<string, string> = {
     SSC_10TH: 'SSC / 10th',

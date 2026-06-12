@@ -1,8 +1,9 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { Calendar } from '@/components/ui/calendar'
 import { FloatingLabelInput } from '@/components/ui/floating-input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
-import { messages } from '@/config/messages'
+// import { messages } from '@/config/messages'
 import { cn } from '@/lib/utils'
 import { format, parse, setHours, setMinutes } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
@@ -60,96 +61,123 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
       lockedYear !== undefined ? new Date(lockedYear, 11, 31) : new Date(new Date().getFullYear() + 5, 11)
 
     // Adjust calendar end month if disableFutureFrom is set and falls within the calendar range
-    const handleDateChange = useCallback(
-      (date: Date | undefined) => {
-        try {
-          if (date) {
-            let finalDate = date
-            if (lockedYear !== undefined) {
-              finalDate = new Date(date)
-              finalDate.setFullYear(lockedYear)
-            }
-            if (showTime) {
-              let adjustedHour = (hour % 12) + (isPM ? 12 : 0)
-              finalDate = setHours(setMinutes(finalDate, minute), adjustedHour)
-            }
-            const formattedDate = format(finalDate, showTime ? 'dd-MM-yyyy hh:mm a' : 'dd-MM-yyyy')
-            setInputValue(formattedDate)
-            onChange(finalDate)
-            setCalendarOpen(false)
-          } else {
-            setInputValue('')
-            onChange(null)
-            setCalendarOpen(false)
+    const handleDateChange = (date: Date | undefined) => {
+      try {
+        if (date) {
+          let finalDate = date
+
+          if (lockedYear !== undefined) {
+            finalDate = new Date(date)
+            finalDate.setFullYear(lockedYear)
           }
-        } catch (error) {
-          console.error(error)
-          toast.error(messages.general.invalidDateFormat)
+
+          if (showTime) {
+            const adjustedHour = (hour % 12) + (isPM ? 12 : 0)
+            finalDate = setHours(setMinutes(finalDate, minute), adjustedHour)
+          }
+
+          const formattedDate = format(
+            finalDate,
+            showTime ? 'dd-MM-yyyy hh:mm a' : 'dd-MM-yyyy'
+          )
+
+          setInputValue(formattedDate)
+          onChange(finalDate)
+          setCalendarOpen(false)
+        } else {
+          setInputValue('')
+          onChange(null)
+          setCalendarOpen(false)
         }
-      },
-      [onChange, showTime, hour, minute, isPM, lockedYear]
-    )
+      } catch (error) {
+        console.error(error)
+        toast.error('Please select a valid date')
+      }
+    }
 
     // Handle manual input changes
-    const handleInputChange = useCallback(
-      (e: ChangeEvent<HTMLInputElement>) => {
-        try {
-          const digits = e.target.value.replace(/[^0-9]/g, '').slice(0, 8)
+    const handleInputChange = (
+      e: ChangeEvent<HTMLInputElement>
+    ) => {
+      try {
+        const digits = e.target.value
+          .replace(/[^0-9]/g, '')
+          .slice(0, 8)
 
-          let formattedValue = ''
-          if (lockedYear !== undefined) {
-            const year = String(lockedYear)
-            const day = digits.slice(0, 2)
-            const month = digits.slice(2, 4)
+        let formattedValue = ''
 
-            if (digits.length <= 2) {
-              formattedValue = day
-            } else if (digits.length <= 4) {
-              formattedValue = [day, month].filter(Boolean).join('-')
-            } else {
-              formattedValue = `${[day, month].filter(Boolean).join('-')}-${year}`
-            }
+        if (lockedYear !== undefined) {
+          const year = String(lockedYear)
+          const day = digits.slice(0, 2)
+          const month = digits.slice(2, 4)
+
+          if (digits.length <= 2) {
+            formattedValue = day
+          } else if (digits.length <= 4) {
+            formattedValue = [day, month].filter(Boolean).join('-')
           } else {
-            let value = digits
-            if (value.length > 4) {
-              let year = value.slice(4, 8)
-              if (year.length > 0 && !['1', '2'].includes(year[0])) {
-                year = '2' + year.slice(1)
-              }
-              value = value.slice(0, 4) + year
+            formattedValue = `${[day, month].filter(Boolean).join('-')}-${year}`
+          }
+        } else {
+          let value = digits
+
+          if (value.length > 4) {
+            let year = value.slice(4, 8)
+
+            if (year.length > 0 && !['1', '2'].includes(year[0])) {
+              year = '2' + year.slice(1)
             }
-            formattedValue = value.replace(/^(\d{2})(\d{0,2})(\d{0,4})$/, (_, d, m, y) =>
-              [d, m, y].filter(Boolean).join('-')
+
+            value = value.slice(0, 4) + year
+          }
+
+          formattedValue = value.replace(
+            /^(\d{2})(\d{0,2})(\d{0,4})$/,
+            (_, d, m, y) => [d, m, y].filter(Boolean).join('-')
+          )
+        }
+
+        setInputValue(formattedValue)
+
+        if (datePattern.test(formattedValue)) {
+          let parsedDate = parse(
+            formattedValue,
+            'dd-MM-yyyy',
+            new Date()
+          )
+
+          if (lockedYear !== undefined) {
+            parsedDate.setFullYear(lockedYear)
+          }
+
+          if (rest.disableFuture && parsedDate > new Date()) {
+            onChange(null)
+            return
+          }
+
+          if (showTime) {
+            const adjustedHour = (hour % 12) + (isPM ? 12 : 0)
+
+            parsedDate = setHours(
+              setMinutes(parsedDate, minute),
+              adjustedHour
+            )
+
+            setInputValue(
+              format(parsedDate, 'dd-MM-yyyy hh:mm a')
             )
           }
 
-          setInputValue(formattedValue)
-          if (datePattern.test(formattedValue)) {
-            let parsedDate = parse(formattedValue, 'dd-MM-yyyy', new Date())
-            if (lockedYear !== undefined) {
-              parsedDate.setFullYear(lockedYear)
-            }
-            if (rest.disableFuture && parsedDate > new Date()) {
-              onChange(null)
-              return
-            }
-            if (showTime) {
-              let adjustedHour = (hour % 12) + (isPM ? 12 : 0)
-              parsedDate = setHours(setMinutes(parsedDate, minute), adjustedHour)
-              setInputValue(format(parsedDate, 'dd-MM-yyyy hh:mm a'))
-            }
-            onChange(parsedDate)
-          } else {
-            onChange(null)
-          }
-        } catch (error) {
-          console.error(error)
-          toast.error(messages.general.invalidDateFormat)
+          onChange(parsedDate)
+        } else {
           onChange(null)
         }
-      },
-      [onChange, hour, minute, isPM, showTime, lockedYear]
-    )
+      } catch (error) {
+        console.error(error)
+        toast.error('Please select a valid date')
+        onChange(null)
+      }
+    }
 
     // Sync input value with external changes to value prop
     useEffect(() => {
@@ -290,3 +318,5 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
     )
   }
 )
+
+DateField.displayName = 'DateField';
