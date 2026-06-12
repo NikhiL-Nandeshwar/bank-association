@@ -10,17 +10,34 @@ const EDUCATION_CRITERION_LEVEL_MAP: Record<string, string> = {
     DIPLOMA: 'Diploma',
 };
 
+export type ExistingDocument = {
+    documentId: number;
+    documentName: string;
+    fileUrl: string;
+};
+
+export type UploadedDocuments = {
+    photo?: ExistingDocument;
+    signature?: ExistingDocument;
+    aadhaar?: ExistingDocument;
+    sscMarksheet?: ExistingDocument;
+    hscMarksheet?: ExistingDocument;
+    degree?: ExistingDocument;
+    mscitCertificate?: ExistingDocument;
+    cccCertificate?: ExistingDocument;
+};
+
 export type ErrorMap =
-  Partial<Record<keyof FormState, string>> & {
-    photo?: string;
-    signature?: string;
-    aadhaar?: string;
-    sscMarksheet?: string;
-    hscMarksheet?: string;
-    degree?: string;
-    mscitCertificate?: string;
-    cccCertificate?: string;
-  };
+    Partial<Record<keyof FormState, string>> & {
+        photo?: string;
+        signature?: string;
+        aadhaar?: string;
+        sscMarksheet?: string;
+        hscMarksheet?: string;
+        degree?: string;
+        mscitCertificate?: string;
+        cccCertificate?: string;
+    };
 
 export const initialState = (recruitment: ApplicationWizardProps['initialRecruitment']): FormState => ({
     recruitmentCode: recruitment.code,
@@ -295,7 +312,14 @@ export function sortEligibilityCriteria(criteria: EligibilityCriteria[]) {
     return [...(criteria ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
-export function validateStep(step: number, form: FormState, eligibilityCriteria?: EligibilityCriteria[]): ErrorMap {
+export function validateStep(
+    step: number,
+    form: FormState,
+    eligibilityCriteria?: EligibilityCriteria[],
+    uploadedDocuments?: UploadedDocuments,
+    mandatoryDocuments: string[] = [],
+): ErrorMap {
+
     const errors: ErrorMap = {};
 
     if (step === 0) {
@@ -378,20 +402,91 @@ export function validateStep(step: number, form: FormState, eligibilityCriteria?
     }
 
     if (step === 5) {
-        if (!form.documents.photo) {
+        const hasDocument = (
+            formFile: File | null,
+            uploadedFile: unknown,
+        ) => !!formFile || !!uploadedFile;
+
+        if (
+            !hasDocument(
+                form.documents.photo,
+                uploadedDocuments?.photo,
+            )
+        ) {
             errors.photo = 'Photo is required.';
         }
 
-        if (!form.documents.signature) {
+        if (
+            !hasDocument(
+                form.documents.signature,
+                uploadedDocuments?.signature,
+            )
+        ) {
             errors.signature = 'Signature is required.';
         }
 
-        if (!form.documents.aadhaar) {
-            errors.aadhaar = 'Aadhaar document is required.';
+        if (
+            !hasDocument(
+                form.documents.aadhaar,
+                uploadedDocuments?.aadhaar,
+            )
+        ) {
+            errors.aadhaar = 'Aadhaar is required.';
         }
 
-        if (!form.documents.sscMarksheet) {
-            errors.sscMarksheet = 'SSC marksheet is required.';
+        if (
+            mandatoryDocuments.includes('SSC_MARKSHEET') &&
+            !hasDocument(
+                form.documents.sscMarksheet,
+                uploadedDocuments?.sscMarksheet,
+            )
+        ) {
+            errors.sscMarksheet =
+                'SSC marksheet is required.';
+        }
+
+        if (
+            mandatoryDocuments.includes('HSC_MARKSHEET') &&
+            !hasDocument(
+                form.documents.hscMarksheet,
+                uploadedDocuments?.hscMarksheet,
+            )
+        ) {
+            errors.hscMarksheet =
+                'HSC marksheet is required.';
+        }
+
+        if (
+            mandatoryDocuments.includes('DEGREE') &&
+            !hasDocument(
+                form.documents.degree,
+                uploadedDocuments?.degree,
+            )
+        ) {
+            errors.degree =
+                'Graduation marksheet is required.';
+        }
+
+        if (
+            mandatoryDocuments.includes('MSCIT_CERTIFICATE') &&
+            !hasDocument(
+                form.documents.mscitCertificate,
+                uploadedDocuments?.mscitCertificate,
+            )
+        ) {
+            errors.mscitCertificate =
+                'MSCIT certificate is required.';
+        }
+
+        if (
+            mandatoryDocuments.includes('CCC_CERTIFICATE') &&
+            !hasDocument(
+                form.documents.cccCertificate,
+                uploadedDocuments?.cccCertificate,
+            )
+        ) {
+            errors.cccCertificate =
+                'CCC certificate is required.';
         }
     }
 

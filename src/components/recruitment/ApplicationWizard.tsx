@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
@@ -11,10 +12,13 @@ import { useEffect, useMemo, useState } from 'react';
 import type { EligibilityCriteria } from '@/types/api.types';
 import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep1and2Payload } from '@/types/applicationSteps';
 import { calculateAgeAsOn, buildSaveStep3Payload, buildSaveStepExperiencePayload, ChoiceButtons, ErrorMap, FormField, generateTransactionNumber, getMandatoryEducationLevels, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons, hasExperienceDetails } from './helper/applicationStepsHelper';
-import { getResumeData, saveStep1and2, saveStep3, saveStepExperience, startOrResumeApplication } from '@/actions/api/application.actions';
+import { getResumeData, saveStep1and2, saveStep3, saveStepExperience, startOrResumeApplication, uploadDocument } from '@/actions/api/application.actions';
 import { createSaveStep3Schema, createSaveStepExperienceSchema } from '@/schemas/application.schema';
 import { useAuth } from '@/lib/useAuth';
-import { CheckCircle2, Upload } from 'lucide-react';
+import { CheckCircle2, FileText, Trash2, Upload } from 'lucide-react';
+import { getAuthToken } from '@/lib/auth-storage';
+import { toast } from 'sonner';
+
 
 function normalizeEligibilityCriteriaResponse(data: unknown): EligibilityCriteria[] {
   if (Array.isArray(data)) {
@@ -307,7 +311,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     [eligibilityCriteria],
   );
 
-  console.log('eligibilityCriteria', eligibilityCriteria)
 
   const mandatoryDocuments = useMemo<string[]>(() => {
     return eligibilityCriteria
@@ -342,10 +345,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
 
   const isMandatoryDocument = (documentType: string) =>
     mandatoryDocuments.includes(documentType);
-
-  console.log('isMandatoryDocument', isMandatoryDocument)
-
-  console.log('mandatoryDocuments', mandatoryDocuments)
 
   const saveStep3Schema = useMemo(
     () => createSaveStep3Schema(mandatoryEducationLevels),
@@ -698,50 +697,278 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     };
   }
 
+  type ExistingDocument = {
+    documentId: number;
+    documentName: string;
+    fileUrl: string;
+  };
+
+  async function getAuthenticatedFileUrl(
+    fileUrl: string,
+  ): Promise<string> {
+    const token = getAuthToken();
+
+    const response = await fetch(fileUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load file');
+    }
+
+    const blob = await response.blob();
+
+    return URL.createObjectURL(blob);
+  }
+
+
+
   function DocumentUploadCard({
     label,
     file,
+    existingDocument,
     onChange,
     required = false,
   }: {
     label: string;
     file: File | null;
+    existingDocument?: ExistingDocument;
     onChange: (file: File | null) => void;
     required?: boolean;
   }) {
+
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const MAX_FILE_SIZE = 2 * 1024 * 1024;
+
+    const [selectedFilePreview, setSelectedFilePreview] =
+      useState<string | null>(null);
+
+    useEffect(() => {
+      if (!file || !file.type.startsWith('image/')) {
+        setSelectedFilePreview(null);
+        return;
+      }
+
+      const url = URL.createObjectURL(file);
+
+      setSelectedFilePreview(url);
+
+      return () => URL.revokeObjectURL(url);
+    }, [file]);
+
+    const imagePreview =
+      selectedFilePreview || previewUrl;
+
+    const isWidePreview =
+      label === 'Signature'
+
+    useEffect(() => {
+      if (!existingDocument?.fileUrl) {
+        return;
+      }
+
+      let mounted = true;
+
+      getAuthenticatedFileUrl(existingDocument.fileUrl)
+        .then((url) => {
+          if (mounted) {
+            setPreviewUrl(url);
+          }
+        })
+        .catch(console.error);
+
+      return () => {
+        mounted = false;
+      };
+    }, [existingDocument?.fileUrl]);
+
+    const handleFileChange = (
+      e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+      const selectedFile = e.target.files?.[0];
+
+      if (!selectedFile) return;
+
+      if (selectedFile.size > MAX_FILE_SIZE) {
+        toast.error('File size must not exceed 2 MB');
+        return;
+      }
+
+      onChange(selectedFile);
+    };
+
+    // Replace handleViewDocument:
+    const handleViewDocument = async (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!existingDocument?.fileUrl) return;
+
+      try {
+        const url = await getAuthenticatedFileUrl(existingDocument.fileUrl);
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        // Revoke after a short delay to let the tab open
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      } catch {
+        alert('Unable to open document.');
+      }
+    };
+
     return (
-      <div className="rounded-2xl border border-slate-200 p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="font-medium text-slate-800">
-            {label}
-            {required && (
-              <span className="ml-1 text-rose-500">*</span>
-            )}
-          </p>
+      <div
+        className={`
+        rounded-2xl border-2 border-dashed p-5 transition-all
+       ${file || existingDocument
+            ? 'border-emerald-300 bg-emerald-50'
+            : 'border-slate-300 hover:border-primary hover:bg-slate-50'
+          }
+      `}
+      >
+        <label className="flex cursor-pointer flex-col items-center text-center">
+          <input
+            type="file"
+            className="hidden"
+            accept=".jpg,.jpeg,.png,.webp,.avif,.pdf"
+            onChange={handleFileChange}
+          />
 
           {file ? (
-            <div className="flex items-center gap-2 text-emerald-600">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>{file.name}</span>
-            </div>
+            <>
+              <div
+                className={`mb-3 flex items-center justify-center overflow-hidden rounded-lg border bg-white ${isWidePreview
+                  ? 'h-20 w-full'
+                  : 'h-24 w-24'
+                  }`}>
+                {imagePreview ? (
+                  <img
+                    src={imagePreview}
+                    alt={label}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <FileText className="h-10 w-10 text-slate-500" />
+                )}
+              </div>
+
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1 text-emerald-600">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    Ready to Upload
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onChange(null);
+                  }}
+                  className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Remove
+                </button>
+              </div>
+
+              <p className="font-medium text-slate-800">
+                {label}
+                {required && (
+                  <span className="ml-1 text-rose-500">*</span>
+                )}
+              </p>
+
+              <p
+                className="mt-2 max-w-full truncate text-xs text-slate-600"
+                title={file.name}
+              >
+                {file.name}
+              </p>
+
+              <span className="mt-2 text-xs text-slate-500">
+                Selected file will be uploaded on next step
+              </span>
+            </>
+          ) : existingDocument ? (
+            <>
+              <div
+                className={`mb-3 flex items-center justify-center overflow-hidden rounded-lg border bg-white ${isWidePreview
+                  ? 'h-20 w-full'
+                  : 'h-24 w-24'
+                  }`}>
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt={label}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <FileText className="h-10 w-10 text-slate-500" />
+                )}
+              </div>
+
+              <div className="mb-2 flex items-center gap-1 text-emerald-600">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  Already Uploaded
+                </span>
+              </div>
+
+              <p className="font-medium text-slate-800">
+                {label}
+                {required && (
+                  <span className="ml-1 text-rose-500">*</span>
+                )}
+              </p>
+
+              <p
+                className="mt-2 max-w-full truncate text-xs text-slate-600"
+                title={existingDocument.documentName}
+              >
+                {existingDocument.documentName}
+              </p>
+
+              <button
+                type="button"
+                onClick={handleViewDocument}
+                className="mt-2 text-xs font-medium text-blue-600 underline"
+              >
+                View Document
+              </button>
+
+              <span className="mt-2 text-xs text-slate-500">
+                Click to replace document
+              </span>
+            </>
           ) : (
-            <Upload className="mx-auto h-5 w-5 text-slate-400" />
+            <>
+              <Upload className="mb-3 h-10 w-10 text-slate-400" />
+
+              <p className="font-medium text-slate-800">
+                {label}
+                {required && (
+                  <span className="ml-1 text-rose-500">*</span>
+                )}
+              </p>
+
+              <p className="mt-2 text-xs text-slate-500">
+                Click to upload document
+              </p>
+
+              <p className="mt-1 text-xs text-slate-400">
+                JPG, PNG, PDF (Max 2 MB)
+              </p>
+            </>
           )}
-        </div>
-
-        <input
-          type="file"
-          onChange={(e) =>
-            onChange(e.target.files?.[0] ?? null)
-          }
-          className="block w-full text-sm"
-        />
-
-        {file && (
-          <p className="mt-2 truncate text-xs text-slate-500">
-            {file.name}
-          </p>
-        )}
+        </label>
       </div>
     );
   }
@@ -757,19 +984,90 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
         [field]: file,
       },
     }));
+
+    setErrors((prev) => ({
+      ...prev,
+      [field]: undefined,
+    }));
   };
 
+  const DOCUMENT_TYPE_MAPPING = {
+    photo: 'Photo',
+    signature: 'Signature',
+    aadhaar: 'Aadhaar',
+    sscMarksheet: 'SSC_MARKSHEET',
+    hscMarksheet: 'HSC_MARKSHEET',
+    degree: 'DEGREE',
+    mscitCertificate: 'MSCIT_CERTIFICATE',
+    cccCertificate: 'CCC_CERTIFICATE',
+  } as const;
+
+  async function uploadAllDocuments() {
+    const uploads = Object.entries(
+      DOCUMENT_TYPE_MAPPING,
+    )
+      .map(([field, documentType]) => {
+        const file =
+          form.documents[
+          field as keyof typeof form.documents
+          ];
+
+        if (!file) {
+          return null;
+        }
+
+        return uploadDocument(
+          applicationRecordId,
+          documentType,
+          file,
+        );
+      })
+      .filter(Boolean);
+
+    await Promise.all(uploads);
+  }
+
   const goNext = async () => {
+    console.log('currentStep', currentStep)
     if (currentStep === 0 && isEligibilityLoading) {
       setErrors({ acceptedEligibilityCriteria: 'Please wait for the eligibility criteria to load.' });
       return;
     }
 
-    const nextErrors = validateStep(currentStep, form, eligibilityCriteria);
+    const nextErrors = validateStep(
+      currentStep,
+      form,
+      eligibilityCriteria,
+      uploadedDocuments,
+      mandatoryDocuments,
+    );
+
+    console.log('VALIDATION ERRORS', nextErrors);
+
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
+
+      const firstError = Object.values(nextErrors).find(Boolean);
+
+      if (firstError) {
+        toast.error(firstError);
+      }
+
+      const firstField = Object.keys(nextErrors)[0];
+
+      document
+        .querySelector(
+          `[name="${firstField}"]`,
+        )
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+
       return;
     }
+
+
 
     // ── Fire SaveStep1 after step 2 (index 2) is validated ──
     if (currentStep === 0) {
@@ -857,7 +1155,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
           console.log('MAPPED DOCUMENTS', mappedDocuments);
 
           setUploadedDocuments(mappedDocuments);
-          console.log(uploadedDocuments)
         }
 
         if (step1) {
@@ -999,7 +1296,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
         }
 
         setApplicationRecordId(applicationId);
-        setApplicationRecordId(extractApplicationId(response.data));
       } catch {
         setStartOrResumeError('Could not start or resume your application. Please try again.');
         return;
@@ -1072,6 +1368,81 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       } finally {
         setIsSavingStepExperience(false);
       }
+    }
+
+    if (currentStep === 5) {
+      debugger
+      console.log('========== DOCUMENT UPLOAD START ==========');
+      console.log('APPLICATION ID', applicationRecordId);
+      console.log('FORM DOCUMENTS', form.documents);
+      console.log('UPLOADED DOCUMENTS', uploadedDocuments);
+
+      try {
+        const uploads = Object.entries(
+          DOCUMENT_TYPE_MAPPING,
+        )
+          .map(([field, documentType]) => {
+            const file =
+              form.documents[
+              field as keyof typeof form.documents
+              ];
+
+            console.log('FIELD', field);
+            console.log('DOCUMENT TYPE', documentType);
+            console.log('FILE', file);
+
+            if (!file) {
+              console.log(
+                `SKIPPED ${documentType} - no new file selected`,
+              );
+              return null;
+            }
+
+            console.log(
+              `QUEUED ${documentType}`,
+              file.name,
+            );
+
+            return uploadDocument(
+              applicationRecordId,
+              documentType,
+              file,
+            );
+          })
+          .filter(
+            (
+              item,
+            ): item is ReturnType<typeof uploadDocument> =>
+              item !== null,
+          );
+
+        console.log('UPLOAD REQUESTS COUNT', uploads.length);
+
+        if (uploads.length === 0) {
+          console.warn(
+            'NO FILES TO UPLOAD - ALL DOCUMENTS ARE NULL',
+          );
+        }
+
+        const result = await Promise.all(uploads);
+
+        console.log('UPLOAD SUCCESS');
+        console.log('UPLOAD RESULT', result);
+      } catch (error) {
+        console.error(
+          'DOCUMENT UPLOAD FAILED',
+          error,
+        );
+
+        setErrors((prev) => ({
+          ...prev,
+          documents: 'Failed to upload documents.',
+        }));
+
+        return;
+      }
+
+      console.log('========== DOCUMENT UPLOAD END ==========');
     }
 
     setErrors({});
@@ -1758,6 +2129,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                     <DocumentUploadCard
                       label="Photo"
                       required
+                      existingDocument={uploadedDocuments.photo}
                       file={form.documents.photo}
                       onChange={(file) => updateDocument('photo', file)}
                     />
@@ -1765,6 +2137,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                     <DocumentUploadCard
                       label="Signature"
                       required
+                      existingDocument={uploadedDocuments.signature}
                       file={form.documents.signature}
                       onChange={(file) => updateDocument('signature', file)}
                     />
@@ -1772,6 +2145,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                     <DocumentUploadCard
                       label="Aadhaar"
                       required
+                      existingDocument={uploadedDocuments.aadhaar}
                       file={form.documents.aadhaar}
                       onChange={(file) => updateDocument('aadhaar', file)}
                     />
@@ -1791,6 +2165,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                       label="SSC Marksheet"
                       required={isMandatoryDocument('SSC_MARKSHEET')}
                       file={form.documents.sscMarksheet}
+                      existingDocument={uploadedDocuments.sscMarksheet}
                       onChange={(file) => updateDocument('sscMarksheet', file)}
                     />
 
@@ -1798,6 +2173,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                       label="HSC Marksheet"
                       file={form.documents.hscMarksheet}
                       required={isMandatoryDocument('HSC_MARKSHEET')}
+                      existingDocument={uploadedDocuments.hscMarksheet}
                       onChange={(file) => updateDocument('hscMarksheet', file)}
                     />
 
@@ -1805,12 +2181,14 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                       label="Graduation Marksheet"
                       file={form.documents.degree}
                       required={isMandatoryDocument('DEGREE')}
+                      existingDocument={uploadedDocuments.degree}
                       onChange={(file) => updateDocument('degree', file)}
                     />
 
                     <DocumentUploadCard
                       label="MSCIT Certificate"
                       file={form.documents.mscitCertificate}
+                      existingDocument={uploadedDocuments.mscitCertificate}
                       required={isMandatoryDocument('MSCIT_CERTIFICATE')}
                       onChange={(file) => updateDocument('mscitCertificate', file)}
                     />
@@ -1818,6 +2196,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                     <DocumentUploadCard
                       label="CCC Certificate"
                       file={form.documents.cccCertificate}
+                      existingDocument={uploadedDocuments.cccCertificate}
                       required={isMandatoryDocument('CCC_CERTIFICATE')}
                       onChange={(file) => updateDocument('cccCertificate', file)}
                     />
