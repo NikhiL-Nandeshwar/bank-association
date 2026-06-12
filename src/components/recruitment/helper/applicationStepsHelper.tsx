@@ -657,8 +657,8 @@ export function YesNoButtons({ value, onChange }: { value: string; onChange: (va
 export function ReviewRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-            <p className="mt-2 text-sm leading-7 text-slate-700">{value}</p>
+            <p className="text-md pt-1 font-semibold uppercase tracking-[0.08em] text-black">{label}</p>
+            <p className="mt-1 text-sm leading-7 text-slate-700">{value}</p>
         </div>
     );
 }

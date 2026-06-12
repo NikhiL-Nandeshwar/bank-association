@@ -3,23 +3,24 @@
 'use client';
 
 import {
-  APPLICATION_INPUT_CLASS_NAME, APPLICATION_STEPS, LANGUAGE_ABILITIES, LANGUAGE_NAMES,
+  APPLICATION_INPUT_CLASS_NAME,
+  APPLICATION_STEPS,
+  LANGUAGE_ABILITIES,
+  LANGUAGE_NAMES,
   type EducationEntry, type LanguageAbility, type LanguageName
-} from '@/constants/application-wizard.constants';
-import { getCategories, getCastesByCategoryReligion, getCountries, getDistricts, getReligions, getStates, getSubCastes, getTalukas } from '@/actions/api/master.actions';
+}
+  from '@/constants/application-wizard.constants';
 import { getEligibilityCriteria } from '@/actions/api/vacancy.actions';
 import { useEffect, useMemo, useState } from 'react';
 import type { EligibilityCriteria } from '@/types/api.types';
-import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep1and2Payload } from '@/types/applicationSteps';
-import { calculateAgeAsOn, buildSaveStep3Payload, buildSaveStepExperiencePayload, ChoiceButtons, ErrorMap, FormField, generateTransactionNumber, getMandatoryEducationLevels, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons, hasExperienceDetails } from './helper/applicationStepsHelper';
+import { ApplicationWizardProps, ExperienceEntry, FormState, SaveStep1and2Payload } from '@/types/applicationSteps';
+import { calculateAgeAsOn, buildSaveStep3Payload, buildSaveStepExperiencePayload, ErrorMap, FormField, generateTransactionNumber, getMandatoryEducationLevels, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons, hasExperienceDetails } from './helper/applicationStepsHelper';
 import { getResumeData, saveStep1and2, saveStep3, saveStepExperience, startOrResumeApplication, uploadDocument } from '@/actions/api/application.actions';
 import { createSaveStep3Schema, createSaveStepExperienceSchema } from '@/schemas/application.schema';
 import { useAuth } from '@/lib/useAuth';
-import { CheckCircle2, FileText, Trash2, Upload } from 'lucide-react';
-import { getAuthToken } from '@/lib/auth-storage';
 import { toast } from 'sonner';
 import { normalizeEligibilityCriteriaResponse } from '@/utils/helper/eligibilityCriteriaHelper';
-import { extractApplicationId, getAuthenticatedFileUrl, splitAuthName } from '@/utils/applicationFormHelper';
+import { extractApplicationId, splitAuthName } from '@/utils/applicationFormHelper';
 import { DOCUMENT_TYPE_MAPPING } from '@/constants/document.constants';
 import { useApplicationMasters } from '@/hooks/useApplicationMasters';
 import { useStates } from '@/hooks/useStates';
@@ -27,10 +28,16 @@ import { useDistricts } from '@/hooks/useDistricts';
 import { useTalukas } from '@/hooks/useTalukas';
 import { useCastes } from '@/hooks/useCastes';
 import { useSubCastes } from '@/hooks/useSubCastes';
+import { DocumentUploadCard } from '../common/DocumentUploadCard';
+import { mapDocuments, mapStep1ToFormState } from '@/utils/helper/applicationResumeMapper';
 
-
-
-
+/**
+ * ApplicationWizard component manages the multi-step application form for bank recruitment. 
+ * It handles form state, validation, API interactions for saving and resuming applications, 
+ * and document uploads. The component also displays a progress sidebar and a summary upon submission.
+ * @param param0 
+ * @returns 
+ */
 export default function ApplicationWizard({ initialRecruitment }: ApplicationWizardProps) {
   const { user, status } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
@@ -105,6 +112,41 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     () => normalizeFormState(initialRecruitment, formState),
     [formState, initialRecruitment],
   );
+
+  const uploadedDocs = [
+    uploadedDocuments.photo || form.documents.photo
+      ? 'Photo'
+      : null,
+
+    uploadedDocuments.signature || form.documents.signature
+      ? 'Signature'
+      : null,
+
+    uploadedDocuments.aadhaar || form.documents.aadhaar
+      ? 'Aadhaar'
+      : null,
+
+    uploadedDocuments.sscMarksheet || form.documents.sscMarksheet
+      ? 'SSC Marksheet'
+      : null,
+
+    uploadedDocuments.hscMarksheet || form.documents.hscMarksheet
+      ? 'HSC Marksheet'
+      : null,
+
+    uploadedDocuments.degree || form.documents.degree
+      ? 'Graduation Marksheet'
+      : null,
+
+    uploadedDocuments.mscitCertificate || form.documents.mscitCertificate
+      ? 'MSCIT Certificate'
+      : null,
+
+    uploadedDocuments.cccCertificate || form.documents.cccCertificate
+      ? 'CCC Certificate'
+      : null,
+  ].filter(Boolean);
+
   const selectedIds = useMemo(
     () => ({
       countryId: getSelectedMasterId(form.country),
@@ -221,8 +263,25 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     };
   }, [initialRecruitment.vacancyId, initialRecruitment.eligibilityCriteria]);
 
+  const getCategoryName = (id: string) =>
+    categoryOptions.find(
+      (x) => x.value === id
+    )?.label ?? id;
 
+  const getReligionName = (id: string) =>
+    religionOptions.find(
+      (x) => x.value === id
+    )?.label ?? id;
 
+  const getCasteName = (id: string) =>
+    casteOptions.find(
+      (x) => x.value === id
+    )?.label ?? id;
+
+  const getSubCasteName = (id: string) =>
+    subCasteOptions.find(
+      (x) => x.value === id
+    )?.label ?? id;
 
   const mandatoryEducationLevels = useMemo(
     () => getMandatoryEducationLevels(eligibilityCriteria),
@@ -456,261 +515,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     };
   }
 
-  type ExistingDocument = {
-    documentId: number;
-    documentName: string;
-    fileUrl: string;
-  };
-
-
-  function DocumentUploadCard({
-    label,
-    file,
-    existingDocument,
-    onChange,
-    required = false,
-  }: {
-    label: string;
-    file: File | null;
-    existingDocument?: ExistingDocument;
-    onChange: (file: File | null) => void;
-    required?: boolean;
-  }) {
-
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const MAX_FILE_SIZE = 2 * 1024 * 1024;
-
-    const [selectedFilePreview, setSelectedFilePreview] =
-      useState<string | null>(null);
-
-    useEffect(() => {
-      if (!file || !file.type.startsWith('image/')) {
-        setSelectedFilePreview(null);
-        return;
-      }
-
-      const url = URL.createObjectURL(file);
-
-      setSelectedFilePreview(url);
-
-      return () => URL.revokeObjectURL(url);
-    }, [file]);
-
-    const imagePreview =
-      selectedFilePreview || previewUrl;
-
-    const isWidePreview =
-      label === 'Signature'
-
-    useEffect(() => {
-      if (!existingDocument?.fileUrl) {
-        return;
-      }
-
-      let mounted = true;
-
-      getAuthenticatedFileUrl(existingDocument.fileUrl)
-        .then((url) => {
-          if (mounted) {
-            setPreviewUrl(url);
-          }
-        })
-        .catch(console.error);
-
-      return () => {
-        mounted = false;
-      };
-    }, [existingDocument?.fileUrl]);
-
-    const handleFileChange = (
-      e: React.ChangeEvent<HTMLInputElement>
-    ) => {
-      const selectedFile = e.target.files?.[0];
-
-      if (!selectedFile) return;
-
-      if (selectedFile.size > MAX_FILE_SIZE) {
-        toast.error('File size must not exceed 2 MB');
-        return;
-      }
-
-      onChange(selectedFile);
-    };
-
-    // Replace handleViewDocument:
-    const handleViewDocument = async (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!existingDocument?.fileUrl) return;
-
-      try {
-        const url = await getAuthenticatedFileUrl(existingDocument.fileUrl);
-        const a = document.createElement('a');
-        a.href = url;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        // Revoke after a short delay to let the tab open
-        setTimeout(() => URL.revokeObjectURL(url), 10_000);
-      } catch {
-        alert('Unable to open document.');
-      }
-    };
-
-    return (
-      <div
-        className={`
-        rounded-2xl border-2 border-dashed p-5 transition-all
-       ${file || existingDocument
-            ? 'border-emerald-300 bg-emerald-50'
-            : 'border-slate-300 hover:border-primary hover:bg-slate-50'
-          }
-      `}
-      >
-        <label className="flex cursor-pointer flex-col items-center text-center">
-          <input
-            type="file"
-            className="hidden"
-            accept=".jpg,.jpeg,.png,.webp,.avif,.pdf"
-            onChange={handleFileChange}
-          />
-
-          {file ? (
-            <>
-              <div
-                className={`mb-3 flex items-center justify-center overflow-hidden rounded-lg border bg-white ${isWidePreview
-                  ? 'h-20 w-full'
-                  : 'h-24 w-24'
-                  }`}>
-                {imagePreview ? (
-                  <img
-                    src={imagePreview}
-                    alt={label}
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
-                  <FileText className="h-10 w-10 text-slate-500" />
-                )}
-              </div>
-
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1 text-emerald-600">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">
-                    Ready to Upload
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onChange(null);
-                  }}
-                  className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  Remove
-                </button>
-              </div>
-
-              <p className="font-medium text-slate-800">
-                {label}
-                {required && (
-                  <span className="ml-1 text-rose-500">*</span>
-                )}
-              </p>
-
-              <p
-                className="mt-2 max-w-full truncate text-xs text-slate-600"
-                title={file.name}
-              >
-                {file.name}
-              </p>
-
-              <span className="mt-2 text-xs text-slate-500">
-                Selected file will be uploaded on next step
-              </span>
-            </>
-          ) : existingDocument ? (
-            <>
-              <div
-                className={`mb-3 flex items-center justify-center overflow-hidden rounded-lg border bg-white ${isWidePreview
-                  ? 'h-20 w-full'
-                  : 'h-24 w-24'
-                  }`}>
-                {previewUrl ? (
-                  <img
-                    src={previewUrl}
-                    alt={label}
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
-                  <FileText className="h-10 w-10 text-slate-500" />
-                )}
-              </div>
-
-              <div className="mb-2 flex items-center gap-1 text-emerald-600">
-                <CheckCircle2 className="h-4 w-4" />
-                <span className="text-sm font-medium">
-                  Already Uploaded
-                </span>
-              </div>
-
-              <p className="font-medium text-slate-800">
-                {label}
-                {required && (
-                  <span className="ml-1 text-rose-500">*</span>
-                )}
-              </p>
-
-              <p
-                className="mt-2 max-w-full truncate text-xs text-slate-600"
-                title={existingDocument.documentName}
-              >
-                {existingDocument.documentName}
-              </p>
-
-              <button
-                type="button"
-                onClick={handleViewDocument}
-                className="mt-2 text-xs font-medium text-blue-600 underline"
-              >
-                View Document
-              </button>
-
-              <span className="mt-2 text-xs text-slate-500">
-                Click to replace document
-              </span>
-            </>
-          ) : (
-            <>
-              <Upload className="mb-3 h-10 w-10 text-slate-400" />
-
-              <p className="font-medium text-slate-800">
-                {label}
-                {required && (
-                  <span className="ml-1 text-rose-500">*</span>
-                )}
-              </p>
-
-              <p className="mt-2 text-xs text-slate-500">
-                Click to upload document
-              </p>
-
-              <p className="mt-1 text-xs text-slate-400">
-                JPG, PNG, PDF (Max 2 MB)
-              </p>
-            </>
-          )}
-        </label>
-      </div>
-    );
-  }
-
   const updateDocument = (
     field: keyof FormState['documents'],
     file: File | null,
@@ -816,185 +620,21 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
         console.log('DOCUMENT STEP', documentStep);
 
         if (documentStep?.length) {
-          const mappedDocuments: typeof uploadedDocuments = {};
-
-          documentStep.forEach((doc) => {
-            switch (doc.documentType) {
-              case 'Photo':
-                mappedDocuments.photo = doc;
-                break;
-
-              case 'Signature':
-                mappedDocuments.signature = doc;
-                break;
-
-              case 'Aadhaar':
-                mappedDocuments.aadhaar = doc;
-                break;
-
-              case 'SSC_MARKSHEET':
-                mappedDocuments.sscMarksheet = doc;
-                break;
-
-              case 'HSC_MARKSHEET':
-                mappedDocuments.hscMarksheet = doc;
-                break;
-
-              case 'DEGREE':
-                mappedDocuments.degree = doc;
-                break;
-
-              case 'MSCIT_CERTIFICATE':
-                mappedDocuments.mscitCertificate = doc;
-                break;
-
-              case 'CCC_CERTIFICATE':
-                mappedDocuments.cccCertificate = doc;
-                break;
-            }
-          });
-
-          console.log('MAPPED DOCUMENTS', mappedDocuments);
-
-          setUploadedDocuments(mappedDocuments);
+          setUploadedDocuments(
+            mapDocuments(documentStep)
+          );
         }
 
         if (step1) {
-          const [firstName = '', ...rest] = step1.fullName.split(' ');
-
-          setForm((prev) => {
-            const languageSkills = { ...prev.languageSkills };
-
-            const dateOfBirth =
-              step1.dateOfBirth?.split('T')[0] ?? '';
-
-            (step1.languages ?? []).forEach(
-              (language: {
-                languageName: string;
-                canRead: boolean;
-                canWrite: boolean;
-                canSpeak: boolean;
-              }) => {
-                const languageName = language.languageName?.toLowerCase();
-
-                if (
-                  languageName === 'marathi' ||
-                  languageName === 'hindi' ||
-                  languageName === 'english'
-                ) {
-                  languageSkills[languageName] = {
-                    read: language.canRead,
-                    write: language.canWrite,
-                    speak: language.canSpeak,
-                  };
-                }
-              },
-            );
-
-            const educationEntries = prev.educationEntries.map((entry) => {
-              const apiEducation = (educationStep ?? []).find(
-                (item: {
-                  educationLevel: string;
-                  specialization?: string;
-                  organizationName?: string;
-                  percentageOrCGPA?: number;
-                  className?: string;
-                  passedMonthYear?: string;
-                  passedDate?: string | null;
-                }) => item.educationLevel === entry.level,
-              );
-
-              console.log('apiEducation', apiEducation)
-
-              if (!apiEducation) {
-                return entry;
-              }
-
-              return {
-                ...entry,
-                institute: apiEducation.organizationName ?? '',
-                educationLevel: apiEducation.educationLevel ?? '',
-                specialization: apiEducation.specialization ?? '',
-                score:
-                  apiEducation.percentageOrCGPA &&
-                    apiEducation.percentageOrCGPA > 0
-                    ? String(apiEducation.percentageOrCGPA)
-                    : '',
-                className: apiEducation.className ?? '',
-                passedMonthYear: apiEducation.passedMonthYear
-                  ? (() => {
-                    const [month, year] =
-                      apiEducation.passedMonthYear.split('/');
-
-                    return `${year}-${month}`;
-                  })()
-                  : '', passedDate: apiEducation.passedDate
-                    ? apiEducation.passedDate.split('T')[0]
-                    : '',
-              };
-            });
-
-            const experienceEntries =
-              experienceStep?.length
-                ? experienceStep.map((item) => ({
-                  organization: item.organizationName ?? '',
-                  designation: item.designation ?? '',
-                  location: item.location ?? '',
-                  fromDate: item.fromDate
-                    ? item.fromDate.split('T')[0]
-                    : '',
-                  toDate: item.toDate
-                    ? item.toDate.split('T')[0]
-                    : '',
-                  isCurrentJob: item.isCurrentJob ?? false,
-                }))
-                : prev.experienceEntries;
-
-            return {
-              ...prev,
-
-              // Step 1
-              firstName,
-              lastName: rest.join(' '),
-              dateOfBirth,
-              ageAsOn: calculateAgeAsOn(dateOfBirth),
-              gender: step1.gender ?? '',
-              aadhaarNumber: step1.aadhaarNumber ?? '',
-              category: String(step1.categoryId ?? ''),
-              religion: String(step1.religionId ?? ''),
-              caste: String(step1.casteId ?? ''),
-              subCaste: String(step1.subCasteId ?? ''),
-              maharashtraDomiciled: step1.isMahaDomiciled ? 'Yes' : 'No',
-              nonCreamyLayer: step1.isNonCreamyLayer ? 'Yes' : 'No',
-              nationalityIndian: step1.nationalityId === 1 ? 'Yes' : 'No',
-              maritalStatus: step1.maritalStatus ?? '',
-              fathersName: step1.fathersName ?? '',
-              mothersName: step1.mothersName ?? '',
-              husbandsName: step1.husbandsName ?? '',
-
-              // Step 2
-              phone: step1.mobileNumber ?? '',
-              alternatePhone: step1.alternateNumber ?? '',
-              addressLine1: step1.addressLine1 ?? '',
-              addressLine2: step1.addressLine2 ?? '',
-              addressLine3: step1.addressLine3 ?? '',
-              pincode: step1.pinCode ?? '',
-              country: String(step1.countryId ?? ''),
-              state: String(step1.stateId ?? ''),
-              district: String(step1.districtId ?? ''),
-              taluka: String(step1.talukaId ?? ''),
-              email: user?.email ?? '',
-
-              // Languages
-              languageSkills,
-
-              // Education
-              educationEntries,
-
-              // Experiences
-              experienceEntries
-            };
-          });
+          setForm((prev) =>
+            mapStep1ToFormState(
+              prev,
+              step1,
+              educationStep ?? [],
+              experienceStep ?? [],
+              user?.email
+            )
+          );
         }
 
         setApplicationRecordId(applicationId);
@@ -1909,50 +1549,328 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
             )}
 
             {currentStep === 6 && (
-              <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-                <div className="space-y-4 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6">
-                  <ReviewRow label="Application" value={`${form.applicationId} | ${form.bankName} | ${form.postName}`} />
-                  <ReviewRow label="Recruitment" value={`${form.recruitmentCode} - ${form.recruitmentName}`} />
-                  <ReviewRow label="Applicant" value={fullName} />
-                  <ReviewRow label="Birth details" value={`${form.dateOfBirth} | ${form.ageAsOn} | ${form.gender} | ${form.category} | ${form.caste}`} />
-                  <ReviewRow label="Family details" value={`Spouse: ${form.husbandsName} | Mother: ${form.mothersName} | ${form.maritalStatus}`} />
-                  <ReviewRow label="Contact" value={`${form.email} | ${form.phone} | Alt: ${form.alternatePhone || 'NA'}`} />
-                  <ReviewRow label="Address" value={`${form.addressLine1}, ${form.addressLine2}, ${form.addressLine3}, ${form.taluka}, ${form.district}, ${form.state}, ${form.country} - ${form.pincode}`} />
-                  <ReviewRow
-                    label="Education"
-                    value={form.educationEntries
-                      .filter((entry) =>
-                        [entry.institute, entry.educationLevel, entry.specialization, entry.score, entry.className, entry.passedMonthYear]
-                          .some((value) => value?.trim()),
-                      )
-                      .map((entry) => `${entry.level}: ${entry.institute || entry.educationLevel || 'NA'} | ${entry.score || 'NA'}`)
-                      .join(' | ') || 'NA'}
-                  />
-                  <ReviewRow
-                    label="Experience"
-                    value={
-                      hasExperienceDetails(form.experienceEntries)
-                        ? form.experienceEntries
-                          .map(
-                            (entry) =>
-                              `${entry.designation} at ${entry.organization}`,
-                          )
-                          .join(' | ')
-                        : 'Fresher'
-                    }
-                  />
-                </div>
 
-                <div className="rounded-[1.75rem] bg-slate-800 p-6 text-white">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">Final declaration</p>
-                  <p className="mt-4 text-sm leading-7 text-slate-300">
-                    I confirm that the information submitted here is accurate and matches my official records. I understand that the recruitment team may verify these details before shortlisting.
-                  </p>
-                  <label className="mt-6 flex cursor-pointer items-start gap-3 text-sm leading-6 text-slate-200">
-                    <input type="checkbox" checked={form.declarationAccepted} onChange={(event) => updateField('declarationAccepted', event.target.checked)} className="mt-1 h-4 w-4 rounded border-white/20" />
-                    <span>I accept the declaration and want to continue to payment.</span>
-                  </label>
-                  {errors.declarationAccepted ? <p className="mt-3 text-sm text-rose-300">{errors.declarationAccepted}</p> : null}
+              <div className="max-h-[90vh] overflow-y-auto pr-2 space-y-6">
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+                  <div className="space-y-6">
+
+                    {/* Recruitment */}
+                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                        Recruitment Details
+                      </h3>
+
+                      <ReviewRow
+                        label="Application"
+                        value={`${form.applicationId} | ${form.bankName} | ${form.postName}`}
+                      />
+
+                      <ReviewRow
+                        label="Recruitment"
+                        value={`${form.recruitmentCode} - ${form.recruitmentName}`}
+                      />
+                    </div>
+
+                    {/* Personal Information */}
+                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                        Personal Information
+                      </h3>
+
+                      <ReviewRow label="Full Name" value={fullName || 'N/A'} />
+
+                      <ReviewRow
+                        label="Date Of Birth"
+                        value={`${form.dateOfBirth || 'N/A'} | Age: ${form.ageAsOn || 'N/A'}`}
+                      />
+
+                      <ReviewRow
+                        label="Gender"
+                        value={form.gender || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Aadhaar Number"
+                        value={form.aadhaarNumber || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Marital Status"
+                        value={form.maritalStatus || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Spouse Name"
+                        value={form.husbandsName || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Father's Name"
+                        value={form.fathersName || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Mother's Name"
+                        value={form.mothersName || 'N/A'}
+                      />
+                    </div>
+
+                    {/* Category & Reservation */}
+                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                        Category & Reservation Details
+                      </h3>
+
+                      <ReviewRow
+                        label="Category"
+                        value={getCategoryName(form.category) || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Religion"
+                        value={getReligionName(form.religion) || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Caste"
+                        value={getCasteName(form.caste) || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Sub Caste"
+                        value={getSubCasteName(form.subCaste) || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Maharashtra Domicile"
+                        value={form.maharashtraDomiciled || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Non Creamy Layer"
+                        value={form.nonCreamyLayer || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Indian National"
+                        value={form.nationalityIndian || 'N/A'}
+                      />
+                    </div>
+
+                    {/* Contact */}
+                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                        Contact Information
+                      </h3>
+
+                      <ReviewRow
+                        label="Email"
+                        value={form.email || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Mobile"
+                        value={form.phone || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Alternate Mobile"
+                        value={form.alternatePhone || 'N/A'}
+                      />
+
+                      <ReviewRow
+                        label="Address"
+                        value={`${form.addressLine1 || ''}
+          ${form.addressLine2 || ''}
+          ${form.addressLine3 || ''}
+          ${form.taluka || ''}
+          ${form.district || ''}
+          ${form.state || ''}
+          ${form.country || ''}
+          ${form.pincode || ''}`}
+                      />
+                    </div>
+
+                    {/* Languages */}
+                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                        Languages Known
+                      </h3>
+
+                      <ReviewRow
+                        label="Languages"
+                        value={
+                          LANGUAGE_NAMES
+                            .filter((language) =>
+                              Object.values(
+                                form.languageSkills[language]
+                              ).some(Boolean)
+                            )
+                            .map((language) => {
+                              const abilities = [];
+
+                              if (form.languageSkills[language].read) {
+                                abilities.push('Read');
+                              }
+
+                              if (form.languageSkills[language].write) {
+                                abilities.push('Write');
+                              }
+
+                              if (form.languageSkills[language].speak) {
+                                abilities.push('Speak');
+                              }
+
+                              return `${language}: ${abilities.join(', ')}`;
+                            })
+                            .join(' | ') || 'N/A'
+                        }
+                      />
+                    </div>
+
+                    {/* Education */}
+                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                        Education Details
+                      </h3>
+
+                      {form.educationEntries
+                        .filter(
+                          (entry) =>
+                            entry.institute?.trim() ||
+                            entry.score?.trim() ||
+                            entry.passedMonthYear?.trim()
+                        )
+                        .map((entry) => (
+                          <div
+                            key={entry.level}
+                            className="rounded-xl border border-slate-300 bg-white p-4"
+                          >
+                            <h4 className="font-semibold text-slate-900">
+                              {entry.level}
+                            </h4>
+
+                            <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                              {entry.institute && (
+                                <p>
+                                  <span className="font-medium">
+                                    Institute:
+                                  </span>{' '}
+                                  {entry.institute}
+                                </p>
+                              )}
+
+                              {entry.specialization && (
+                                <p>
+                                  <span className="font-medium">
+                                    Specialization:
+                                  </span>{' '}
+                                  {entry.specialization}
+                                </p>
+                              )}
+
+                              {entry.score && (
+                                <p>
+                                  <span className="font-medium">
+                                    Score:
+                                  </span>{' '}
+                                  {entry.score}
+                                </p>
+                              )}
+
+                              {entry.className && (
+                                <p>
+                                  <span className="font-medium">
+                                    Class:
+                                  </span>{' '}
+                                  {entry.className}
+                                </p>
+                              )}
+
+                              {entry.passedMonthYear && (
+                                <p>
+                                  <span className="font-medium">
+                                    Passed:
+                                  </span>{' '}
+                                  {entry.passedMonthYear}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+
+                    {/* Experience */}
+                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                        Experience Details
+                      </h3>
+
+                      {hasExperienceDetails(form.experienceEntries) ? (
+                        form.experienceEntries.map((entry, index) => (
+                          <ReviewRow
+                            key={index}
+                            label={`Experience ${index + 1}`}
+                            value={`${entry.designation || 'N/A'} | ${entry.organization || 'N/A'} | ${entry.location || 'N/A'} | ${entry.fromDate || 'N/A'} - ${entry.isCurrentJob ? 'Current' : entry.toDate || 'N/A'}`}
+                          />
+                        ))
+                      ) : (
+                        <ReviewRow
+                          label="Experience"
+                          value="Fresher"
+                        />
+                      )}
+                    </div>
+
+                    {/* Documents */}
+                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                        Uploaded Documents
+                      </h3>
+
+                      <ReviewRow
+                        label="Uploaded Documents"
+                        value={uploadedDocs.join(', ') || 'None'}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-[1.75rem] bg-slate-800 p-6 text-white">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
+                      Final declaration
+                    </p>
+
+                    <p className="mt-4 text-sm leading-7 text-slate-300">
+                      I confirm that all personal details, educational information,
+                      experience details and uploaded documents are correct and match
+                      my original records. I understand that any discrepancy may lead
+                      to rejection of my application.
+                    </p>
+
+                    <label className="mt-6 flex cursor-pointer items-start gap-3 text-sm leading-6 text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={form.declarationAccepted}
+                        onChange={(event) =>
+                          updateField(
+                            'declarationAccepted',
+                            event.target.checked
+                          )
+                        }
+                        className="mt-1 h-4 w-4 rounded border-white/20"
+                      />
+
+                      <span>
+                        I have reviewed all details and wish to continue to payment.
+                      </span>
+                    </label>
+
+                    {errors.declarationAccepted ? (
+                      <p className="mt-3 text-sm text-rose-300">
+                        {errors.declarationAccepted}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             )}
