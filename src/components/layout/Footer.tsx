@@ -1,5 +1,7 @@
 'use client';
 
+import Link from "next/link";
+
 export default function Footer() {
   const year = new Date().getFullYear();
 
@@ -9,7 +11,7 @@ export default function Footer() {
 
         {/* Address */}
         <div>
-          <h3 className="mb-3 text-2xl font-semibold text-[#fcd62e] hover:cursor-pointer hover:text-yellow-500">
+          <h3 className="mb-3 text-2xl font-semibold text-[#fcd62e]">
             Association Office
           </h3>
 
@@ -19,31 +21,87 @@ export default function Footer() {
             कोल्हापूर - 416012
           </p>
 
-          <p className="mt-3 text-md">
-            Phone: 0231-2627307
-          </p>
+          <a href="tel:02312627307" className="hover:text-[#fcd62e]">
+            0231-2627307
+          </a>
         </div>
 
         {/* Quick Links */}
         <div>
-          <h4 className="mb-3 text-2xl font-semibold text-[#fcd62e] hover:cursor-pointer hover:text-yellow-500">
+          <h4 className="mb-3 text-2xl font-semibold text-[#fcd62e]">
             Quick Links
           </h4>
 
           <ul className="space-y-2 text-md">
-            <li>RBI</li>
-            <li>Govt. of Maharashtra</li>
-            <li>Banking Regulation Act</li>
-            <li>Privacy Policy</li>
+            <li>
+              <a
+                href="https://rbi.org.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition hover:text-[#fcd62e]"
+              >
+                RBI
+              </a>
+            </li>
+
+            <li>
+              <a
+                href="https://www.maharashtra.gov.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition hover:text-[#fcd62e]"
+              >
+                Govt. of Maharashtra
+              </a>
+            </li>
+
+            {/* <li>
+              <Link
+                href="/banking-regulation-act"
+                className="transition hover:text-[#fcd62e]"
+              >
+                Banking Regulation Act
+              </Link>
+            </li> */}
+
+            <li className="cursor-not-allowed text-slate-400">
+              Banking Regulation Act (Coming Soon)
+            </li>
+
+            {/* <li>
+              <Link
+                href="/privacy-policy"
+                className="transition hover:text-[#fcd62e]"
+              >
+                Privacy Policy
+              </Link>
+            </li> */}
+            <li className="cursor-not-allowed text-slate-400">
+              Privacy Policy (Coming Soon)
+            </li>
           </ul>
         </div>
 
         {/* Copyright */}
-        <div className="flex items-end text-md">
-          © {year} - Kolhapur District Urban Banks Association
+        <div className="flex flex-col justify-end text-md">
+          <p>
+            © {year} - Kolhapur District Urban Banks Association
+          </p>
+
+          <p className="mt-2 text-sm text-slate-200">
+            Managed by{' '}
+            <a
+              href="https://www.nexspiretechnologies.in/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-[#fcd62e] hover:text-yellow-400"
+            >
+              Nexspire Technologies
+            </a>
+          </p>
         </div>
+
       </div>
     </footer>
   );
 }
-
