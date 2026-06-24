@@ -1,5 +1,6 @@
 'use client';
 
+import { Phone } from "lucide-react";
 import Link from "next/link";
 
 export default function Footer() {
@@ -11,18 +12,25 @@ export default function Footer() {
 
         {/* Address */}
         <div>
-          <h3 className="mb-3 text-2xl font-semibold text-[#fcd62e]">
+          <h3 className="mb-4 text-2xl font-semibold text-[#fcd62e]">
             Association Office
           </h3>
 
-          <p className="text-md leading-relaxed">
-            कोल्हापूर जिल्हा नागरी बँक्स सहकारी असोसिएशन लि.
+          <p className="text-md leading-7">
+            Kolhapur District Urban Co-operative Banks Asso. Ltd.
             <br />
-            कोल्हापूर - 416012
+            C.S. 1458, G.N. Chambers,
+            <br />
+            Mangalwar Peth, Kolhapur,
+            <br />
+            Maharashtra - 416012
           </p>
 
-          <a href="tel:02312627307" className="hover:text-[#fcd62e]">
-            0231-2627307
+          <a
+            href="tel:02312627307"
+            className="mt-4 inline-block font-medium transition-colors hover:text-[#fcd62e]"
+          >
+            📞 0231-2627307
           </a>
         </div>
 
@@ -85,7 +93,7 @@ export default function Footer() {
         {/* Copyright */}
         <div className="flex flex-col justify-end text-md">
           <p>
-            © {year} - Kolhapur District Urban Banks Association
+            © {year} - Kolhapur District Urban Co-operative Banks Association
           </p>
 
           <p className="mt-2 text-sm text-slate-200">
