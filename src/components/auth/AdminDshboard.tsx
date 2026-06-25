@@ -4,7 +4,7 @@
 import { useAuth } from '@/lib/useAuth';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes.constants';
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import { AdminBank, AdminRecruitment, AdminNews } from '@/types/adminDashboard';
 import { formatDate } from '@/utils/adminDashboardHelper';
 import { fetchBanksService, fetchRecruitmentsService, fetchNewsService } from '@/actions/api/admin.actions';
@@ -102,6 +102,8 @@ export default function AdminDashboardPage() {
     const recruitment = useRecruitmentForm(loadRecruitments);
     const actions = useRecruitmentActions(loadRecruitments);
     const newsForm = useNewsForm(news, setNews);
+    const newsFormRef = useRef<HTMLDivElement>(null);
+    const newsEngInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         async function loadStates() {
@@ -143,6 +145,22 @@ export default function AdminDashboardPage() {
             router.replace(ROUTES.login);
         }
     }, [status, isAdmin, router, sessionExpired]);
+
+    useEffect(() => {
+        if (activeSection !== 'news' || !newsForm.editingId) return;
+
+        newsFormRef.current?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+        });
+
+        const timer = window.setTimeout(() => {
+            newsEngInputRef.current?.focus();
+            newsEngInputRef.current?.select();
+        }, 150);
+
+        return () => window.clearTimeout(timer);
+    }, [activeSection, newsForm.editingId]);
 
     // Load initial data on mount
     if (status === 'loading') return null;
@@ -845,7 +863,7 @@ export default function AdminDashboardPage() {
 
                     {activeSection === 'news' ? (
                         <div className="space-y-6">
-                            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                            <div ref={newsFormRef} className={"rounded-lg border bg-white p-6 shadow-sm transition " + (newsForm.editingId ? "border-amber-300 ring-2 ring-amber-100 shadow-lg shadow-amber-50" : "border-slate-200")}>
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-xl font-semibold text-slate-900">
                                         {newsForm.editingId ? 'Edit News' : 'Add News'}
@@ -869,6 +887,7 @@ export default function AdminDashboardPage() {
                                     className="space-y-4"
                                 >
                                     <AdminInput
+                                        ref={newsEngInputRef}
                                         label="News (English)"
                                         value={newsForm.form.newsEng}
                                         onChange={(v) =>
@@ -1198,25 +1217,31 @@ function RecentlyAddedNews({ news, onEdit }: { news: AdminNews[]; onEdit?: (item
     );
 }
 
-function AdminInput({
-    label,
-    value,
-    onChange,
-    type = 'text',
-    required = false,
-    error,
-}: {
+type AdminInputProps = {
     label: string;
     value: string;
     onChange: (value: string) => void;
     type?: string;
     required?: boolean;
     error?: string;
-}) {
+};
+
+const AdminInput = forwardRef<HTMLInputElement, AdminInputProps>(function AdminInput(
+    {
+        label,
+        value,
+        onChange,
+        type = 'text',
+        required = false,
+        error,
+    },
+    ref,
+) {
     return (
         <label className="block">
             <span className="text-sm font-semibold text-slate-800">{label}</span>
             <input
+                ref={ref}
                 type={type}
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
@@ -1227,4 +1252,4 @@ function AdminInput({
             {error ? <p className="mt-2 text-sm text-rose-600">{error}</p> : null}
         </label>
     );
-}
+});
