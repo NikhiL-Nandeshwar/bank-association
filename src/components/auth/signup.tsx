@@ -56,7 +56,7 @@ const SIGNUP_COPY = {
         memberPortal: 'सदस्य पोर्टल',
         heading: 'सुरू ठेवण्यासाठी आपले खाते तयार करा',
         description: 'खाली आपली माहिती भरा. खातं सक्रिय करण्यापूर्वी तुमच्या ईमेल पत्त्यावर पुष्टीकरण कोड पाठवला जाईल.',
-        formTitle: 'साइन अप',
+        formTitle: 'नोंदणी करा',
         formDescription: 'आपले KOP बँक असोसिएशन खाते तयार करा.',
         fullName: 'पूर्ण नाव',
         fullNamePlaceholder: 'आधारप्रमाणे आपले पूर्ण नाव भरा',
@@ -213,7 +213,7 @@ export default function Signup() {
         <section className="bg-slate-100 px-4 py-10 sm:py-14">
             <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_420px] lg:items-center">
                 <div className="max-w-2xl">
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                    <p className="text-sm font-semibold uppercase tracking-[0.09em] text-emerald-700">
                         {content.memberPortal}
                     </p>
 

@@ -36,6 +36,7 @@
     fixFields: '\u0915\u0943\u092a\u092f\u093e \u0939\u093e\u092f\u0932\u093e\u0907\u091f \u0915\u0947\u0932\u0947\u0932\u0947 \u092b\u0940\u0932\u094d\u0921 \u0926\u0941\u0930\u0941\u0938\u094d\u0924 \u0915\u0930\u093e.',
   },
 } as const;
+
 export const PASSWORD_RECOVERY_COPY = {
   en: {
     eyebrow: 'Account Recovery',
