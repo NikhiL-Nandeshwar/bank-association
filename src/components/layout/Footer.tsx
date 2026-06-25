@@ -63,6 +63,17 @@ export default function Footer() {
               </a>
             </li>
 
+            <li>
+              <a
+                href="/pdf/termsforpayment.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition hover:text-[#fcd62e]"
+              >
+                Terms & Conditions for Online Payment
+              </a>
+            </li>
+
             {/* <li>
               <Link
                 href="/banking-regulation-act"
