@@ -75,7 +75,7 @@ export const HERO_COPY = {
     titleLineOne: 'Online Application Portal 2026-27 !!',
     titleLineTwo: 'Recruitment Process, E-books, Current Updates and Other Services',
     description: 'Submit online applications for recruitment opportunities across member cooperative banks.',
-    about: 'About Us',
+    // about: 'About Us',
     recruitment: 'Recruitment Updates',
   },
   mr: {
@@ -357,7 +357,7 @@ export const RECRUITMENT_OVERVIEW_COPY = {
     marks: 'Marks',
     loading: 'Loading recruitment updates...',
     emptyCurrent: 'No recruitment exam is currently active. Please stay tuned for upcoming bank recruitment announcements.',
-    emptyPrevious: 'No previous recruitment records are available from the API yet.',
+    emptyPrevious: 'No previous recruitment records are available at the moment.',
     resultNote: 'The following candidates are shortlisted for document verification. This is sample data for the portal preview.',
     note: 'All recruitment processes are conducted through the respective cooperative banks.',
     acts: 'Banking Regulation Acts',

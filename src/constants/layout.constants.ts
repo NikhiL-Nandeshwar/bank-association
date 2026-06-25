@@ -3,7 +3,7 @@ import { ROUTES } from '@/constants/routes.constants';
 export const HEADER_COPY = {
   en: {
     home: 'Home',
-    about: 'About Us',
+    // about: 'About Us',
     recruitment: 'Recruitment Updates',
     ebook: 'E-Book',
     login: 'Login / Register',
@@ -15,7 +15,7 @@ export const HEADER_COPY = {
   },
   mr: {
     home: 'मुख्यपृष्ठ',
-    about: 'आमच्याबद्दल',
+    // about: 'आमच्याबद्दल',
     recruitment: 'भरती अपडेट्स',
     ebook: 'ई-पुस्तक',
     login: 'लॉगिन / नोंदणी',
@@ -33,11 +33,11 @@ export const HEADER_NAV_ITEMS = [
     labelKey: 'home',
     external: false,
   },
-  {
-    href: ROUTES.about,
-    labelKey: 'about',
-    external: false,
-  },
+  // {
+  //   href: ROUTES.about,
+  //   labelKey: 'about',
+  //   external: false,
+  // },
   {
     href: ROUTES.recruitment,
     labelKey: 'recruitment',

@@ -44,11 +44,11 @@ export default function Hero() {
             </p>
 
             <div className="mt-8 flex flex-wrap justify-center gap-3 md:justify-start">
-              <Link
+              {/* <Link
                 href={ROUTES.about}
                 className="inline-flex items-center rounded-md bg-[] border border-[#b13c7a] px-5 py-3 text-md font-semibold text-[#b13c7a] shadow-sm transition hover:bg-[#f9e7f1]"              >
                 {content.about}
-              </Link>
+              </Link> */}
 
               <Link
                 href={ROUTES.recruitment}
