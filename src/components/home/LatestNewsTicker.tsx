@@ -46,6 +46,11 @@ function NewsCard({ item, compact = false }: { item: NewsItem; compact?: boolean
       ? item.newsMrt
       : item.newsEng;
 
+  const newsSummary =
+    language === 'mr'
+      ? item.newsMrt
+      : item.newsEng;
+
   return (
     <article
       className={`group flex h-full min-h-[190px] w-[320px] shrink-0 flex-col justify-between rounded-lg border ${styles.border} bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg sm:w-[380px] ${compact ? 'min-h-[210px] w-full sm:w-full' : ''
@@ -68,9 +73,9 @@ function NewsCard({ item, compact = false }: { item: NewsItem; compact?: boolean
         </h3>
 
         {/* Keep summary if needed */}
-        <p className="mt-2 line-clamp-3 text-md leading-6 text-slate-700">
-          {item.summary}
-        </p>
+        {/* <p className="mt-2 line-clamp-3 text-md leading-6 text-slate-700">
+          {newsSummary}
+        </p> */}
       </div>
 
       <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4 text-sm">
