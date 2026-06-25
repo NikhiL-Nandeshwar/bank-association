@@ -61,10 +61,20 @@ export default function Header() {
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4">
         <Link href={isAdmin ? ROUTES.adminDashboard : ROUTES.home}
           className="flex min-w-0 items-center gap-2 sm:gap-3" onClick={closeMenu}>
-          <Image src="/logo.png" alt="KOP Bank Logo" width={46} height={46} className="h-12 w-12 shrink-0 object-contain" priority />
-          <div className="min-w-0">
-            <p className="max-w-37.5 truncate text-lg font-semibold leading-tight sm:max-w-none ">{content.logoLineOne}</p>
-            <p className="max-w-37.5 truncate text-md text-[#fbf5da] sm:max-w-none ">{content.logoLineTwo}</p>
+          <Image src="/logo.png"
+            alt="KOP Bank Logo"
+            width={46}
+            height={46}
+            className="h-11 w-11 shrink-0 object-contain sm:h-12 sm:w-12"
+            priority />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold leading-4 sm:text-lg sm:leading-tight">
+              {content.logoLineOne}
+            </p>
+
+            <p className="mt-0.5 text-[11px] leading-4 text-[#fbf5da] sm:mt-0 sm:text-base sm:leading-tight">
+              {content.logoLineTwo}
+            </p>
           </div>
         </Link>
 
