@@ -1,7 +1,7 @@
 'use client';
 
 // React
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // Framework
 import Image from 'next/image';
@@ -24,6 +24,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { language, setLanguage } = usePortalLanguage();
   const { user, logout, status } = useAuth();
@@ -43,6 +44,24 @@ export default function Header() {
 
   const closeMenu = () => setIsMenuOpen(false);
 
+  // Handle click outside user menu to close it
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!isUserMenuOpen) {
+        return;
+      }
+
+      const target = event.target as Node | null;
+
+      if (target && userMenuRef.current && !userMenuRef.current.contains(target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [isUserMenuOpen]);
   /**
    * Handles user logout by calling the logout API and then redirecting to the login page.
    */
@@ -57,7 +76,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-[#7A2E92] text-white">
+    <header className="relative z-50 overflow-visible bg-[#7A2E92] text-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4">
         <Link href={isAdmin ? ROUTES.adminDashboard : ROUTES.home}
           className="flex min-w-0 items-center gap-2 sm:gap-3" onClick={closeMenu}>
@@ -88,7 +107,8 @@ export default function Header() {
             </button>
           </div>
 
-          <button type="button" aria-label="Toggle menu" aria-expanded={isMenuOpen} onClick={() => setIsMenuOpen((prev) => !prev)} className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-500 text-slate-100 hover:bg-slate-700">
+          <button type="button" aria-label="Toggle menu" aria-expanded={isMenuOpen} onClick={() => setIsMenuOpen((prev) => !prev)} 
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-500 text-slate-100 hover:bg-slate-700">
             {isMenuOpen ? (
               <span className="text-sm font-semibold leading-none">X</span>
             ) : (
@@ -101,7 +121,7 @@ export default function Header() {
           </button>
         </div>
 
-        <nav className="hidden items-center gap-5 text-md font-medium md:flex">
+        <nav className="relative z-50 hidden items-center gap-5 text-md font-medium md:flex">
           {navLinks.map((item) =>
             item.external ? (
               <a
@@ -160,11 +180,11 @@ export default function Header() {
           )}
 
           {status === 'loading' ? null : user ? (
-            <div className="relative">
+            <div ref={userMenuRef} className="relative z-50">
               <button
                 type="button"
                 onClick={() => setIsUserMenuOpen((prev) => !prev)}
-                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-slate-700"
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-slate-600"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fcd62e] text-slate-900">
                   <span className="text-xs font-semibold">
@@ -180,21 +200,21 @@ export default function Header() {
               </button>
 
               {isUserMenuOpen && (
-                <div className="absolute right-0 top-full mt-1 w-48 rounded-md border border-slate-600 bg-slate-800 py-1 shadow-lg">
+                <div className="absolute right-0 top-full z-50 mt-0 w-40 rounded-md border border-[#7A2E92]/10 bg-gray-200 py-1 shadow-xl ring-1 ring-black/10">
                   <button
                     type="button"
                     onClick={() => {
                       setIsUserMenuOpen(false);
                       setIsChangePasswordModalOpen(true);
                     }}
-                    className="block w-full px-4 py-2 text-left text-sm text-slate-200 hover:bg-slate-700"
+                    className="block w-full px-3 py-1 text-left text-sm text-[#7A2E92] hover:bg-[#7A2E92]/50 hover:text-white"
                   >
                     Change Password
                   </button>
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="block w-full px-4 py-2 text-left text-sm text-slate-200 hover:bg-slate-700"
+                    className="block w-full px-3 py-1 text-left text-sm text-[#7A2E92] hover:bg-[#7A2E92]/50 hover:text-white"
                   >
                     Logout
                   </button>
@@ -337,3 +357,4 @@ export default function Header() {
     </header>
   );
 }
+
