@@ -16,7 +16,7 @@ export const ASSOCIATION_COMMITMENT_COPY = {
     badge: 'About us',
     title: 'Strong support for member banks',
     description:
-      'Kolhapur District Urban Banks Association helps member institutions with planning, training, and implementation support so they can build stronger, more people-focused banking operations.',
+      'Kolhapur Zilla Nagari Banks Sahakri Association Ltd helps member institutions with planning, training, and implementation support so they can build stronger, more people-focused banking operations.',
     focusAreas: [
       {
         title: 'Guidance and policy support',

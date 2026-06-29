@@ -13,7 +13,7 @@ export default function AboutPage() {
                 About us
               </span>
               <h1 className="mt-4 text-3xl font-semibold text-slate-900 md:text-4xl">
-                Kolhapur District Urban Banks Association recruitment portal
+                Kolhapur Zilla Nagari Banks Sahakri Association Ltd recruitment portal
               </h1>
               <p className="mt-4 text-sm leading-7 text-slate-600 md:text-base">
                 This portal is designed to present recruitment notices, guide applicants, and streamline the application journey for member banks. Instead of sending every visitor directly into a form, it helps people understand the process first and apply only during active recruitment windows.

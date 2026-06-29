@@ -10,7 +10,7 @@ export const HEADER_COPY = {
     languageLabel: 'View in',
     english: 'English',
     marathi: '\u092e\u0930\u093e\u0920\u0940',
-    logoLineOne: 'Kolhapur District Urban Banks',
+    logoLineOne: 'Kolhapur Zilla Nagari Banks Sahakari',
     logoLineTwo: 'Association Ltd.',
   },
   mr: {

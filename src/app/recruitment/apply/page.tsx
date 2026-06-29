@@ -98,7 +98,7 @@ export default function RecruitmentApplyPage() {
       initialRecruitment={{
         vacancyId: selectedVacancy?.vacancyId ?? selectedVacancy?.id,
         code: query.code ?? 'KM-016',
-        name: query.name ?? 'Kolhapur District Urban Banks Association Recruitment',
+        name: query.name ?? 'Kolhapur Zilla Nagari Banks Sahakri Association Ltd recruitment',
         postName: selectedVacancy?.postName || query.post,
         bankName: selectedVacancy?.bankName || query.bankName,
         eligibilityCriteria: selectedVacancy?.eligibilityCriteria ?? [],
