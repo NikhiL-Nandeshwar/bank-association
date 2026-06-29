@@ -22,7 +22,7 @@ export const HEADER_COPY = {
     languageLabel: 'भाषा',
     english: 'English',
     marathi: 'मराठी',
-    logoLineOne: 'कोल्हापूर जिल्हा नागरी बँक्स',
+    logoLineOne: 'कोल्हापूर जिल्हा नागरी बँक्स सहकारी',
     logoLineTwo: 'असोसिएशन लि.',
   },
 } as const;
