@@ -17,7 +17,7 @@ export default function Footer() {
           </h3>
 
           <p className="text-md leading-7">
-            Kolhapur Zilla Nagari Banks Sahakri Association Ltd
+            Kolhapur Zilla Nagari Banks Sahakari Association Ltd.
             <br />
             C.S. 1458, G.N. Chambers,
             <br />
@@ -104,7 +104,7 @@ export default function Footer() {
         {/* Copyright */}
         <div className="flex flex-col justify-end text-md">
           <p>
-            © {year} - Kolhapur Zilla Nagari Banks Sahakri Association Ltd
+            © {year} - Kolhapur Zilla Nagari Banks Sahakari Association Ltd.
           </p>
 
           <p className="mt-2 text-sm text-slate-200">
