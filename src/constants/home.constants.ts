@@ -3,7 +3,7 @@ import { ROUTES } from '@/constants/routes.constants';
 export const ANNOUNCEMENT_COPY = {
   en: {
     label: 'Notice',
-    message: 'Welcome to the Kolhapur District Urban Banks Association portal. Check the latest announcements and recruitment updates here.',
+    message: 'Welcome to the Kolhapur Zilla Nagari Banks Sahakari Association Ltd portal. Check the latest announcements and recruitment updates here.',
   },
   mr: {
     label: '\u0938\u0942\u091a\u0928\u093e',
