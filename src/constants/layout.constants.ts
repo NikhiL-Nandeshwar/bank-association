@@ -44,8 +44,8 @@ export const HEADER_NAV_ITEMS = [
     external: false,
   },
   {
-    href: 'https://digi-e-book.vercel.app/',
+    href: ROUTES.eBook,
     labelKey: 'ebook',
-    external: true,
+    external: false,
   },
 ] as const;

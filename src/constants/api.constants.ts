@@ -5,7 +5,6 @@ export const API_ENDPOINTS = {
   auth: {
     login: 'Auth/Login',
     refresh: 'Auth/Refresh',
-
     signup: 'Auth/Signup',
     sendOtp: 'Auth/SendOtp',
     verifyOtp: 'Auth/VerifyOtp',
@@ -60,5 +59,12 @@ export const API_ENDPOINTS = {
     startOrResume: 'Application/StartOrResume',
     getResumeData: '/Application/GetResumeData',
     uploadDocument: '/Application/UploadDocument',
-  }
+  },
+   book: {
+    create: 'Book/Create',
+    update: 'Book/Update',
+    getAll: 'Book/GetAll',
+    getById: (bookId: number) => `Book/GetById/${bookId}`,
+    toggleActive: (bookId: number) => `Book/ToggleActive/${bookId}`,
+  },
 } as const;

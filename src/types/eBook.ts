@@ -1,0 +1,15 @@
+export interface Book {
+  bookId: number
+  title: string
+  slug: string
+  authorName: string
+  categoryName: string
+  coverImageUrl: string
+  shortSummary: string | null
+  language: string
+  price: number
+  isFeatured: boolean
+  isActive: boolean
+  isOwned: boolean
+  totalPurchases: number
+}
