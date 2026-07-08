@@ -30,6 +30,7 @@ export default function Header() {
   const { user, logout, status } = useAuth();
   const content = HEADER_COPY[language];
   const pathname = usePathname();
+  const hideLanguage = (pathname?.startsWith(ROUTES.eBook) ?? false) || (pathname?.startsWith('/bookslist') ?? false);
   const isAdmin =
     user?.role?.toLowerCase?.().includes('admin') ?? false;
 
@@ -149,7 +150,7 @@ export default function Header() {
             )
           )}
 
-          {!isAdmin && (
+          {!isAdmin && !hideLanguage && (
             <div className="ml-2 flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs backdrop-blur-md">
               <span className="text-white/85">{content.languageLabel}</span>
               <div className="flex items-center rounded-full bg-white/15 p-1 font-semibold">
@@ -266,7 +267,7 @@ export default function Header() {
               )
             )}
 
-            {!isAdmin && (
+            {!isAdmin && !hideLanguage && (
               <div className="mt-2 flex items-center justify-between rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs backdrop-blur-md">
                 <span className="text-white/85">
                   {content.languageLabel}

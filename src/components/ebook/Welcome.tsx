@@ -39,7 +39,7 @@ export function Welcome() {
 
                 <div className="flex flex-wrap gap-4">
                     <Link
-                        href="/books"
+                        href="/bookslist"
                         className="rounded-lg bg-[#7A2E92] px-6 py-3 font-medium text-white transition hover:bg-[#69267d]"
                     >
                         📚 पुस्तके पहा

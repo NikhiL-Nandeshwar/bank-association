@@ -70,7 +70,7 @@ export function LatestBooks() {
                         </div>
 
                         <Link
-                            href="/books"
+                            href="/bookslist"
                             className="rounded-xl bg-[#7A2E92] px-5 py-3 font-medium text-white transition hover:bg-[#69267d]"
                         >
                             सर्व पुस्तके पहा →
@@ -121,9 +121,9 @@ export function LatestBooks() {
                         ) : (
 
                             filteredBooks.map((book) => (
-                                <Link key={book.bookId} href={`/books/${book.slug}`}>
+                                <Link key={book.bookId} href={`/bookslist/${book.slug}`}>
                                     <Card className="group overflow-hidden rounded-3xl border-[#7A2E92]/20 bg-white shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
-                                        <div className="relative h-80 overflow-hidden bg-gradient-to-b from-slate-100 to-slate-200">
+                                        <div className="relative h-80 overflow-hidden bg-linear-to-b from-slate-100 to-slate-200">
                                             <BookCover
                                                 src={book.coverImageUrl}
                                                 alt={book.title}
@@ -172,7 +172,7 @@ export function LatestBooks() {
                 {/* Mobile Button */}
                 <div className="mt-10 text-center md:hidden">
                     <Link
-                        href="/books"
+                        href="/bookslist"
                         className="rounded-xl bg-[#7A2E92] px-6 py-3 font-medium text-white hover:bg-[#69267d]"
                     >
                         सर्व पुस्तके पहा →
