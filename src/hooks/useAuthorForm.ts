@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { createAuthorService } from '@/actions/api/admin.actions';
 import { createAuthorSchema } from '@/schemas/author.schema';
@@ -10,6 +11,10 @@ export const emptyAuthorForm = {
   bio: '',
   photoUrl: '',
 };
+
+export interface CreateAuthorResponse {
+  authorId: number;
+}
 
 export function useAuthorForm(authors: any[], setAuthors: any) {
   const [form, setForm] = useState(emptyAuthorForm);
@@ -30,7 +35,10 @@ export function useAuthorForm(authors: any[], setAuthors: any) {
     const local = { authorId: Date.now(), ...parsed.data };
 
     try {
-      const data = await createAuthorService(parsed.data);
+      const data = (await createAuthorService(parsed.data)) as {
+        authorId?: number;
+      };
+
       local.authorId = data.authorId ?? local.authorId;
       toast.success(ADMIN_DASHBOARD_MESSAGES.author?.saveSuccess ?? 'Author added.');
     } catch {

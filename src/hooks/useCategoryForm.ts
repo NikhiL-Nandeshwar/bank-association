@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { createCategoryService } from '@/actions/api/admin.actions';
 import { createCategorySchema } from '@/schemas/category.schema';
@@ -31,8 +32,12 @@ export function useCategoryForm(categories: any[], setCategories: any) {
     const local = { categoryId: Date.now(), ...parsed.data };
 
     try {
-      const data = await createCategoryService(parsed.data);
+      const data = (await createCategoryService(parsed.data)) as {
+        categoryId?: number;
+      };
+
       local.categoryId = data.categoryId ?? local.categoryId;
+
       toast.success(ADMIN_DASHBOARD_MESSAGES.category?.saveSuccess ?? 'Category added.');
     } catch {
       toast.error(ADMIN_DASHBOARD_MESSAGES.category?.saveFailed ?? 'Failed to add category.');
