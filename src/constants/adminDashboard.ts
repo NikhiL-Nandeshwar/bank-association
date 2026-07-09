@@ -44,6 +44,19 @@ export const emptyNewsForm = {
   newsMrt: '',
 };
 
+export const emptyCategoryForm = {
+  categoryName: '',
+  description: '',
+  thumbnailUrl: '',
+  sortOrder: 0,
+};
+
+export const emptyAuthorForm = {
+  authorName: '',
+  bio: '',
+  photoUrl: '',
+};
+
 export const ELIGIBILITY_CRITERIA_TYPES = ['EDUCATION', 'COURSE', 'EXPERIENCE', 'CERTIFICATION'];
 
 export const ELIGIBILITY_CRITERIA_VALUES = {

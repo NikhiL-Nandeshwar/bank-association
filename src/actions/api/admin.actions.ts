@@ -3,6 +3,9 @@ import { createVacancy, getVacancies, updateVacancy } from "./vacancy.actions";
 import { formatApiBank, formatApiRecruitment, getBankItems, getVacancyItems } from "@/utils/adminDashboardHelper";
 import { createBank, getBanks } from "./bank.actions";
 import { createNews, updateNews, getNews } from "./news.actions";
+import { createCategory } from './category.actions';
+import { createAuthor } from './author.actions';
+import { createBook } from './books.actions';
 
 export async function fetchBanksService() {
     const response = await getBanks();
@@ -18,6 +21,21 @@ export async function fetchRecruitmentsService() {
 
 export async function createBankService(payload: any) {
     const response = await createBank(payload);
+    return response.data;
+}
+
+export async function createCategoryService(payload: any) {
+    const response = await createCategory(payload);
+    return response.data;
+}
+
+export async function createAuthorService(payload: any) {
+    const response = await createAuthor(payload);
+    return response.data;
+}
+
+export async function createBookService(formData: FormData) {
+    const response = await createBook(formData as any);
     return response.data;
 }
 

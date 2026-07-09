@@ -25,7 +25,7 @@ export function BookCover({ src, alt }: Props) {
       src={imageSrc}
       alt={alt}
       fill
-      className="object-cover"
+      className="object-contain object-center"
       onError={() => setImageSrc('/images/UPI.webp')}
     />
   );

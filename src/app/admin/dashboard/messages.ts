@@ -23,4 +23,19 @@ export const ADMIN_DASHBOARD_MESSAGES = {
     localSaveFallback: 'News saved locally. API save can be retried when backend is available.',
     translationInfo: 'Note: Marathi translation can be entered manually or auto-translated.',
   },
+  category: {
+    validationError: 'Please fix the highlighted category fields.',
+    saveSuccess: 'Category added successfully.',
+    saveFailed: 'Failed to add category.',
+  },
+  author: {
+    validationError: 'Please fix the highlighted author fields.',
+    saveSuccess: 'Author added successfully.',
+    saveFailed: 'Failed to add author.',
+  },
+  book: {
+    validationError: 'Please fix the highlighted book fields.',
+    saveSuccess: 'Book added successfully.',
+    saveFailed: 'Failed to add book.',
+  },
 } as const;

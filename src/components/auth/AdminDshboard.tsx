@@ -7,10 +7,15 @@ import { ROUTES } from '@/constants/routes.constants';
 import { forwardRef, useEffect, useRef, useState } from 'react';
 import { AdminBank, AdminRecruitment, AdminNews } from '@/types/adminDashboard';
 import { formatDate } from '@/utils/adminDashboardHelper';
-import { fetchBanksService, fetchRecruitmentsService, fetchNewsService } from '@/actions/api/admin.actions';
+import { fetchBanksService, fetchRecruitmentsService, fetchNewsService, createBookService } from '@/actions/api/admin.actions';
+import { getCategories } from '@/actions/api/category.actions';
+import { getAuthors } from '@/actions/api/author.actions';
 import { useBankForm } from '@/hooks/useBankForm';
 import { useRecruitmentForm } from '@/hooks/useRecruitmentForm';
 import { useNewsForm } from '@/hooks/useNewsForm';
+import { useCategoryForm } from '@/hooks/useCategoryForm';
+import { useAuthorForm } from '@/hooks/useAuthorForm';
+import BookForm from '@/components/admin/BookForm';
 import { useRecruitmentActions } from '@/hooks/useRecruitmentActions';
 import { toast } from 'sonner';
 import { documentTypeOptions } from '@/constants/vacancy.constants';
@@ -61,8 +66,10 @@ const ELIGIBILITY_CRITERIA_DEFAULT_DECLARATIONS: Record<string, { declarationEng
  * @returns 
  */
 export default function AdminDashboardPage() {
-    const [activeSection, setActiveSection] = useState<'overview' | 'banks' | 'recruitments' | 'news'>('overview');
+    const [activeSection, setActiveSection] = useState<'overview' | 'banks' | 'recruitments' | 'news' | 'categories' | 'authors' | 'books'>('overview');
     const [banks, setBanks] = useState<AdminBank[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
+    const [authors, setAuthors] = useState<any[]>([]);
     const bank = useBankForm(banks, setBanks);
     const [recruitments, setRecruitments] = useState<AdminRecruitment[]>([]);
     const [news, setNews] = useState<AdminNews[]>([]);
@@ -102,6 +109,8 @@ export default function AdminDashboardPage() {
     const recruitment = useRecruitmentForm(loadRecruitments);
     const actions = useRecruitmentActions(loadRecruitments);
     const newsForm = useNewsForm(news, setNews);
+    const categoryForm = useCategoryForm(categories, setCategories);
+    const authorForm = useAuthorForm(authors, setAuthors);
     const newsFormRef = useRef<HTMLDivElement>(null);
     const newsEngInputRef = useRef<HTMLInputElement>(null);
 
@@ -116,6 +125,28 @@ export default function AdminDashboardPage() {
         }
 
         loadStates();
+    }, []);
+
+    useEffect(() => {
+        async function loadCatsAndAuthors() {
+            try {
+                const resp = await getCategories();
+                const items = Array.isArray(resp.data) ? resp.data : resp.data.items || [];
+                setCategories(items);
+            } catch {
+                setCategories([]);
+            }
+
+            try {
+                const resp = await getAuthors();
+                const items = Array.isArray(resp.data) ? resp.data : resp.data.items || [];
+                setAuthors(items);
+            } catch {
+                setAuthors([]);
+            }
+        }
+
+        loadCatsAndAuthors();
     }, []);
 
     useEffect(() => {
@@ -184,6 +215,9 @@ export default function AdminDashboardPage() {
                     <nav className="mt-4 space-y-2">
                         <SidebarButton label="Overview" active={activeSection === 'overview'} onClick={() => setActiveSection('overview')} />
                         <SidebarButton label="Bank Master" active={activeSection === 'banks'} onClick={() => setActiveSection('banks')} />
+                        <SidebarButton label="Category Master" active={activeSection === 'categories'} onClick={() => setActiveSection('categories')} />
+                        <SidebarButton label="Author Master" active={activeSection === 'authors'} onClick={() => setActiveSection('authors')} />
+                        <SidebarButton label="Book Master" active={activeSection === 'books'} onClick={() => setActiveSection('books')} />
                         <SidebarButton label="Recruitment" active={activeSection === 'recruitments'} onClick={() => setActiveSection('recruitments')} />
                         <SidebarButton label="News" active={activeSection === 'news'} onClick={() => setActiveSection('news')} />
                     </nav>
@@ -310,6 +344,82 @@ export default function AdminDashboardPage() {
                             </div>
 
                             <RecentlyAddedBanks banks={banks} />
+                        </div>
+                    ) : null}
+
+                    {activeSection === 'categories' ? (
+                        <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+                            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                                <h2 className="text-xl font-semibold text-slate-900 mb-6">Category Master</h2>
+
+                                <form
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        categoryForm.submit();
+                                    }}
+                                    className="space-y-4"
+                                >
+                                    <AdminInput label="Category name" value={categoryForm.form.categoryName} onChange={(v) => categoryForm.setForm((p:any) => ({ ...p, categoryName: v }))} error={categoryForm.errors.categoryName} />
+
+                                    <AdminInput label="Description" value={categoryForm.form.description} onChange={(v) => categoryForm.setForm((p:any) => ({ ...p, description: v }))} />
+
+                                    <AdminInput label="Thumbnail URL" value={categoryForm.form.thumbnailUrl} onChange={(v) => categoryForm.setForm((p:any) => ({ ...p, thumbnailUrl: v }))} />
+
+                                    <button type="submit" disabled={categoryForm.isSaving} className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{categoryForm.isSaving ? 'Saving...' : 'Save category'}</button>
+                                </form>
+                            </div>
+
+                            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                                <h3 className="text-lg font-semibold mb-4">Recently added categories</h3>
+                                <ul className="space-y-2">
+                                    {categories.map((c) => (
+                                        <li key={c.categoryId} className="text-sm">{c.categoryName}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {activeSection === 'authors' ? (
+                        <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+                            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                                <h2 className="text-xl font-semibold text-slate-900 mb-6">Author Master</h2>
+
+                                <form
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        authorForm.submit();
+                                    }}
+                                    className="space-y-4"
+                                >
+                                    <AdminInput label="Author name" value={authorForm.form.authorName} onChange={(v) => authorForm.setForm((p:any) => ({ ...p, authorName: v }))} error={authorForm.errors.authorName} />
+
+                                    <AdminInput label="Bio" value={authorForm.form.bio} onChange={(v) => authorForm.setForm((p:any) => ({ ...p, bio: v }))} />
+
+                                    <AdminInput label="Photo URL" value={authorForm.form.photoUrl} onChange={(v) => authorForm.setForm((p:any) => ({ ...p, photoUrl: v }))} />
+
+                                    <button type="submit" disabled={authorForm.isSaving} className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{authorForm.isSaving ? 'Saving...' : 'Save author'}</button>
+                                </form>
+                            </div>
+
+                            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                                <h3 className="text-lg font-semibold mb-4">Recently added authors</h3>
+                                <ul className="space-y-2">
+                                    {authors.map((a) => (
+                                        <li key={a.authorId} className="text-sm">{a.authorName}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {activeSection === 'books' ? (
+                        <div className="grid gap-6 xl:grid-cols-[720px_minmax(0,1fr)]">
+                            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                                <h2 className="text-xl font-semibold text-slate-900 mb-6">Add Book</h2>
+
+                                <BookForm categories={categories} authors={authors} onSaved={(b) => { /* TODO: append to list if needed */ }} />
+                            </div>
                         </div>
                     ) : null}
 

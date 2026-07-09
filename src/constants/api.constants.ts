@@ -46,6 +46,22 @@ export const API_ENDPOINTS = {
     getDistricts: 'Master/GetDistricts',
     getTalukas: 'Master/GetTalukas',
   },
+  category: {
+    create: 'Category/Create',
+    update: 'Category/Update',
+    getAll: 'Category/GetAll',
+    getById: (id: number) => `Category/GetById/${id}`,
+    getDropdown: 'Category/Dropdown',
+    toggleActive: (id: number) => `Category/Toggle/${id}`,
+  },
+  author: {
+    create: 'Author/Create',
+    update: 'Author/Update',
+    getAll: 'Author/GetAll',
+    getById: (id: number) => `Author/GetById/${id}`,
+    getDropdown: 'Author/Dropdown',
+    toggleActive: (id: number) => `Author/Toggle/${id}`,
+  },
   news: {
     create: 'news/create',
     getAll: 'news/GetAll',

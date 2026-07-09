@@ -11,3 +11,29 @@ export function getBooks(page = 1, pageSize = 12) {
     }
   );
 }
+
+export function createBook(formData: FormData) {
+  return apiRequest<Book>(API_ENDPOINTS.book.create, {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export function updateBook(formData: FormData) {
+  return apiRequest<Book>(API_ENDPOINTS.book.update, {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export function getBookById(bookId: number) {
+  return apiRequest<Book>(API_ENDPOINTS.book.getById(bookId), {
+    method: 'GET',
+  });
+}
+
+export function toggleBookActive(bookId: number) {
+  return apiRequest<Book>(API_ENDPOINTS.book.toggleActive(bookId), {
+    method: 'POST',
+  });
+}

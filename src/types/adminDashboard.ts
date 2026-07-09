@@ -54,6 +54,21 @@ export type AdminNews = {
   updatedAt: string;
 };
 
+export type AdminCategory = {
+  categoryId: number;
+  categoryName: string;
+  description?: string;
+  thumbnailUrl?: string;
+  sortOrder?: number;
+};
+
+export type AdminAuthor = {
+  authorId: number;
+  authorName: string;
+  bio?: string;
+  photoUrl?: string;
+};
+
 export type NewsForm = {
   newsEng: string;
   newsMrt: string;
@@ -61,3 +76,11 @@ export type NewsForm = {
 
 export type NewsFormField = keyof NewsForm;
 export type NewsFormErrors = Partial<Record<NewsFormField, string>>;
+
+export type CategoryForm = typeof import("@/constants/adminDashboard").emptyCategoryForm;
+export type CategoryFormField = keyof CategoryForm;
+export type CategoryFormErrors = Partial<Record<CategoryFormField, string>>;
+
+export type AuthorForm = typeof import("@/constants/adminDashboard").emptyAuthorForm;
+export type AuthorFormField = keyof AuthorForm;
+export type AuthorFormErrors = Partial<Record<AuthorFormField, string>>;
