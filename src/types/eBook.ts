@@ -6,6 +6,8 @@ export interface Book {
   categoryName: string
   coverImageUrl: string
   shortSummary: string | null
+  description?: string | null
+  bookPdfUrl?: string | null
   language: string
   price: number
   isFeatured: boolean
