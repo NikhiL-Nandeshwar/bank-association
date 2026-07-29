@@ -27,7 +27,7 @@ export const APPLICATION_STEPS = [
   { id: '05', title: 'Experience', description: 'Highlight your work readiness.' },
   { id: '06', title: 'Documents', description: 'Provide IDs, links, and preferences.' },
   { id: '07', title: 'Review', description: 'Verify everything before payment.' },
-  { id: '08', title: 'Payment', description: 'Complete the demo application payment.' },
+  { id: '08', title: 'Payment', description: 'Start the Billdesk payment process for your application.' },
 ] as const;
 
 export const APPLICATION_INPUT_CLASS_NAME =

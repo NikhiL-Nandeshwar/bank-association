@@ -41,6 +41,12 @@ export function publishVacancy(vacancyId: number) {
   });
 }
 
+export function deleteVacancy(vacancyId: number) {
+  return apiRequest<unknown>(API_ENDPOINTS.vacancy.delete(vacancyId), {
+    method: 'DELETE',
+  });
+}
+
 export function uploadNoticePdf(payload: FormData) {
   return apiRequest<unknown>(API_ENDPOINTS.vacancy.uploadNoticePdf, {
     method: 'POST',

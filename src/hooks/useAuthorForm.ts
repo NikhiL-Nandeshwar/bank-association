@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
-import { createAuthorService } from '@/actions/api/admin.actions';
+import { createAuthorService, updateAuthorService } from '@/actions/api/admin.actions';
 import { createAuthorSchema } from '@/schemas/author.schema';
 import { getZodFieldErrors } from '@/utils/validation';
 import { ADMIN_DASHBOARD_MESSAGES } from '@/app/admin/dashboard/messages';
@@ -20,6 +20,7 @@ export function useAuthorForm(authors: any[], setAuthors: any) {
   const [form, setForm] = useState(emptyAuthorForm);
   const [errors, setErrors] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const submit = async () => {
     const parsed = createAuthorSchema.safeParse(form);
@@ -31,6 +32,26 @@ export function useAuthorForm(authors: any[], setAuthors: any) {
 
     setErrors({});
     setIsSaving(true);
+
+    if (editingId) {
+      try {
+        await updateAuthorService({ authorId: editingId, ...parsed.data });
+
+        const next = authors.map((item: any) =>
+          item.authorId === editingId ? { ...item, ...parsed.data, authorId: editingId } : item,
+        );
+
+        setAuthors(next);
+        toast.success(ADMIN_DASHBOARD_MESSAGES.author?.saveSuccess ?? 'Author updated successfully.');
+      } catch {
+        toast.error(ADMIN_DASHBOARD_MESSAGES.author?.saveFailed ?? 'Failed to update author.');
+      } finally {
+        setForm(emptyAuthorForm);
+        setEditingId(null);
+        setIsSaving(false);
+      }
+      return;
+    }
 
     const local = { authorId: Date.now(), ...parsed.data };
 
@@ -46,9 +67,26 @@ export function useAuthorForm(authors: any[], setAuthors: any) {
     } finally {
       setAuthors([local, ...authors]);
       setForm(emptyAuthorForm);
+      setEditingId(null);
       setIsSaving(false);
     }
   };
 
-  return { form, setForm, errors, isSaving, submit };
+  const startEdit = (item: any) => {
+    setEditingId(item.authorId);
+    setForm({
+      authorName: item.authorName ?? '',
+      bio: item.bio ?? '',
+      photoUrl: item.photoUrl ?? '',
+    });
+    setErrors({});
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(emptyAuthorForm);
+    setErrors({});
+  };
+
+  return { form, setForm, errors, isSaving, submit, editingId, startEdit, cancelEdit };
 }

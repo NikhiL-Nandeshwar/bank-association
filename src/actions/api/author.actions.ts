@@ -9,9 +9,9 @@ export function createAuthor(payload: unknown) {
   });
 }
 
-export function updateAuthor(payload: unknown) {
+export function updateAuthor(payload: any) {
   return apiRequest(API_ENDPOINTS.author.update, {
-    method: 'POST',
+    method: 'PUT',
     body: payload,
   });
 }
@@ -25,6 +25,12 @@ export function getAuthors(page = 1, pageSize = 50) {
 export function getAuthorById(authorId: number) {
   return apiRequest(API_ENDPOINTS.author.getById(authorId), {
     method: 'GET',
+  });
+}
+
+export function deleteAuthor(authorId: number) {
+  return apiRequest(API_ENDPOINTS.author.delete(authorId), {
+    method: 'DELETE',
   });
 }
 

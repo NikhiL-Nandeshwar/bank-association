@@ -11,7 +11,7 @@ export function createCategory(payload: unknown) {
 
 export function updateCategory(payload: unknown) {
   return apiRequest(API_ENDPOINTS.category.update, {
-    method: 'POST',
+    method: 'PUT',
     body: payload,
   });
 }
@@ -28,8 +28,14 @@ export function getCategoryById(categoryId: number) {
   });
 }
 
+export function deleteCategory(categoryId: number) {
+  return apiRequest(API_ENDPOINTS.category.delete(categoryId), {
+    method: 'DELETE',
+  });
+}
+
 export function toggleCategoryActive(categoryId: number) {
   return apiRequest(API_ENDPOINTS.category.toggleActive(categoryId), {
-    method: 'POST',
+    method: 'PATCH',
   });
 }

@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
   bank: {
     create: 'Bank/Create',
     update: 'Bank/Update',
+    delete: (bankId: number) => `Bank/ToggleActive?bankId=${bankId}`,
     getAll: 'Bank/GetAll',
     getById: (bankId: number) => `Bank/GetbyId/${bankId}`,
     getDropdown: 'Bank/GetDrowpdown',
@@ -29,6 +30,7 @@ export const API_ENDPOINTS = {
     create: 'vacancy/create',
     getAll: 'vacancy/getall',
     update: 'Vacancy/Update',
+    delete: (vacancyId: number) => `Vacancy/ToggleActive?bankId=${vacancyId}`,
     publish: 'Vacancy/Publish',
     uploadNoticePdf: 'Vacancy/UploadNoticePdf',
     getPublicList: 'Vacancy/GetPublicList',
@@ -49,6 +51,7 @@ export const API_ENDPOINTS = {
   category: {
     create: 'Category/Create',
     update: 'Category/Update',
+    delete: (id: number) => `Category/Delete/${id}`,
     getAll: 'Category/GetAll',
     getById: (id: number) => `Category/GetById/${id}`,
     getDropdown: 'Category/Dropdown',
@@ -57,6 +60,7 @@ export const API_ENDPOINTS = {
   author: {
     create: 'Author/Create',
     update: 'Author/Update',
+    delete: (id: number) => `Author/Delete/${id}`,
     getAll: 'Author/GetAll',
     getById: (id: number) => `Author/GetById/${id}`,
     getDropdown: 'Author/Dropdown',
@@ -66,6 +70,7 @@ export const API_ENDPOINTS = {
     create: 'news/create',
     getAll: 'news/GetAll',
     update: 'news/update',
+    delete: (newsId: number) => `news/Delete/${newsId}`,
     getPublic: 'news/GetPublic',
   },
   application: {
@@ -76,9 +81,13 @@ export const API_ENDPOINTS = {
     getResumeData: '/Application/GetResumeData',
     uploadDocument: '/Application/UploadDocument',
   },
-   book: {
+  payment: {
+    initiateApplication: 'Payment/InitiateApplication',
+  },
+  book: {
     create: 'Book/Create',
     update: 'Book/Update',
+    delete: (bookId: number) => `Book/Delete/${bookId}`,
     getAll: 'Book/GetAll',
     getById: (bookId: number) => `Book/GetById/${bookId}`,
     toggleActive: (bookId: number) => `Book/ToggleActive/${bookId}`,

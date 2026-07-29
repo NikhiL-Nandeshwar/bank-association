@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
-import { createCategoryService } from '@/actions/api/admin.actions';
+import { createCategoryService, updateCategoryService } from '@/actions/api/admin.actions';
 import { createCategorySchema } from '@/schemas/category.schema';
 import { getZodFieldErrors } from '@/utils/validation';
 import { ADMIN_DASHBOARD_MESSAGES } from '@/app/admin/dashboard/messages';
@@ -17,6 +17,7 @@ export function useCategoryForm(categories: any[], setCategories: any) {
   const [form, setForm] = useState(emptyCategoryForm);
   const [errors, setErrors] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const submit = async () => {
     const parsed = createCategorySchema.safeParse(form);
@@ -28,6 +29,26 @@ export function useCategoryForm(categories: any[], setCategories: any) {
 
     setErrors({});
     setIsSaving(true);
+
+    if (editingId) {
+      try {
+        const data = await updateCategoryService({ categoryId: editingId, ...parsed.data });
+
+        const next = categories.map((item: any) =>
+          item.categoryId === editingId ? { ...item, ...parsed.data, categoryId: editingId } : item,
+        );
+
+        setCategories(next);
+        toast.success(ADMIN_DASHBOARD_MESSAGES.category?.saveSuccess ?? 'Category updated successfully.');
+      } catch {
+        toast.error(ADMIN_DASHBOARD_MESSAGES.category?.saveFailed ?? 'Failed to update category.');
+      } finally {
+        setForm(emptyCategoryForm);
+        setEditingId(null);
+        setIsSaving(false);
+      }
+      return;
+    }
 
     const local = { categoryId: Date.now(), ...parsed.data };
 
@@ -44,9 +65,27 @@ export function useCategoryForm(categories: any[], setCategories: any) {
     } finally {
       setCategories([local, ...categories]);
       setForm(emptyCategoryForm);
+      setEditingId(null);
       setIsSaving(false);
     }
   };
 
-  return { form, setForm, errors, isSaving, submit };
+  const startEdit = (item: any) => {
+    setEditingId(item.categoryId);
+    setForm({
+      categoryName: item.categoryName ?? '',
+      description: item.description ?? '',
+      thumbnailUrl: item.thumbnailUrl ?? '',
+      sortOrder: item.sortOrder ?? 0,
+    });
+    setErrors({});
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(emptyCategoryForm);
+    setErrors({});
+  };
+
+  return { form, setForm, errors, isSaving, submit, editingId, startEdit, cancelEdit };
 }

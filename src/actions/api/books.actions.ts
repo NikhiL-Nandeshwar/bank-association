@@ -26,6 +26,12 @@ export function updateBook(formData: FormData) {
   });
 }
 
+export function deleteBook(bookId: number) {
+  return apiRequest<Book>(API_ENDPOINTS.book.delete(bookId), {
+    method: 'DELETE',
+  });
+}
+
 export function getBookById(bookId: number) {
   return apiRequest<Book>(API_ENDPOINTS.book.getById(bookId), {
     method: 'GET',

@@ -22,3 +22,9 @@ export function getNews() {
     method: 'GET',
   });
 }
+
+export function deleteNews(newsId: number) {
+  return apiRequest<News>(API_ENDPOINTS.news.delete(newsId), {
+    method: 'DELETE',
+  });
+}

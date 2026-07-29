@@ -38,6 +38,15 @@ export async function saveStepExperience(payload: SaveStepExperiencePayload) {
   });
 }
 
+export async function initiateApplicationPayment(applicationId: number) {
+  return apiRequest<unknown>(
+    `${API_ENDPOINTS.payment.initiateApplication}?applicationId=${applicationId}`,
+    {
+      method: 'POST',
+    }
+  );
+}
+
 export async function uploadDocument(
   applicationId: number,
   documentType: string,

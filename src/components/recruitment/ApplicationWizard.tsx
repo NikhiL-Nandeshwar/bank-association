@@ -14,8 +14,8 @@ import { getEligibilityCriteria } from '@/actions/api/vacancy.actions';
 import { useEffect, useMemo, useState } from 'react';
 import type { EligibilityCriteria } from '@/types/api.types';
 import { ApplicationWizardProps, ExperienceEntry, FormState, SaveStep1and2Payload } from '@/types/applicationSteps';
-import { calculateAgeAsOn, buildSaveStep3Payload, buildSaveStepExperiencePayload, ErrorMap, FormField, generateTransactionNumber, getMandatoryEducationLevels, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons, hasExperienceDetails } from './helper/applicationStepsHelper';
-import { getResumeData, saveStep1and2, saveStep3, saveStepExperience, startOrResumeApplication, uploadDocument } from '@/actions/api/application.actions';
+import { calculateAgeAsOn, buildSaveStep3Payload, buildSaveStepExperiencePayload, ErrorMap, FormField, getMandatoryEducationLevels, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons, hasExperienceDetails } from './helper/applicationStepsHelper';
+import { getResumeData, initiateApplicationPayment, saveStep1and2, saveStep3, saveStepExperience, startOrResumeApplication, uploadDocument } from '@/actions/api/application.actions';
 import { createSaveStep3Schema, createSaveStepExperienceSchema } from '@/schemas/application.schema';
 import { useAuth } from '@/lib/useAuth';
 import { toast } from 'sonner';
@@ -64,6 +64,8 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [saveStep1and2Error, setSaveStep1and2Error] = useState<string | null>(null);
   const [saveStep3Error, setSaveStep3Error] = useState<string | null>(null);
   const [saveStepExperienceError, setSaveStepExperienceError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [applicationRecordId, setApplicationRecordId] = useState<number>(0);
   const [uploadedDocuments, setUploadedDocuments] = useState<{
     photo?: {
@@ -202,6 +204,8 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     setStartOrResumeError(null);
     setSaveStep3Error(null);
     setSaveStepExperienceError(null);
+    setPaymentError(null);
+    setIsProcessingPayment(false);
     setApplicationRecordId(0);
   }, [initialRecruitment]); // re-init when recruitment changes
 
@@ -796,16 +800,105 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
-  const handleDemoPayment = () => {
-    const transactionNumber = generateTransactionNumber();
+  const extractPaymentReference = (data: unknown) => {
+    if (!data || typeof data !== 'object') {
+      return '';
+    }
 
-    setForm((prev) => ({
-      ...prev,
-      paymentStatus: 'Payment successful',
-      transactionNumber,
-      paymentDate: new Date().toLocaleDateString('en-IN'),
-    }));
-    setSubmitted(true);
+    const record = data as Record<string, unknown>;
+    const candidates = [
+      record.transactionNumber,
+      record.transactionNo,
+      record.transactionId,
+      record.transactionID,
+      record.paymentReference,
+      record.paymentRef,
+      record.referenceNumber,
+      record.referenceNo,
+      record.orderId,
+      record.orderID,
+      record.orderNumber,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim()) {
+        return candidate;
+      }
+
+      if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+        return String(candidate);
+      }
+    }
+
+    if ('data' in record && typeof record.data === 'object') {
+      return extractPaymentReference(record.data);
+    }
+
+    return '';
+  };
+
+  const extractPaymentRedirectUrl = (data: unknown) => {
+    if (!data || typeof data !== 'object') {
+      return '';
+    }
+
+    const record = data as Record<string, unknown>;
+    const candidates = [
+      record.redirectUrl,
+      record.redirectURL,
+      record.paymentUrl,
+      record.paymentURL,
+      record.url,
+      record.paymentGatewayUrl,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim()) {
+        return candidate;
+      }
+    }
+
+    if ('data' in record && typeof record.data === 'object') {
+      return extractPaymentRedirectUrl(record.data);
+    }
+
+    return '';
+  };
+
+  const handleInitiatePayment = async () => {
+    if (!applicationRecordId) {
+      setPaymentError('Application record is not ready. Please restart the wizard and ensure the application is created first.');
+      return;
+    }
+
+    setPaymentError(null);
+    setIsProcessingPayment(true);
+
+    try {
+      const response = await initiateApplicationPayment(applicationRecordId);
+      console.log("BillDesk Response:", response);
+      const transactionNumber = extractPaymentReference(response.data) || `BILL${Date.now().toString().slice(-8)}`;
+      const redirectUrl = extractPaymentRedirectUrl(response.data);
+       console.log("Redirect URL:", redirectUrl);
+
+      setForm((prev) => ({
+        ...prev,
+        paymentStatus: 'Payment initiated',
+        transactionNumber,
+        paymentDate: new Date().toLocaleDateString('en-IN'),
+      }));
+
+      if (redirectUrl) {
+        window.open(redirectUrl, '_blank');
+      }
+
+      setSubmitted(true);
+    } catch (error) {
+      console.error('Failed to initiate payment', error);
+      setPaymentError('Could not initiate Billdesk payment. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   const step = APPLICATION_STEPS[currentStep];
@@ -819,7 +912,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               <span className="inline-flex rounded-full border border-amber-300/40 bg-amber-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-amber-200">
                 Application received
               </span>
-              <h1 className="mt-4 text-3xl font-semibold">Your application and demo payment are complete.</h1>
+              <h1 className="mt-4 text-3xl font-semibold">Your application and payment are complete.</h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
                 We captured your details for {form.recruitmentCode}. The recruitment desk can now review your profile and payment reference.
               </p>
@@ -1890,10 +1983,10 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                 </div>
 
                 <div className="rounded-[1.75rem] bg-slate-800 p-6 text-white">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">Demo payment</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">Payment</p>
                   <p className="mt-3 text-4xl font-semibold">Rs. 767</p>
                   <p className="mt-3 text-sm leading-7 text-slate-300">
-                    This is a front-end demo. Clicking pay will generate a mock transaction number and complete the application.
+                    This step initiates the Billdesk payment for your application record. The backend will call Billdesk and return the payment reference.
                   </p>
                   <label className="mt-6 block">
                     <span className="text-sm font-semibold text-slate-100">Payment method</span>
@@ -1903,8 +1996,14 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                       <option className="text-slate-900" value="Net banking">Net banking</option>
                     </select>
                   </label>
-                  <button type="button" onClick={handleDemoPayment} className="mt-6 w-full rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400">
-                    Pay demo amount
+                  {paymentError ? <p className="mt-3 text-sm font-semibold text-rose-300">{paymentError}</p> : null}
+                  <button
+                    type="button"
+                    onClick={handleInitiatePayment}
+                    disabled={isProcessingPayment}
+                    className="mt-6 w-full rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isProcessingPayment ? 'Initiating payment...' : 'Pay with Billdesk'}
                   </button>
                 </div>
               </div>

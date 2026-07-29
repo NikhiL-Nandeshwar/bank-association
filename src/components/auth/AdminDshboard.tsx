@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes.constants';
 import { forwardRef, useEffect, useRef, useState } from 'react';
 import { AdminBank, AdminRecruitment, AdminNews } from '@/types/adminDashboard';
-import { formatDate } from '@/utils/adminDashboardHelper';
-import { fetchBanksService, fetchRecruitmentsService, fetchNewsService, createBookService } from '@/actions/api/admin.actions';
+import { formatDate, isRecruitmentActive } from '@/utils/adminDashboardHelper';
+import { fetchBanksService, fetchRecruitmentsService, fetchNewsService, createBookService, deleteBankService, deleteCategoryService, deleteAuthorService, deleteBookService, deleteRecruitmentService, deleteNewsService, fetchBooksService } from '@/actions/api/admin.actions';
 import { getCategories } from '@/actions/api/category.actions';
 import { getAuthors } from '@/actions/api/author.actions';
 import { useBankForm } from '@/hooks/useBankForm';
@@ -16,8 +16,10 @@ import { useNewsForm } from '@/hooks/useNewsForm';
 import { useCategoryForm } from '@/hooks/useCategoryForm';
 import { useAuthorForm } from '@/hooks/useAuthorForm';
 import BookForm from '@/components/admin/BookForm';
+import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
 import { useRecruitmentActions } from '@/hooks/useRecruitmentActions';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/utils/api-error';
 import { documentTypeOptions } from '@/constants/vacancy.constants';
 import { MasterOption } from '@/types/applicationSteps';
 import { getStates } from '@/actions/api';
@@ -70,6 +72,21 @@ export default function AdminDashboardPage() {
     const [banks, setBanks] = useState<AdminBank[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [authors, setAuthors] = useState<any[]>([]);
+    const [books, setBooks] = useState<any[]>([]);
+    const [editingBook, setEditingBook] = useState<any | null>(null);
+    const [deleteDialog, setDeleteDialog] = useState<{
+        isOpen: boolean;
+        title: string;
+        description: string;
+        confirmText: string;
+        action: (() => Promise<void>) | null;
+    }>({
+        isOpen: false,
+        title: '',
+        description: '',
+        confirmText: 'Delete',
+        action: null,
+    });
     const bank = useBankForm(banks, setBanks);
     const [recruitments, setRecruitments] = useState<AdminRecruitment[]>([]);
     const [news, setNews] = useState<AdminNews[]>([]);
@@ -104,6 +121,145 @@ export default function AdminDashboardPage() {
         } catch {
             toast.error('Failed to load news');
         }
+    }
+
+    async function loadBooks() {
+        try {
+            const data = await fetchBooksService();
+            setBooks(data);
+        } catch {
+            toast.error('Failed to load books');
+        }
+    }
+
+    async function handleConfirmDelete() {
+        if (!deleteDialog.action) return;
+
+        try {
+            await deleteDialog.action();
+        } finally {
+            setDeleteDialog((prev) => ({
+                ...prev,
+                isOpen: false,
+                action: null,
+            }));
+        }
+    }
+
+    function openDeleteDialog(
+        title: string,
+        description: string,
+        action: () => Promise<void>,
+        confirmText = 'Delete'
+    ) {
+        setDeleteDialog({
+            isOpen: true,
+            title,
+            description,
+            confirmText,
+            action,
+        });
+    }
+
+    async function handleDeleteBank(bankId: number, bankName: string) {
+        openDeleteDialog(
+            'Delete bank',
+            `Are you sure you want to delete ${bankName}? This action cannot be undone.`,
+            async () => {
+                await deleteBankService(bankId);
+                setBanks((prev) => prev.filter((bank) => bank.bankId !== bankId));
+                toast.success('Bank deleted successfully.');
+            }
+        );
+    }
+
+    function handleEditBank(item: AdminBank) {
+        setActiveSection('banks');
+        bank.startEdit(item);
+    }
+
+    async function handleDeleteCategory(categoryId: number, categoryName: string) {
+        openDeleteDialog(
+            'Delete category',
+            `Are you sure you want to delete ${categoryName}? This action cannot be undone.`,
+            async () => {
+                await deleteCategoryService(categoryId);
+                setCategories((prev) => prev.filter((item) => item.categoryId !== categoryId));
+                toast.success('Category deleted successfully.');
+            }
+        );
+    }
+
+    function handleEditCategory(item: any) {
+        setActiveSection('categories');
+        categoryForm.startEdit(item);
+    }
+
+    async function handleDeleteAuthor(authorId: number, authorName: string) {
+        openDeleteDialog(
+            'Delete author',
+            `Are you sure you want to delete ${authorName}? This action cannot be undone.`,
+            async () => {
+                await deleteAuthorService(authorId);
+                setAuthors((prev) => prev.filter((item) => item.authorId !== authorId));
+                toast.success('Author deleted successfully.');
+            }
+        );
+    }
+
+    function handleEditAuthor(item: any) {
+        setActiveSection('authors');
+        authorForm.startEdit(item);
+    }
+
+    async function handleDeleteBook(bookId: number, bookTitle: string) {
+        openDeleteDialog(
+            'Delete book',
+            `Are you sure you want to delete "${bookTitle}"? This action cannot be undone.`,
+            async () => {
+                await deleteBookService(bookId);
+                setBooks((prev) => prev.filter((item) => item.bookId !== bookId));
+                toast.success('Book deleted successfully.');
+            }
+        );
+    }
+
+    function handleEditBook(item: any) {
+        setActiveSection('books');
+        setEditingBook(item);
+    }
+
+    function handleCancelBookEdit() {
+        setEditingBook(null);
+    }
+
+    async function handleDeleteRecruitment(item: AdminRecruitment) {
+        if (isRecruitmentActive(item)) {
+            toast.error('Active recruitment cannot be deleted.');
+            return;
+        }
+
+        openDeleteDialog(
+            'Delete recruitment',
+            `Are you sure you want to delete recruitment ${item.code}? This action cannot be undone.`,
+            async () => {
+                await deleteRecruitmentService(item.id);
+                setRecruitments((prev) => prev.filter((record) => record.id !== item.id));
+                toast.success('Recruitment deleted successfully.');
+            }
+        );
+    }
+
+    async function handleDeleteNews(newsId: number, previewText: string) {
+        openDeleteDialog(
+            'Delete news item',
+            `Are you sure you want to delete this news item? ${previewText}`,
+            async () => {
+                await deleteNewsService(newsId);
+                setNews((prev) => prev.filter((item) => item.id !== newsId));
+                toast.success('News deleted successfully.');
+            }
+        );
     }
 
     const recruitment = useRecruitmentForm(loadRecruitments);
@@ -155,6 +311,7 @@ export default function AdminDashboardPage() {
         loadBanks();
         loadRecruitments();
         loadNews();
+        loadBooks();
     }, [status, isAdmin, router]);
 
     // Redirect non-admin users to login page after auth state is determined
@@ -249,6 +406,7 @@ export default function AdminDashboardPage() {
                                 }}
                                 onUpload={(item) => actions.setUploadId(item.id)}
                                 onPublish={(item) => actions.publish(item.id)}
+                                onDelete={handleDeleteRecruitment}
                                 publishingRecruitmentId={actions.publishingId}
                             />
                         </div>
@@ -333,17 +491,29 @@ export default function AdminDashboardPage() {
                                         <p className="text-sm text-emerald-600">{bank.message}</p>
                                     )}
 
-                                    <button
-                                        type="submit"
-                                        disabled={bank.isSaving}
-                                        className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
-                                    >
-                                        {bank.isSaving ? 'Saving...' : 'Save bank'}
-                                    </button>
+                                    <div className="flex flex-col gap-3">
+                                        {bank.editingId && (
+                                            <button
+                                                type="button"
+                                                onClick={bank.cancelEdit}
+                                                className="w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                            >
+                                                Cancel edit
+                                            </button>
+                                        )}
+
+                                        <button
+                                            type="submit"
+                                            disabled={bank.isSaving}
+                                            className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                                        >
+                                            {bank.isSaving ? 'Saving...' : bank.editingId ? 'Update bank' : 'Save bank'}
+                                        </button>
+                                    </div>
                                 </form>
                             </div>
 
-                            <RecentlyAddedBanks banks={banks} />
+                            <RecentlyAddedBanks banks={banks} onEdit={handleEditBank} onDelete={(item) => handleDeleteBank(item.bankId, item.bankName)} />
                         </div>
                     ) : null}
 
@@ -365,17 +535,69 @@ export default function AdminDashboardPage() {
 
                                     <AdminInput label="Thumbnail URL" value={categoryForm.form.thumbnailUrl} onChange={(v) => categoryForm.setForm((p:any) => ({ ...p, thumbnailUrl: v }))} />
 
-                                    <button type="submit" disabled={categoryForm.isSaving} className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{categoryForm.isSaving ? 'Saving...' : 'Save category'}</button>
+                                    <div className="space-y-3">
+                                    {categoryForm.editingId && (
+                                        <button
+                                            type="button"
+                                            onClick={categoryForm.cancelEdit}
+                                            className="w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Cancel edit
+                                        </button>
+                                    )}
+
+                                    <button type="submit" disabled={categoryForm.isSaving} className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{categoryForm.isSaving ? 'Saving...' : categoryForm.editingId ? 'Update category' : 'Save category'}</button>
+                                </div>
                                 </form>
                             </div>
 
                             <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-                                <h3 className="text-lg font-semibold mb-4">Recently added categories</h3>
-                                <ul className="space-y-2">
-                                    {categories.map((c) => (
-                                        <li key={c.categoryId} className="text-sm">{c.categoryName}</li>
-                                    ))}
-                                </ul>
+                                <div className="mb-4 flex items-center justify-between gap-4">
+                                    <h3 className="text-lg font-semibold">Recently added categories</h3>
+                                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{categories.length} total</span>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-slate-50 text-slate-600">
+                                            <tr>
+                                                <th className="px-3 py-3 text-left">Name</th>
+                                                <th className="px-3 py-3 text-left">Description</th>
+                                                <th className="px-3 py-3 text-left">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {categories.map((item) => (
+                                                <tr key={item.categoryId} className="border-t">
+                                                    <td className="px-3 py-3 font-semibold text-slate-900">{item.categoryName}</td>
+                                                    <td className="px-3 py-3 text-slate-600">{item.description || '—'}</td>
+                                                    <td className="px-3 py-3">
+                                                        <div className="flex flex-wrap gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleEditCategory(item)}
+                                                                className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteCategory(item.categoryId, item.categoryName)}
+                                                                className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {categories.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={3} className="px-3 py-6 text-center text-slate-500">No categories added yet.</td>
+                                                </tr>
+                                            ) : null}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     ) : null}
@@ -398,17 +620,69 @@ export default function AdminDashboardPage() {
 
                                     <AdminInput label="Photo URL" value={authorForm.form.photoUrl} onChange={(v) => authorForm.setForm((p:any) => ({ ...p, photoUrl: v }))} />
 
-                                    <button type="submit" disabled={authorForm.isSaving} className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{authorForm.isSaving ? 'Saving...' : 'Save author'}</button>
+                                    <div className="space-y-3">
+                                        {authorForm.editingId && (
+                                            <button
+                                                type="button"
+                                                onClick={authorForm.cancelEdit}
+                                                className="w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                            >
+                                                Cancel edit
+                                            </button>
+                                        )}
+
+                                        <button type="submit" disabled={authorForm.isSaving} className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{authorForm.isSaving ? 'Saving...' : authorForm.editingId ? 'Update author' : 'Save author'}</button>
+                                    </div>
                                 </form>
                             </div>
 
                             <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-                                <h3 className="text-lg font-semibold mb-4">Recently added authors</h3>
-                                <ul className="space-y-2">
-                                    {authors.map((a) => (
-                                        <li key={a.authorId} className="text-sm">{a.authorName}</li>
-                                    ))}
-                                </ul>
+                                <div className="mb-4 flex items-center justify-between gap-4">
+                                    <h3 className="text-lg font-semibold">Recently added authors</h3>
+                                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{authors.length} total</span>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-slate-50 text-slate-600">
+                                            <tr>
+                                                <th className="px-3 py-3 text-left">Author</th>
+                                                <th className="px-3 py-3 text-left">Bio</th>
+                                                <th className="px-3 py-3 text-left">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {authors.map((item) => (
+                                                <tr key={item.authorId} className="border-t">
+                                                    <td className="px-3 py-3 font-semibold text-slate-900">{item.authorName}</td>
+                                                    <td className="px-3 py-3 text-slate-600">{item.bio || '—'}</td>
+                                                    <td className="px-3 py-3">
+                                                        <div className="flex flex-wrap gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleEditAuthor(item)}
+                                                                className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteAuthor(item.authorId, item.authorName)}
+                                                                className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {authors.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={3} className="px-3 py-6 text-center text-slate-500">No authors added yet.</td>
+                                                </tr>
+                                            ) : null}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     ) : null}
@@ -416,10 +690,35 @@ export default function AdminDashboardPage() {
                     {activeSection === 'books' ? (
                         <div className="grid gap-6 xl:grid-cols-[720px_minmax(0,1fr)]">
                             <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-                                <h2 className="text-xl font-semibold text-slate-900 mb-6">Add Book</h2>
+                                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                                    <h2 className="text-xl font-semibold text-slate-900">{editingBook ? 'Edit Book' : 'Add Book'}</h2>
+                                    {editingBook ? (
+                                        <button
+                                            type="button"
+                                            onClick={handleCancelBookEdit}
+                                            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Cancel edit
+                                        </button>
+                                    ) : null}
+                                </div>
 
-                                <BookForm categories={categories} authors={authors} onSaved={(b) => { /* TODO: append to list if needed */ }} />
+                                <BookForm
+                                    categories={categories}
+                                    authors={authors}
+                                    editingBook={editingBook ?? undefined}
+                                    onSaved={(book) => {
+                                        if (editingBook) {
+                                            setBooks((prev) => prev.map((item) => (item.bookId === book.bookId ? book : item)));
+                                        } else {
+                                            setBooks((prev) => [book, ...prev]);
+                                        }
+                                    }}
+                                    onCancel={handleCancelBookEdit}
+                                />
                             </div>
+
+                            <RecentlyAddedBooks books={books} onEdit={handleEditBook} onDelete={(item) => handleDeleteBook(item.bookId, item.title)} />
                         </div>
                     ) : null}
 
@@ -1043,10 +1342,14 @@ export default function AdminDashboardPage() {
                                 </form>
                             </div>
 
-                            <RecentlyAddedNews news={news} onEdit={(item) => {
-                                setActiveSection('news');
-                                newsForm.startEdit(item);
-                            }} />
+                            <RecentlyAddedNews
+                                news={news}
+                                onEdit={(item) => {
+                                    setActiveSection('news');
+                                    newsForm.startEdit(item);
+                                }}
+                                onDelete={(item) => handleDeleteNews(item.id, item.newsEng || item.newsMrt || '')}
+                            />
                         </div>
                     ) : null}
                 </div>
@@ -1122,6 +1425,15 @@ export default function AdminDashboardPage() {
                     </div>
                 </div>
             ) : null}
+
+            <DeleteConfirmationDialog
+                isOpen={deleteDialog.isOpen}
+                title={deleteDialog.title}
+                description={deleteDialog.description}
+                confirmText={deleteDialog.confirmText}
+                onConfirm={handleConfirmDelete}
+                onClose={() => setDeleteDialog((prev) => ({ ...prev, isOpen: false, action: null }))}
+            />
         </section>
     );
 }
@@ -1157,7 +1469,7 @@ function DashboardCard({ title, value, detail }: { title: string; value: number;
     );
 }
 
-function RecentlyAddedBanks({ banks }: { banks: AdminBank[] }) {
+function RecentlyAddedBanks({ banks, onEdit, onDelete }: { banks: AdminBank[]; onEdit?: (item: AdminBank) => void; onDelete?: (item: AdminBank) => void }) {
     return (
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
@@ -1172,6 +1484,7 @@ function RecentlyAddedBanks({ banks }: { banks: AdminBank[] }) {
                             <th className="px-3 py-3 text-left">Code</th>
                             <th className="px-3 py-3 text-left">Contact</th>
                             <th className="px-3 py-3 text-left">Phone</th>
+                            {(onEdit || onDelete) && <th className="px-3 py-3 text-left">Actions</th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -1186,11 +1499,98 @@ function RecentlyAddedBanks({ banks }: { banks: AdminBank[] }) {
                                 <td className="px-3 py-3 text-slate-600">{bank.bankCode || 'NA'}</td>
                                 <td className="px-3 py-3 text-slate-600">{bank.contactEmail}</td>
                                 <td className="px-3 py-3 text-slate-600">{bank.contactPhone}</td>
+                                {(onEdit || onDelete) && (
+                                    <td className="px-3 py-3">
+                                        <div className="flex flex-wrap gap-2">
+                                            {onEdit && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onEdit(bank)}
+                                                    className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                                >
+                                                    Edit
+                                                </button>
+                                            )}
+                                            {onDelete && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onDelete(bank)}
+                                                    className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+                                        </div>
+                                    </td>
+                                )}
                             </tr>
                         ))}
                         {banks.length === 0 ? (
                             <tr>
-                                <td colSpan={4} className="px-3 py-6 text-center text-slate-500">No bank added yet.</td>
+                                <td colSpan={onEdit || onDelete ? 5 : 4} className="px-3 py-6 text-center text-slate-500">No bank added yet.</td>
+                            </tr>
+                        ) : null}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+function RecentlyAddedBooks({ books, onEdit, onDelete }: { books: any[]; onEdit?: (item: any) => void; onDelete?: (item: any) => void }) {
+    return (
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+                <h2 className="text-xl font-semibold text-slate-900">Recently added books</h2>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{books.length} total</span>
+            </div>
+            <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead className="bg-slate-50 text-slate-600">
+                        <tr>
+                            <th className="px-3 py-3 text-left">Title</th>
+                            <th className="px-3 py-3 text-left">Author</th>
+                            <th className="px-3 py-3 text-left">Category</th>
+                            <th className="px-3 py-3 text-left">Price</th>
+                            {(onEdit || onDelete) && <th className="px-3 py-3 text-left">Actions</th>}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {books.map((book) => (
+                            <tr key={book.bookId} className="border-t">
+                                <td className="px-3 py-3 font-semibold text-slate-900">{book.title}</td>
+                                <td className="px-3 py-3 text-slate-600">{book.authorName}</td>
+                                <td className="px-3 py-3 text-slate-600">{book.categoryName}</td>
+                                <td className="px-3 py-3 text-slate-600">{book.price}</td>
+                                {(onEdit || onDelete) && (
+                                    <td className="px-3 py-3">
+                                        <div className="flex flex-wrap gap-2">
+                                            {onEdit && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onEdit(book)}
+                                                    className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                                >
+                                                    Edit
+                                                </button>
+                                            )}
+                                            {onDelete && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onDelete(book)}
+                                                    className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+                                        </div>
+                                    </td>
+                                )}
+                            </tr>
+                        ))}
+                        {books.length === 0 ? (
+                            <tr>
+                                <td colSpan={onEdit || onDelete ? 5 : 4} className="px-3 py-6 text-center text-slate-500">No books added yet.</td>
                             </tr>
                         ) : null}
                     </tbody>
@@ -1205,12 +1605,14 @@ function RecentlyAddedRecruitments({
     onEdit,
     onUpload,
     onPublish,
+    onDelete,
     publishingRecruitmentId,
 }: {
     recruitments: AdminRecruitment[];
     onEdit: (item: AdminRecruitment) => void;
     onUpload: (item: AdminRecruitment) => void;
     onPublish: (item: AdminRecruitment) => void;
+    onDelete?: (item: AdminRecruitment) => void;
     publishingRecruitmentId: number | null;
 }) {
     return (
@@ -1259,6 +1661,15 @@ function RecentlyAddedRecruitments({
                                         >
                                             {publishingRecruitmentId === item.id ? 'Publishing...' : item.isPublished ? 'Published' : 'Publish'}
                                         </button>
+                                        {onDelete && (
+                                            <button
+                                                type="button"
+                                                onClick={() => onDelete(item)}
+                                                className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
                                     </div>
                                     {!item.noticePdfUrl && !item.isPublished ? (
                                         <p className="mt-2 text-xs text-slate-500">Upload the notice PDF before publishing.</p>
@@ -1278,7 +1689,7 @@ function RecentlyAddedRecruitments({
     );
 }
 
-function RecentlyAddedNews({ news, onEdit }: { news: AdminNews[]; onEdit?: (item: AdminNews) => void }) {
+function RecentlyAddedNews({ news, onEdit, onDelete }: { news: AdminNews[]; onEdit?: (item: AdminNews) => void; onDelete?: (item: AdminNews) => void }) {
     return (
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
@@ -1303,15 +1714,26 @@ function RecentlyAddedNews({ news, onEdit }: { news: AdminNews[]; onEdit?: (item
                                 <td className="px-3 py-3 max-w-xs truncate">{item.newsMrt}</td>
                                 <td className="px-3 py-3 whitespace-nowrap text-slate-500">{formatDate(item.createdAt) || 'N/A'}</td>
                                 <td className="px-3 py-3">
-                                    {onEdit && (
-                                        <button
-                                            type="button"
-                                            onClick={() => onEdit(item)}
-                                            className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                                        >
-                                            Edit
-                                        </button>
-                                    )}
+                                    <div className="flex flex-wrap gap-2">
+                                        {onEdit && (
+                                            <button
+                                                type="button"
+                                                onClick={() => onEdit(item)}
+                                                className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                            >
+                                                Edit
+                                            </button>
+                                        )}
+                                        {onDelete && (
+                                            <button
+                                                type="button"
+                                                onClick={() => onDelete(item)}
+                                                className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}

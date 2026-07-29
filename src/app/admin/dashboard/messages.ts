@@ -2,6 +2,10 @@ export const ADMIN_DASHBOARD_MESSAGES = {
   bank: {
     validationError: 'Please fix the highlighted bank fields.',
     saveSuccess: 'Bank added successfully.',
+    updateSuccess: 'Bank updated successfully.',
+    deleteSuccess: 'Bank deleted successfully.',
+    updateFailed: 'Failed to update bank.',
+    deleteFailed: 'Failed to delete bank.',
     saveFailed: 'Failed to add bank.',
     localSaveFallback: 'Bank saved locally. API save can be retried when backend is available.',
   },

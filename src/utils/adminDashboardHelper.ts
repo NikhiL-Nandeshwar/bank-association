@@ -58,6 +58,18 @@ export function getBankItems(data: ApiPagedResult<Bank> | Bank[]) {
   return Array.isArray(data) ? data : data.items;
 }
 
+export function isRecruitmentActive(item: AdminRecruitment | Vacancy) {
+  if (!item.applicationStartDate || !item.applicationEndDate) {
+    return false;
+  }
+
+  const now = new Date();
+  const start = new Date(item.applicationStartDate);
+  const end = new Date(item.applicationEndDate);
+
+  return now >= start && now <= end;
+}
+
 export function formatApiBank(item: Bank): AdminBank {
   return {
     bankId: item.bankId,

@@ -1,37 +1,84 @@
 'use client'
-import { useState, useRef } from 'react';
-import { createBookService } from '@/actions/api/admin.actions';
+import { FormEvent, useEffect, useState, useRef } from 'react';
+import { createBookService, updateBookService } from '@/actions/api/admin.actions';
 import { toast } from 'sonner';
+
+type BookFormValues = {
+  categoryId: string;
+  authorId: string;
+  title: string;
+  description: string;
+  language: string;
+  totalPages: string;
+  publishedYear: string;
+  isbn: string;
+  price: string;
+  isFeatured: boolean;
+  tagsRaw: string;
+};
 
 type Props = {
   categories: any[];
   authors: any[];
+  editingBook?: any;
   onSaved?: (book: any) => void;
+  onCancel?: () => void;
 };
 
 const inputClass = 'mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-amber-100';
 
-export default function BookForm({ categories, authors, onSaved }: Props) {
-  const [form, setForm] = useState({
-    categoryId: '',
-    authorId: '',
-    title: '',
-    description: '',
-    language: '',
-    totalPages: '',
-    publishedYear: '',
-    isbn: '',
-    price: '',
-    isFeatured: false,
-    tagsRaw: '',
-  });
+const initialForm: BookFormValues = {
+  categoryId: '',
+  authorId: '',
+  title: '',
+  description: '',
+  language: '',
+  totalPages: '',
+  publishedYear: '',
+  isbn: '',
+  price: '',
+  isFeatured: false,
+  tagsRaw: '',
+};
+
+export default function BookForm({ categories, authors, editingBook, onSaved, onCancel }: Props) {
+  const [form, setForm] = useState<BookFormValues>(initialForm);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const pdfRef = useRef<HTMLInputElement | null>(null);
   const coverRef = useRef<HTMLInputElement | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!editingBook) {
+      setForm(initialForm);
+      setPdfFile(null);
+      setCoverFile(null);
+      if (pdfRef.current) pdfRef.current.value = '';
+      if (coverRef.current) coverRef.current.value = '';
+      return;
+    }
+
+    setForm({
+      categoryId: String(editingBook.categoryId ?? ''),
+      authorId: String(editingBook.authorId ?? ''),
+      title: editingBook.title ?? '',
+      description: editingBook.description ?? '',
+      language: editingBook.language ?? '',
+      totalPages: String(editingBook.totalPages ?? ''),
+      publishedYear: String(editingBook.publishedYear ?? ''),
+      isbn: editingBook.isbn ?? '',
+      price: String(editingBook.price ?? ''),
+      isFeatured: Boolean(editingBook.isFeatured),
+      tagsRaw: editingBook.tagsRaw ?? '',
+    });
+    setPdfFile(null);
+    setCoverFile(null);
+    if (pdfRef.current) pdfRef.current.value = '';
+    if (coverRef.current) coverRef.current.value = '';
+  }, [editingBook]);
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const fd = new FormData();
     fd.append('CategoryId', String(form.categoryId));
@@ -50,16 +97,20 @@ export default function BookForm({ categories, authors, onSaved }: Props) {
 
     try {
       setIsSaving(true);
-      const data = await createBookService(fd as any);
-      toast.success('Book created');
+      const service = editingBook ? updateBookService : createBookService;
+      const data = await service(fd as any);
+      toast.success(editingBook ? 'Book updated' : 'Book created');
       onSaved?.(data);
-      setForm({ categoryId: '', authorId: '', title: '', description: '', language: '', totalPages: '', publishedYear: '', isbn: '', price: '', isFeatured: false, tagsRaw: '' });
-      setPdfFile(null);
-      setCoverFile(null);
-      if (pdfRef.current) pdfRef.current.value = '';
-      if (coverRef.current) coverRef.current.value = '';
+      if (!editingBook) {
+        setForm(initialForm);
+        setPdfFile(null);
+        setCoverFile(null);
+        if (pdfRef.current) pdfRef.current.value = '';
+        if (coverRef.current) coverRef.current.value = '';
+      }
+      onCancel?.();
     } catch (err) {
-      toast.error('Failed to create book');
+      toast.error(editingBook ? 'Failed to update book' : 'Failed to create book');
     } finally {
       setIsSaving(false);
     }
@@ -69,9 +120,13 @@ export default function BookForm({ categories, authors, onSaved }: Props) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <label className="block">
         <span className="text-sm font-semibold text-slate-800">Category</span>
-        <select value={form.categoryId} onChange={(e) => setForm(p => ({ ...p, categoryId: e.target.value }))} className={inputClass}>
+        <select value={form.categoryId} onChange={(e) => setForm((p) => ({ ...p, categoryId: e.target.value }))} className={inputClass}>
           <option value="">Select category</option>
-          {categories.map((c) => <option key={c.categoryId} value={c.categoryId}>{c.categoryName}</option>)}
+          {categories.map((c) => (
+            <option key={c.categoryId} value={c.categoryId}>
+              {c.categoryName}
+            </option>
+          ))}
         </select>
       </label>
 
@@ -165,7 +220,7 @@ export default function BookForm({ categories, authors, onSaved }: Props) {
       </div>
 
       <div>
-        <button type="submit" disabled={isSaving} className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{isSaving ? 'Saving...' : 'Create book'}</button>
+        <button type="submit" disabled={isSaving} className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{isSaving ? 'Saving...' : editingBook ? 'Update book' : 'Create book'}</button>
       </div>
     </form>
   );

@@ -19,7 +19,7 @@ export function createBank(payload: CreateBankRequest) {
 
 export function updateBank(payload: UpdateBankRequest) {
   return apiRequest<Bank>(API_ENDPOINTS.bank.update, {
-    method: 'POST',
+    method: 'PUT',
     body: payload,
   });
 }
@@ -39,6 +39,12 @@ export function getBankById(bankId: number) {
 export function getBankDropdown() {
   return apiRequest<BankDropdownItem[]>(API_ENDPOINTS.bank.getDropdown, {
     method: 'GET',
+  });
+}
+
+export function deleteBank(bankId: number) {
+  return apiRequest<Bank>(API_ENDPOINTS.bank.delete(bankId), {
+    method: 'PATCH',
   });
 }
 

@@ -20,7 +20,7 @@ export const createBankSchema = z.object({
   logoUrl: optionalUrlSchema,
 });
 
-export const updateBankSchema = createBankSchema.omit({ bankCode: true }).extend({
+export const updateBankSchema = createBankSchema.extend({
   bankId: z.number().int().positive('Bank id is required.'),
 });
 
