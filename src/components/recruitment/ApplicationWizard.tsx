@@ -2003,7 +2003,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                     disabled={isProcessingPayment}
                     className="mt-6 w-full rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {isProcessingPayment ? 'Initiating payment...' : 'Pay with Billdesk'}
+                    {isProcessingPayment ? 'Initiating payment...' : 'Pay Now'}
                   </button>
                 </div>
               </div>
