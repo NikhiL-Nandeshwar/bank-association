@@ -91,8 +91,8 @@ export type FormState = {
   }
   acceptedEligibilityCriteria: Record<number, boolean>;
   declarationAccepted: boolean;
-  paymentMethod: string;
   paymentStatus: string;
+  paymentAmount: string;
   transactionNumber: string;
   paymentDate: string;
 };

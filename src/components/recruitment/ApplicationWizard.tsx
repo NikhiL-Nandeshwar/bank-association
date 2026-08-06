@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
@@ -14,7 +14,7 @@ import { getEligibilityCriteria } from '@/actions/api/vacancy.actions';
 import { useEffect, useMemo, useState } from 'react';
 import type { EligibilityCriteria } from '@/types/api.types';
 import { ApplicationWizardProps, ExperienceEntry, FormState, SaveStep1and2Payload } from '@/types/applicationSteps';
-import { calculateAgeAsOn, buildSaveStep3Payload, buildSaveStepExperiencePayload, ErrorMap, FormField, getMandatoryEducationLevels, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, toCategoryOptions, toMasterOptions, toReligionOptions, validateStep, YesNoButtons, hasExperienceDetails } from './helper/applicationStepsHelper';
+import { calculateAgeAsOn, buildSaveStep3Payload, buildSaveStepExperiencePayload, ErrorMap, FormField, getMandatoryEducationLevels, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, validateStep, YesNoButtons, hasExperienceDetails } from './helper/applicationStepsHelper';
 import { getResumeData, initiateApplicationPayment, saveStep1and2, saveStep3, saveStepExperience, startOrResumeApplication, uploadDocument } from '@/actions/api/application.actions';
 import { createSaveStep3Schema, createSaveStepExperienceSchema } from '@/schemas/application.schema';
 import { useAuth } from '@/lib/useAuth';
@@ -66,7 +66,16 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [saveStepExperienceError, setSaveStepExperienceError] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentInitiated, setPaymentInitiated] = useState(false);
+  const [sdkModuleLoaded, setSdkModuleLoaded] = useState(false);
+  const [sdkNoModuleLoaded, setSdkNoModuleLoaded] = useState(false);
+  const [sdkModuleFailed, setSdkModuleFailed] = useState(false);
+  const [sdkNoModuleFailed, setSdkNoModuleFailed] = useState(false);
   const [applicationRecordId, setApplicationRecordId] = useState<number>(0);
+
+  const sdkLoaded = sdkModuleLoaded || sdkNoModuleLoaded;
+  const sdkLoadFailed = !sdkLoaded && sdkModuleFailed && sdkNoModuleFailed;
+  const sdkEnabled = sdkLoaded && !sdkLoadFailed;
   const [uploadedDocuments, setUploadedDocuments] = useState<{
     photo?: {
       documentId: number;
@@ -114,6 +123,38 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     () => normalizeFormState(initialRecruitment, formState),
     [formState, initialRecruitment],
   );
+
+  useEffect(() => {
+    if (currentStep !== 7) {
+      return;
+    }
+
+    if (!document.getElementById('billdesk-sdk-module')) {
+      const moduleScript = document.createElement('script');
+      moduleScript.id = 'billdesk-sdk-module';
+      moduleScript.type = 'module';
+      moduleScript.src = 'https://uat1.billdesk.com/merchant-uat/websdk/shared/billdesksdk.esm.js';
+      moduleScript.async = true;
+      moduleScript.onload = () => {
+        console.log('BillDesk ESM SDK loaded successfully', {
+          id: moduleScript.id,
+          src: moduleScript.src,
+          type: moduleScript.type,
+        });
+        setSdkModuleLoaded(true);
+      };
+      moduleScript.onerror = (event) => {
+        console.error('BillDesk ESM SDK failed to load', {
+          id: moduleScript.id,
+          src: moduleScript.src,
+          type: moduleScript.type,
+          event,
+        });
+        setSdkModuleFailed(true);
+      };
+      document.head.appendChild(moduleScript);
+    }
+  }, [currentStep]);
 
   const uploadedDocs = [
     uploadedDocuments.photo || form.documents.photo
@@ -291,7 +332,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     () => getMandatoryEducationLevels(eligibilityCriteria),
     [eligibilityCriteria],
   );
-
 
   const mandatoryDocuments = useMemo<string[]>(() => {
     return eligibilityCriteria
@@ -717,7 +757,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     }
 
     if (currentStep === 5) {
-      debugger
       console.log('========== DOCUMENT UPLOAD START ==========');
       console.log('APPLICATION ID', applicationRecordId);
       console.log('FORM DOCUMENTS', form.documents);
@@ -837,32 +876,102 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     return '';
   };
 
-  const extractPaymentRedirectUrl = (data: unknown) => {
+  const extractNestedStringValue = (data: unknown, keys: string[]) => {
+    if (!data || typeof data !== 'object') {
+      return undefined;
+    }
+
+    const record = data as Record<string, unknown>;
+
+    for (const key of keys) {
+      const value = record[key];
+      if (typeof value === 'string') {
+        return value;
+      }
+    }
+
+    if ('data' in record && typeof record.data === 'object') {
+      return extractNestedStringValue(record.data, keys);
+    }
+
+    return undefined;
+  };
+
+  const extractBillDeskOrderId = (data: unknown) => {
+    return extractNestedStringValue(data, [
+      'bdOrderId',
+      'bdorderid',
+    ]);
+  };
+
+  const extractBillDeskAuthToken = (data: unknown) => {
+    return extractNestedStringValue(data, [
+      'authToken',
+      'auth_token',
+    ]);
+  };
+
+  const extractBillDeskMerchantOrderId = (data: unknown) => {
+    return extractNestedStringValue(data, [
+      'merchantOrderId',
+      'merchantorderid',
+      'merchant_order_id',
+      'gatewayOrderId',
+      'gatewayorderid',
+      'gateway_order_id',
+      'orderId',
+      'orderID',
+      'orderNumber',
+    ]);
+  };
+
+  const extractBillDeskPaymentId = (data: unknown) => {
+    return extractNestedStringValue(data, [
+      'paymentId',
+      'paymentID',
+      'payment_id',
+    ]);
+  };
+
+  const extractPaymentAmount = (data: unknown) => {
     if (!data || typeof data !== 'object') {
       return '';
     }
 
     const record = data as Record<string, unknown>;
     const candidates = [
-      record.redirectUrl,
-      record.redirectURL,
-      record.paymentUrl,
-      record.paymentURL,
-      record.url,
-      record.paymentGatewayUrl,
+      record.amount,
+      record.totalAmount,
+      record.paymentAmount,
+      record.amountPayable,
+      record.payableAmount,
+      record.transactionAmount,
+      record.orderAmount,
     ];
 
     for (const candidate of candidates) {
       if (typeof candidate === 'string' && candidate.trim()) {
         return candidate;
       }
+
+      if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+        return String(candidate);
+      }
     }
 
     if ('data' in record && typeof record.data === 'object') {
-      return extractPaymentRedirectUrl(record.data);
+      return extractPaymentAmount(record.data);
     }
 
     return '';
+  };
+
+  const handleBillDeskResponse = (txn: unknown) => {
+    console.log('BillDesk callback', txn);
+    setForm((prev) => ({
+      ...prev,
+      paymentStatus: 'Verifying payment',
+    }));
   };
 
   const handleInitiatePayment = async () => {
@@ -871,31 +980,126 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       return;
     }
 
+    if (sdkLoadFailed) {
+      setPaymentError('BillDesk payment SDK failed to load. Please refresh the page and try again.');
+      return;
+    }
+
+    if (!sdkLoaded) {
+      setPaymentError('Waiting for the BillDesk payment SDK to load. Please try again in a moment.');
+      return;
+    }
+
+    if (typeof window.loadBillDeskSdk !== 'function') {
+      setPaymentError('BillDesk payment SDK is loaded but not available. Please refresh and try again.');
+      return;
+    }
+
     setPaymentError(null);
+    setPaymentInitiated(false);
     setIsProcessingPayment(true);
 
     try {
       const response = await initiateApplicationPayment(applicationRecordId);
-      console.log("BillDesk Response:", response);
-      const transactionNumber = extractPaymentReference(response.data) || `BILL${Date.now().toString().slice(-8)}`;
-      const redirectUrl = extractPaymentRedirectUrl(response.data);
-       console.log("Redirect URL:", redirectUrl);
+      console.log('BillDesk Response:', response);
+      const responseData = response?.data as Record<string, unknown> | undefined;
+      const bdOrderId = responseData && extractBillDeskOrderId(responseData);
+      const merchantOrderId = responseData && extractBillDeskMerchantOrderId(responseData);
+      const paymentId = responseData && extractBillDeskPaymentId(responseData);
+      const authToken = responseData && extractBillDeskAuthToken(responseData);
+      const paymentAmount = extractPaymentAmount(responseData);
+      const transactionNumber =
+        extractPaymentReference(response.data) || `BILL${Date.now().toString().slice(-8)}`;
+
+      if (!bdOrderId) {
+        setPaymentError(
+          'The payment gateway did not return the required BillDesk order id. Please try again.'
+        );
+        setForm((prev) => ({
+          ...prev,
+          paymentAmount: paymentAmount || prev.paymentAmount,
+        }));
+        return;
+      }
+
+      if (!authToken) {
+        setPaymentError(
+          'The BillDesk order was created, but authToken is missing from the backend response. The raw authToken must be passed unchanged.'
+        );
+        setForm((prev) => ({
+          ...prev,
+          paymentAmount: paymentAmount || prev.paymentAmount,
+          transactionNumber,
+        }));
+        return;
+      }
 
       setForm((prev) => ({
         ...prev,
-        paymentStatus: 'Payment initiated',
+        paymentStatus: 'Payment order created',
         transactionNumber,
+        paymentAmount: paymentAmount || prev.paymentAmount,
         paymentDate: new Date().toLocaleDateString('en-IN'),
       }));
 
-      if (redirectUrl) {
-        window.open(redirectUrl, '_blank');
+      const flowConfig = {
+        merchantId: 'KOLZILAUAT',
+        bdOrderId,
+        authToken,
+        returnUrl: 'https://www.kopbankasso-recruit-book.com/payment/callback?module=APPLICATION',
+        childWindow: false,
+        retryCount: 3,
+      } as const;
+
+      if (typeof window !== 'undefined' && merchantOrderId) {
+        window.sessionStorage.setItem(
+          'billdesk_application_merchant_order_id',
+          merchantOrderId,
+        );
+
+        if (paymentId) {
+          window.sessionStorage.setItem(
+            'billdesk_application_payment_id',
+            paymentId,
+          );
+        }
+
+        window.sessionStorage.setItem(
+          'billdesk_application_bd_order_id',
+          bdOrderId,
+        );
+
+        window.sessionStorage.setItem(
+          'billdesk_application_application_id',
+          String(applicationRecordId),
+        );
       }
 
-      setSubmitted(true);
+      const config = {
+        flowConfig,
+        flowType: 'payments' as const,
+        responseHandler: handleBillDeskResponse,
+      };
+
+      console.log('BillDesk runtime diagnostics before loadBillDeskSdk', {
+        loadBillDeskSdk: typeof (window as any).loadBillDeskSdk,
+        BillDesk: typeof (window as any).BillDesk,
+        sdkModuleLoaded,
+        sdkNoModuleLoaded,
+        hasModuleScript: !!document.getElementById('billdesk-sdk-module'),
+        hasNoModuleScript: !!document.getElementById('billdesk-sdk-nomodule'),
+      });
+
+      window.loadBillDeskSdk(config);
+      console.log('BillDesk loadBillDeskSdk call completed');
+      setPaymentInitiated(true);
+      setForm((prev) => ({
+        ...prev,
+        paymentStatus: 'Awaiting payment',
+      }));
     } catch (error) {
       console.error('Failed to initiate payment', error);
-      setPaymentError('Could not initiate Billdesk payment. Please try again.');
+      setPaymentError('Could not initiate BillDesk payment. Please try again.');
     } finally {
       setIsProcessingPayment(false);
     }
@@ -1975,36 +2179,34 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   <div className="mt-6 space-y-4">
                     <ReviewRow label="Process name" value={form.recruitmentName} />
                     <ReviewRow label="Post name" value={form.postName} />
-                    <ReviewRow label="Application charges" value="650" />
-                    <ReviewRow label="GST 18%" value="117" />
-                    <ReviewRow label="Amount payable" value="767" />
+                    <ReviewRow label="Amount payable" value={form.paymentAmount ? `Rs. ${form.paymentAmount}` : 'Pending'} />
                     <ReviewRow label="Payment status" value={form.paymentStatus || 'Pending'} />
                   </div>
                 </div>
 
                 <div className="rounded-[1.75rem] bg-slate-800 p-6 text-white">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">Payment</p>
-                  <p className="mt-3 text-4xl font-semibold">Rs. 767</p>
+                  <p className="mt-3 text-4xl font-semibold">{form.paymentAmount ? `Rs. ${form.paymentAmount}` : 'Pending'}</p>
                   <p className="mt-3 text-sm leading-7 text-slate-300">
-                    This step initiates the Billdesk payment for your application record. The backend will call Billdesk and return the payment reference.
+                    This step starts the payment process for your application record. The backend returns BillDesk Web SDK order details that the payment widget will use to complete payment.
                   </p>
-                  <label className="mt-6 block">
-                    <span className="text-sm font-semibold text-slate-100">Payment method</span>
-                    <select value={form.paymentMethod} onChange={(event) => updateField('paymentMethod', event.target.value)} className={`${APPLICATION_INPUT_CLASS_NAME} border-white/10 bg-white/10 text-white focus:border-amber-200 focus:ring-amber-300/20`}>
-                      <option className="text-slate-900" value="UPI">UPI</option>
-                      <option className="text-slate-900" value="Debit card">Debit card</option>
-                      <option className="text-slate-900" value="Net banking">Net banking</option>
-                    </select>
-                  </label>
                   {paymentError ? <p className="mt-3 text-sm font-semibold text-rose-300">{paymentError}</p> : null}
+                  {!sdkLoaded && !sdkLoadFailed ? (
+                    <p className="mt-3 text-sm text-slate-300">Loading the BillDesk payment SDK. Please wait before you try again.</p>
+                  ) : null}
                   <button
                     type="button"
                     onClick={handleInitiatePayment}
-                    disabled={isProcessingPayment}
+                    disabled={isProcessingPayment || !sdkEnabled}
                     className="mt-6 w-full rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isProcessingPayment ? 'Initiating payment...' : 'Pay Now'}
                   </button>
+                  {paymentInitiated ? (
+                    <p className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-50 px-4 py-3 text-sm text-slate-700">
+                      BillDesk payment has been initiated. Complete the payment using the BillDesk NEO widget or checkout flow, then return to this page.
+                    </p>
+                  ) : null}
                 </div>
               </div>
             )}

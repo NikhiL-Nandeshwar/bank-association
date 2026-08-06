@@ -90,8 +90,8 @@ export const initialState = (recruitment: ApplicationWizardProps['initialRecruit
     },
     acceptedEligibilityCriteria: {},
     declarationAccepted: false,
-    paymentMethod: 'UPI',
     paymentStatus: '',
+    paymentAmount: '',
     transactionNumber: '',
     paymentDate: '',
 });

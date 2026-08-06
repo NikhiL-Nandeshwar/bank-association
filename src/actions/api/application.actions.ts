@@ -38,11 +38,29 @@ export async function saveStepExperience(payload: SaveStepExperiencePayload) {
   });
 }
 
-export async function initiateApplicationPayment(applicationId: number) {
+export async function initiateApplicationPayment(applicationId: number, paymentMethod?: string) {
+  const body: Record<string, unknown> = {
+    applicationId,
+  };
+
+  if (paymentMethod) {
+    body.paymentMethod = paymentMethod;
+  }
+
   return apiRequest<unknown>(
     `${API_ENDPOINTS.payment.initiateApplication}?applicationId=${applicationId}`,
     {
       method: 'POST',
+      body,
+    }
+  );
+}
+
+export async function getApplicationPaymentStatus(merchantOrderId: string) {
+  return apiRequest<unknown>(
+    `${API_ENDPOINTS.payment.status}?merchantOrderId=${encodeURIComponent(merchantOrderId)}`,
+    {
+      method: 'GET',
     }
   );
 }

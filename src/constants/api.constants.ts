@@ -83,6 +83,7 @@ export const API_ENDPOINTS = {
   },
   payment: {
     initiateApplication: 'Payment/InitiateApplication',
+    status: 'Payment/Status',
   },
   book: {
     create: 'Book/Create',
