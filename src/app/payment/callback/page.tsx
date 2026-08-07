@@ -11,6 +11,7 @@ const SESSION_KEYS = {
   paymentId: 'billdesk_application_payment_id',
   bdOrderId: 'billdesk_application_bd_order_id',
   applicationId: 'billdesk_application_application_id',
+  refreshApplication: 'billdesk_application_refresh_needed',
 };
 
 const MAX_POLL_ATTEMPTS = 10;
@@ -90,6 +91,10 @@ export default function PaymentCallbackPage() {
       }
 
       if (paymentStatus === 'SUCCESS') {
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.setItem(SESSION_KEYS.refreshApplication, '1');
+        }
+
         setStatus('success');
         setMessage('Payment Successful');
         clearBillDeskSessionStorage();
@@ -225,13 +230,26 @@ export default function PaymentCallbackPage() {
           {renderStatus()}
           <div>{renderAction()}</div>
           <div className="rounded-2xl bg-slate-50 p-5 text-sm text-slate-600">
-            <p>
-              This page verifies the payment with the backend. It does not treat the browser redirect as proof of success.
-            </p>
-            {!merchantOrderId && (
-              <p className="mt-2 text-sm text-amber-700">
-                The payment could not be identified because the required gateway order id is missing.
-              </p>
+            {status === 'success' ? (
+              <>
+                <p className="text-slate-900">
+                  Your payment has been successfully verified and your application has been submitted successfully.
+                </p>
+                <p className="mt-2">
+                  You can now view your submitted application at any time from the recruitment portal.
+                </p>
+              </>
+            ) : (
+              <>
+                <p>
+                  This page verifies your payment with the recruitment system. Please wait while we confirm the payment status.
+                </p>
+                {!merchantOrderId && (
+                  <p className="mt-2 text-sm text-amber-700">
+                    The payment could not be identified because the required gateway order id is missing.
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>

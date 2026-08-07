@@ -94,6 +94,7 @@ export const initialState = (recruitment: ApplicationWizardProps['initialRecruit
     paymentAmount: '',
     transactionNumber: '',
     paymentDate: '',
+    paymentMethod: '',
 });
 
 export function generateApplicationId(recruitment: ApplicationWizardProps['initialRecruitment']) {

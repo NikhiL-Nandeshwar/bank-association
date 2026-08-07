@@ -95,6 +95,7 @@ export type FormState = {
   paymentAmount: string;
   transactionNumber: string;
   paymentDate: string;
+  paymentMethod: string;
 };
 
 export type SaveStep1and2Payload = {

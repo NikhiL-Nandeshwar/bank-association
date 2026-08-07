@@ -72,10 +72,149 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [sdkModuleFailed, setSdkModuleFailed] = useState(false);
   const [sdkNoModuleFailed, setSdkNoModuleFailed] = useState(false);
   const [applicationRecordId, setApplicationRecordId] = useState<number>(0);
+  const [isRefreshingApplication, setIsRefreshingApplication] = useState(false);
 
   const sdkLoaded = sdkModuleLoaded || sdkNoModuleLoaded;
   const sdkLoadFailed = !sdkLoaded && sdkModuleFailed && sdkNoModuleFailed;
   const sdkEnabled = sdkLoaded && !sdkLoadFailed;
+
+  const BILLDESK_REFRESH_KEY = 'billdesk_application_refresh_needed';
+
+  const readPaymentRefreshMarker = () => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.sessionStorage.getItem(BILLDESK_REFRESH_KEY) === '1';
+  };
+
+  const clearPaymentRefreshMarker = () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.sessionStorage.removeItem(BILLDESK_REFRESH_KEY);
+  };
+
+  const hydrateResumeResponse = (resumeResponse: { data?: any }) => {
+    const responseData = resumeResponse as { data?: any };
+    const step1 = responseData.data?.step1;
+    const educationStep = responseData.data?.step2;
+    const experienceStep = responseData.data?.step3;
+    const documentStep = responseData.data?.step4;
+
+    if (documentStep?.length) {
+      setUploadedDocuments(
+        mapDocuments(documentStep)
+      );
+    }
+
+    if (step1) {
+      setForm((prev) =>
+        mapStep1ToFormState(
+          prev,
+          step1,
+          educationStep ?? [],
+          experienceStep ?? [],
+          user?.email
+        )
+      );
+    }
+
+    const paymentStatusFromApi = responseData.data && (
+      responseData.data.paymentStatus ||
+      responseData.data.payment?.status ||
+      responseData.data.paymentStatus
+    );
+
+    const paymentAmountFromApi = responseData.data && (
+      responseData.data.paymentAmount ||
+      responseData.data.amount ||
+      responseData.data.payment?.amount
+    );
+
+    const transactionRefFromApi = responseData.data && (
+      responseData.data.transactionNumber ||
+      responseData.data.paymentReference ||
+      responseData.data.payment?.reference ||
+      responseData.data.orderNumber
+    );
+
+    const paidAtFromApi = responseData.data && (
+      responseData.data.paidAt ||
+      responseData.data.payment?.paidAt ||
+      responseData.data.paymentDate
+    );
+
+    const paymentMethodFromApi = responseData.data && (
+      responseData.data.paymentMethod ||
+      responseData.data.payment?.method
+    );
+
+    const isSubmittedFromApi = responseData.data && (
+      responseData.data.isSubmitted ||
+      responseData.data.application?.isSubmitted ||
+      responseData.data.submitted ||
+      responseData.data.application?.submitted
+    );
+
+    const isPaymentCompleteFromApi = responseData.data && (
+      responseData.data.isPaymentComplete ||
+      responseData.data.payment?.isPaymentComplete ||
+      responseData.data.payment?.isComplete ||
+      responseData.data.isPaid
+    );
+
+    setForm((prev) => ({
+      ...prev,
+      paymentStatus: paymentStatusFromApi ?? prev.paymentStatus,
+      paymentAmount: paymentAmountFromApi ?? prev.paymentAmount,
+      transactionNumber: transactionRefFromApi ?? prev.transactionNumber,
+      paymentDate: paidAtFromApi ?? prev.paymentDate,
+      paymentMethod: paymentMethodFromApi ?? prev.paymentMethod,
+    }));
+
+    if (
+      isSubmittedFromApi ||
+      isPaymentCompleteFromApi ||
+      (typeof paymentStatusFromApi === 'string' && /success/i.test(String(paymentStatusFromApi)))
+    ) {
+      setSubmitted(true);
+    }
+  };
+
+  const resumeApplication = async (vacancyId: number) => {
+    const response = await startOrResumeApplication(vacancyId);
+    const applicationId = extractApplicationId(response.data);
+    setApplicationRecordId(applicationId);
+
+    const resumeResponse = await getResumeData(applicationId);
+    const responseData = resumeResponse as { data?: any };
+    const resumeData = responseData.data as any;
+
+    const currentStepFromApi = resumeData?.currentStep;
+    const isPaymentCompleteFromApi = resumeData && (
+      resumeData.isPaymentComplete ||
+      resumeData.payment?.isPaymentComplete ||
+      resumeData.payment?.isComplete ||
+      resumeData.isPaid
+    );
+    const isSubmittedFromApi = resumeData && (
+      resumeData.isSubmitted ||
+      resumeData.application?.isSubmitted ||
+      resumeData.submitted ||
+      resumeData.application?.submitted
+    );
+
+    if (isSubmittedFromApi || isPaymentCompleteFromApi) {
+      setCurrentStep(APPLICATION_STEPS.length - 1);
+    } else if (currentStepFromApi) {
+      setCurrentStep(Math.max(0, currentStepFromApi - 1));
+    }
+
+    hydrateResumeResponse(resumeResponse);
+  };
+
   const [uploadedDocuments, setUploadedDocuments] = useState<{
     photo?: {
       documentId: number;
@@ -249,6 +388,38 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     setIsProcessingPayment(false);
     setApplicationRecordId(0);
   }, [initialRecruitment]); // re-init when recruitment changes
+
+  useEffect(() => {
+    const vacancyId = initialRecruitment.vacancyId;
+
+    if (status !== 'authenticated' || !user || vacancyId === undefined) {
+      return;
+    }
+
+    if (!readPaymentRefreshMarker()) {
+      return;
+    }
+
+    let isActive = true;
+    setIsRefreshingApplication(true);
+
+    void (async () => {
+      try {
+        await resumeApplication(vacancyId);
+      } catch (error) {
+        console.error('Unable to refresh application after payment', error);
+      } finally {
+        if (isActive) {
+          setIsRefreshingApplication(false);
+          clearPaymentRefreshMarker();
+        }
+      }
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  }, [status, user, initialRecruitment.vacancyId]);
 
   useEffect(() => {
     if (status !== 'authenticated' || !user) {
@@ -647,12 +818,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
         }
 
         const responseData = resumeResponse as {
-          data?: {
-            step1?: any;
-            step2?: any[];
-            step3?: any[];
-            step4?: any[]
-          };
+          data?: any;
         };
 
         console.log('RESUME DATA', responseData.data);
@@ -679,6 +845,28 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               user?.email
             )
           );
+        }
+
+        // Extract payment-related fields from resume data if provided by backend
+        const paymentStatusFromApi = responseData.data && (responseData.data.paymentStatus || responseData.data.payment?.status || responseData.data.paymentStatus);
+        const paymentAmountFromApi = responseData.data && (responseData.data.paymentAmount || responseData.data.amount || responseData.data.payment?.amount);
+        const transactionRefFromApi = responseData.data && (responseData.data.transactionNumber || responseData.data.paymentReference || responseData.data.payment?.reference || responseData.data.orderNumber);
+        const paidAtFromApi = responseData.data && (responseData.data.paidAt || responseData.data.payment?.paidAt || responseData.data.paymentDate);
+        const paymentMethodFromApi = responseData.data && (responseData.data.paymentMethod || responseData.data.payment?.method);
+        const isPaymentCompleteFromApi = responseData.data && (responseData.data.isPaymentComplete || responseData.data.payment?.isComplete || responseData.data.isPaid);
+
+        setForm((prev) => ({
+          ...prev,
+          paymentStatus: paymentStatusFromApi ?? prev.paymentStatus,
+          paymentAmount: paymentAmountFromApi ?? prev.paymentAmount,
+          transactionNumber: transactionRefFromApi ?? prev.transactionNumber,
+          paymentDate: paidAtFromApi ?? prev.paymentDate,
+          paymentMethod: paymentMethodFromApi ?? prev.paymentMethod,
+        }));
+
+        // If backend reports payment success/completed, switch to submitted/read-only mode
+        if (isPaymentCompleteFromApi || (typeof paymentStatusFromApi === 'string' && /success/i.test(String(paymentStatusFromApi)))) {
+          setSubmitted(true);
         }
 
         setApplicationRecordId(applicationId);
@@ -1106,42 +1294,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   };
 
   const step = APPLICATION_STEPS[currentStep];
-
-  if (submitted) {
-    return (
-      <section className="bg-slate-50 py-16">
-        <div className="mx-auto max-w-5xl px-4">
-          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.14)]">
-            <div className="bg-slate-800 px-8 py-10 text-white">
-              <span className="inline-flex rounded-full border border-amber-300/40 bg-amber-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-amber-200">
-                Application received
-              </span>
-              <h1 className="mt-4 text-3xl font-semibold">Your application and payment are complete.</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                We captured your details for {form.recruitmentCode}. The recruitment desk can now review your profile and payment reference.
-              </p>
-            </div>
-            <div className="grid gap-6 px-8 py-8 md:grid-cols-3">
-              <SummaryCard label="Applied post" value={form.postName || form.recruitmentCode} detail={form.bankName} tone="slate" />
-              <SummaryCard label="Primary contact" value={fullName || 'Applicant'} detail={`${form.email} | ${form.phone}`} tone="amber" />
-              <SummaryCard label="Payment" value={form.paymentStatus || 'Payment successful'} detail={form.transactionNumber} tone="emerald" />
-            </div>
-            <div className="border-t border-slate-100 px-8 pb-8">
-              <button
-                type="button"
-                onClick={() => setShowHallTicket((prev) => !prev)}
-                className="inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
-              >
-                {showHallTicket ? 'Hide hall ticket' : 'View hall ticket'}
-              </button>
-            </div>
-          </div>
-
-          {showHallTicket ? <HallTicketPreview form={form} fullName={fullName || 'Applicant'} /> : null}
-        </div>
-      </section>
-    );
-  }
+  const isPaymentComplete = submitted || (form.paymentStatus && /success/i.test(String(form.paymentStatus)));
 
   return (
     <section className="bg-[radial-gradient(circle_at_top,_rgba(252,214,46,0.18),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#e2e8f0_100%)] py-10 md:py-16">
@@ -1204,6 +1357,20 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
             })}
           </div>
         </aside>
+
+        {submitted ? (
+          <div className="mb-6 rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-6 text-slate-900">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+              Application received
+            </p>
+            <p className="mt-2 text-lg font-semibold">
+              Your application and payment are complete.
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              The application is now read-only and the Payment step below shows your completed receipt.
+            </p>
+          </div>
+        ) : null}
 
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.12)] md:p-8">
           <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 md:flex-row md:items-end md:justify-between">
@@ -2181,6 +2348,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                     <ReviewRow label="Post name" value={form.postName} />
                     <ReviewRow label="Amount payable" value={form.paymentAmount ? `Rs. ${form.paymentAmount}` : 'Pending'} />
                     <ReviewRow label="Payment status" value={form.paymentStatus || 'Pending'} />
+                    {form.paymentMethod ? <ReviewRow label="Payment method" value={form.paymentMethod} /> : null}
                   </div>
                 </div>
 
@@ -2190,19 +2358,32 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
                   <p className="mt-3 text-sm leading-7 text-slate-300">
                     This step starts the payment process for your application record. The backend returns BillDesk Web SDK order details that the payment widget will use to complete payment.
                   </p>
-                  {paymentError ? <p className="mt-3 text-sm font-semibold text-rose-300">{paymentError}</p> : null}
-                  {!sdkLoaded && !sdkLoadFailed ? (
+                  {!isPaymentComplete && paymentError ? <p className="mt-3 text-sm font-semibold text-rose-300">{paymentError}</p> : null}
+                  {!isPaymentComplete && !sdkLoaded && !sdkLoadFailed ? (
                     <p className="mt-3 text-sm text-slate-300">Loading the BillDesk payment SDK. Please wait before you try again.</p>
                   ) : null}
-                  <button
-                    type="button"
-                    onClick={handleInitiatePayment}
-                    disabled={isProcessingPayment || !sdkEnabled}
-                    className="mt-6 w-full rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isProcessingPayment ? 'Initiating payment...' : 'Pay Now'}
-                  </button>
-                  {paymentInitiated ? (
+                  {isPaymentComplete ? (
+                    <div className="space-y-4">
+                      <div className="mt-6 w-full rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white text-center">
+                        ✓ Payment Completed Successfully
+                      </div>
+                      <div className="rounded-3xl border border-emerald-500/20 bg-emerald-900/10 p-4 text-sm text-slate-100">
+                        <p><span className="font-semibold">Reference:</span> {form.transactionNumber || 'N/A'}</p>
+                        {form.paymentMethod ? <p><span className="font-semibold">Method:</span> {form.paymentMethod}</p> : null}
+                        {form.paymentDate ? <p><span className="font-semibold">Paid on:</span> {form.paymentDate}</p> : null}
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleInitiatePayment}
+                      disabled={isProcessingPayment || !sdkEnabled}
+                      className="mt-6 w-full rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isProcessingPayment ? 'Initiating payment...' : 'Pay Now'}
+                    </button>
+                  )}
+                  {!isPaymentComplete && paymentInitiated ? (
                     <p className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-50 px-4 py-3 text-sm text-slate-700">
                       BillDesk payment has been initiated. Complete the payment using the BillDesk NEO widget or checkout flow, then return to this page.
                     </p>
