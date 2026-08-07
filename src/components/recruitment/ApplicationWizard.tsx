@@ -1046,7 +1046,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
         merchantId: 'KOLZILAUAT',
         bdOrderId,
         authToken,
-        returnUrl: 'https://www.kopbankasso-recruit-book.com/payment/callback?module=APPLICATION',
+        returnUrl: 'https://www.kopbankasso-recruit-book.com/payment/billdesk-return?module=APPLICATION',
         childWindow: false,
         retryCount: 3,
       } as const;
