@@ -10,6 +10,10 @@ export type ApplicationWizardProps = {
     bankName?: string;
     eligibilityCriteria?: EligibilityCriteria[];
   };
+  existingApplication?: {
+    applicationId: number;
+    mode: 'resume' | 'view';
+  };
 };
 
 export type ExperienceEntry = {

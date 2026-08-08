@@ -1,10 +1,17 @@
 import { apiRequest } from '@/actions/api/client';
 import { API_ENDPOINTS } from '@/constants/api.constants';
+import type { CandidateApplicationSummary } from '@/types/api.types';
 import { SaveStep1and2Payload, SaveStep3Payload, SaveStepExperiencePayload } from '@/types/applicationSteps';
 
 export async function startOrResumeApplication(vacancyId: number) {
   return apiRequest<unknown>(`${API_ENDPOINTS.application.startOrResume}?vacancyId=${vacancyId}`, {
     method: 'POST',
+  });
+}
+
+export async function getMyApplications() {
+  return apiRequest<CandidateApplicationSummary[]>(API_ENDPOINTS.application.myApplications, {
+    method: 'GET',
   });
 }
 

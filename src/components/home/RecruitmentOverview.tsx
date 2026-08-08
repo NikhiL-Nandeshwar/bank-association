@@ -1,9 +1,9 @@
 'use client';
 
-import { getPublicList } from '@/actions/api';
+import { getMyApplications, getPublicList } from '@/actions/api';
 import { RECRUITMENT_OVERVIEW_COPY } from '@/constants/home.constants';
 import { ROUTES } from '@/constants/routes.constants';
-import type { ApiPagedResult, Vacancy } from '@/types/api.types';
+import type { ApiPagedResult, CandidateApplicationSummary, Vacancy } from '@/types/api.types';
 import { fixPdfUrl } from '@/lib/utils';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -15,10 +15,13 @@ type CurrentRecruitment = {
   name: string;
   startDate: string;
   endDate: string;
+  applicationEndDate?: string;
   status: string;
   postName?: string;
   noticePdfUrl?: string;
   noticePdfFileName?: string;
+  vacancyId?: number;
+  applicationSummary?: CandidateApplicationSummary;
 };
 
 type VacancyRecord = Vacancy & Record<string, unknown>;
@@ -84,16 +87,19 @@ function getRecruitmentCode(item: VacancyRecord) {
 
 function mapVacancyToRecruitment(item: Vacancy): CurrentRecruitment {
   const vacancy = item as VacancyRecord;
+  const applicationEndDate = getStringField(vacancy, ['applicationEndDate', 'ApplicationEndDate', 'endDate', 'EndDate']);
 
   return {
     code: getRecruitmentCode(vacancy),
     name: item.bankName || `Bank #${item.bankId}`,
     postName: item.postName,
     startDate: formatDisplayDate(getStringField(vacancy, ['applicationStartDate', 'ApplicationStartDate', 'startDate', 'StartDate'])),
-    endDate: formatDisplayDate(getStringField(vacancy, ['applicationEndDate', 'ApplicationEndDate', 'endDate', 'EndDate'])),
+    endDate: formatDisplayDate(applicationEndDate),
+    applicationEndDate,
     status: item.status || 'Open',
     noticePdfUrl: item.noticePdfUrl ?? undefined,
     noticePdfFileName: item.noticePdfFileName ?? undefined,
+    vacancyId: item.vacancyId ?? item.id,
   };
 }
 
@@ -118,6 +124,20 @@ function isCurrentVacancy(item: Vacancy) {
   endDate.setHours(23, 59, 59, 999);
 
   return endDate >= new Date();
+}
+
+function isCurrentRecruitment(item: CurrentRecruitment) {
+  const status = item.status.toLowerCase();
+
+  if (status.includes('closed') || status.includes('previous') || status.includes('result')) {
+    return false;
+  }
+
+  const endDate = new Date(item.applicationEndDate ?? item.endDate);
+
+  endDate.setHours(23, 59, 59, 999);
+
+  return !item.endDate || Number.isNaN(endDate.getTime()) || endDate >= new Date();
 }
 
 function isPublishedVacancy(item: Vacancy) {
@@ -158,18 +178,99 @@ export default function RecruitmentOverview() {
         };
   };
 
+  const getApplicationAction = (item: CurrentRecruitment) => {
+    const application = item.applicationSummary;
+
+    if (!application) {
+      return {
+        label: content.apply,
+        href: getApplyHref(item),
+        variant: 'apply' as const,
+      };
+    }
+
+    const isSubmitted = Boolean(application.isSubmitted);
+    const statusText = typeof application.status === 'string' ? application.status.trim().toLowerCase() : '';
+    const isSubmittedByStatus = ['submitted', 'completed', 'success', 'paid'].some((value) => statusText.includes(value));
+
+    if (isSubmitted || isSubmittedByStatus) {
+      return {
+        label: 'View Application',
+        href: {
+          pathname: ROUTES.apply,
+          query: {
+            code: item.code,
+            name: item.name,
+            post: item.postName,
+            applicationId: application.applicationId,
+            vacancyId: item.vacancyId,
+            mode: 'view',
+          },
+        },
+        variant: 'view' as const,
+      };
+    }
+
+    return {
+      label: 'Continue Application',
+      href: {
+        pathname: ROUTES.apply,
+        query: {
+          code: item.code,
+          name: item.name,
+          post: item.postName,
+          applicationId: application.applicationId,
+          vacancyId: item.vacancyId,
+          mode: 'resume',
+        },
+      },
+      variant: 'resume' as const,
+    };
+  };
+
   useEffect(() => {
+    if (status === 'loading') {
+      return;
+    }
+
     let isMounted = true;
 
     async function loadRecruitments() {
       try {
-        const response = await getPublicList();
-        const vacancies = getVacancyItems(response.data);
+        const [vacanciesResponse, applicationsResponse] = await Promise.all([
+          getPublicList(),
+          isLoggedIn ? getMyApplications() : Promise.resolve({ data: [] as CandidateApplicationSummary[] }),
+        ]);
+
+        const vacancies = getVacancyItems(vacanciesResponse.data);
+        const applications = Array.isArray(applicationsResponse.data) ? applicationsResponse.data : [];
 
         if (!isMounted) return;
 
-        setCurrentRecruitments(vacancies.filter(isCurrentVacancy).map(mapVacancyToRecruitment));
-        setPreviousRecruitments(vacancies.filter((item) => !isCurrentVacancy(item)).map(mapVacancyToRecruitment));
+        const applicationsByVacancyId = new Map<number, CandidateApplicationSummary>();
+        applications.forEach((application) => {
+          const vacancyId = application.vacancyId;
+
+          if (typeof vacancyId === 'number' && !Number.isNaN(vacancyId)) {
+            applicationsByVacancyId.set(vacancyId, application);
+          }
+        });
+
+        const mappedRecruitments = vacancies.map((item) => {
+          const recruitment = mapVacancyToRecruitment(item);
+          const application = recruitment.vacancyId !== undefined
+            ? applicationsByVacancyId.get(recruitment.vacancyId)
+            : undefined;
+
+          if (application) {
+            recruitment.applicationSummary = application;
+          }
+
+          return recruitment;
+        });
+
+        setCurrentRecruitments(mappedRecruitments.filter(isCurrentRecruitment));
+        setPreviousRecruitments(mappedRecruitments.filter((item) => !isCurrentRecruitment(item)));
       } catch {
         if (!isMounted) return;
 
@@ -187,7 +288,7 @@ export default function RecruitmentOverview() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isLoggedIn, status]);
 
   return (
     <section id="recruitments" className="bg-slate-100 py-14">
@@ -240,11 +341,24 @@ export default function RecruitmentOverview() {
                       {activeTab === 'current' ? (
                         <div className="flex flex-col items-center gap-2">
                           <Link
-                            href={getApplyHref(item)}
-                            className="inline-block rounded-md bg-[#b13c7a] px-4 py-1.5 text-xs font-semibold border border-[#b13c7a] text-white hover:bg-[#b13c7a]/80 transition"
+                            href={getApplicationAction(item).href}
+                            className={`inline-block rounded-md px-4 py-1.5 text-xs font-semibold border transition ${
+                              getApplicationAction(item).variant === 'view'
+                                ? 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700'
+                                : 'border-[#b13c7a] bg-[#b13c7a] text-white hover:bg-[#b13c7a]/80'
+                            }`}
                           >
-                            {content.apply}
+                            {getApplicationAction(item).label}
                           </Link>
+                          {item.applicationSummary && (getApplicationAction(item).variant === 'view' || getApplicationAction(item).variant === 'resume') ? (
+                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                              getApplicationAction(item).variant === 'view'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              {getApplicationAction(item).variant === 'view' ? 'Application Submitted' : 'In Progress'}
+                            </span>
+                          ) : null}
                           {'noticePdfUrl' in item && item.noticePdfUrl ? (
                             <a
                               href={fixPdfUrl(item.noticePdfUrl)}

@@ -14,6 +14,9 @@ type RecruitmentApplyPageQuery = {
   name?: string;
   post?: string;
   bankName?: string;
+  vacancyId?: number;
+  applicationId?: number;
+  mode?: 'resume' | 'view';
 };
 
 function getVacancyCode(vacancy: Vacancy): string {
@@ -36,6 +39,9 @@ export default function RecruitmentApplyPage() {
       name: params.get('name') ?? undefined,
       post: params.get('post') ?? undefined,
       bankName: params.get('bankName') ?? undefined,
+      vacancyId: Number(params.get('vacancyId')) || undefined,
+      applicationId: Number(params.get('applicationId')) || undefined,
+      mode: params.get('mode') === 'view' ? 'view' : params.get('mode') === 'resume' ? 'resume' : undefined,
     });
   }, []);
 
@@ -50,7 +56,11 @@ export default function RecruitmentApplyPage() {
       try {
         const response = await getPublicList();
         const vacancies = Array.isArray(response.data) ? response.data : response.data.items;
-        const vacancy = vacancies.find((v) => getVacancyCode(v) === query.code);
+        const vacancy = vacancies.find((v) =>
+          query.vacancyId !== undefined
+            ? (v.vacancyId ?? v.id) === query.vacancyId
+            : getVacancyCode(v) === query.code,
+        );
         setSelectedVacancy(vacancy || null);
       } catch {
         setSelectedVacancy(null);
@@ -60,7 +70,7 @@ export default function RecruitmentApplyPage() {
     }
 
     void fetchVacancy();
-  }, [query.code]);
+  }, [query.code, query.vacancyId]);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -96,13 +106,17 @@ export default function RecruitmentApplyPage() {
   return (
     <ApplicationWizard
       initialRecruitment={{
-        vacancyId: selectedVacancy?.vacancyId ?? selectedVacancy?.id,
+        vacancyId: selectedVacancy?.vacancyId ?? selectedVacancy?.id ?? query.vacancyId,
         code: query.code ?? 'KM-016',
         name: query.name ?? 'Kolhapur Zilla Nagari Banks Sahakari Association Ltd. recruitment',
         postName: selectedVacancy?.postName || query.post,
         bankName: selectedVacancy?.bankName || query.bankName,
         eligibilityCriteria: selectedVacancy?.eligibilityCriteria ?? [],
       }}
+      existingApplication={query.applicationId && query.mode ? {
+        applicationId: query.applicationId,
+        mode: query.mode,
+      } : undefined}
     />
   );
 }

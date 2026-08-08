@@ -38,7 +38,7 @@ import { mapDocuments, mapStep1ToFormState } from '@/utils/helper/applicationRes
  * @param param0 
  * @returns 
  */
-export default function ApplicationWizard({ initialRecruitment }: ApplicationWizardProps) {
+export default function ApplicationWizard({ initialRecruitment, existingApplication }: ApplicationWizardProps) {
   const { user, status } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [formState, setForm] = useState<FormState>(() => initialState(initialRecruitment));
@@ -73,6 +73,9 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   const [sdkNoModuleFailed, setSdkNoModuleFailed] = useState(false);
   const [applicationRecordId, setApplicationRecordId] = useState<number>(0);
   const [isRefreshingApplication, setIsRefreshingApplication] = useState(false);
+  const [applicationNumber, setApplicationNumber] = useState('');
+  const [receiptNumber, setReceiptNumber] = useState('');
+  const isReadOnly = existingApplication?.mode === 'view';
 
   const sdkLoaded = sdkModuleLoaded || sdkNoModuleLoaded;
   const sdkLoadFailed = !sdkLoaded && sdkModuleFailed && sdkNoModuleFailed;
@@ -128,8 +131,10 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     );
 
     const paymentAmountFromApi = responseData.data && (
+      responseData.data.paidAmount ||
       responseData.data.paymentAmount ||
       responseData.data.amount ||
+      responseData.data.payment?.paidAmount ||
       responseData.data.payment?.amount
     );
 
@@ -149,6 +154,17 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     const paymentMethodFromApi = responseData.data && (
       responseData.data.paymentMethod ||
       responseData.data.payment?.method
+    );
+
+    const receiptNumberFromApi = responseData.data && (
+      responseData.data.receiptNumber ||
+      responseData.data.payment?.receiptNumber ||
+      responseData.data.paymentReceiptNumber
+    );
+
+    const applicationNumberFromApi = responseData.data && (
+      responseData.data.applicationNumber ||
+      responseData.data.application?.applicationNumber
     );
 
     const isSubmittedFromApi = responseData.data && (
@@ -173,12 +189,10 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       paymentDate: paidAtFromApi ?? prev.paymentDate,
       paymentMethod: paymentMethodFromApi ?? prev.paymentMethod,
     }));
+    setReceiptNumber(receiptNumberFromApi ?? '');
+    setApplicationNumber(applicationNumberFromApi ? String(applicationNumberFromApi) : '');
 
-    if (
-      isSubmittedFromApi ||
-      isPaymentCompleteFromApi ||
-      (typeof paymentStatusFromApi === 'string' && /success/i.test(String(paymentStatusFromApi)))
-    ) {
+    if (isSubmittedFromApi) {
       setSubmitted(true);
     }
   };
@@ -213,6 +227,21 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     }
 
     hydrateResumeResponse(resumeResponse);
+  };
+
+  const loadExistingApplication = async (applicationId: number, readOnly: boolean) => {
+    setApplicationRecordId(applicationId);
+    const resumeResponse = await getResumeData(applicationId);
+    const resumeData = (resumeResponse as { data?: any }).data;
+
+    hydrateResumeResponse(resumeResponse);
+
+    if (readOnly) {
+      setSubmitted(true);
+      setCurrentStep(APPLICATION_STEPS.length - 1);
+    } else if (resumeData?.currentStep) {
+      setCurrentStep(Math.max(0, resumeData.currentStep - 1));
+    }
   };
 
   const [uploadedDocuments, setUploadedDocuments] = useState<{
@@ -264,7 +293,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   );
 
   useEffect(() => {
-    if (currentStep !== 7) {
+    if (isReadOnly || currentStep !== 7) {
       return;
     }
 
@@ -293,7 +322,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
       };
       document.head.appendChild(moduleScript);
     }
-  }, [currentStep]);
+  }, [currentStep, isReadOnly]);
 
   const uploadedDocs = [
     uploadedDocuments.photo || form.documents.photo
@@ -387,7 +416,35 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
     setPaymentError(null);
     setIsProcessingPayment(false);
     setApplicationRecordId(0);
+    setApplicationNumber('');
+    setReceiptNumber('');
   }, [initialRecruitment]); // re-init when recruitment changes
+
+  useEffect(() => {
+    if (!existingApplication || status !== 'authenticated') {
+      return;
+    }
+
+    let isActive = true;
+    setIsStartingOrResuming(true);
+    setStartOrResumeError(null);
+
+    void loadExistingApplication(existingApplication.applicationId, existingApplication.mode === 'view')
+      .catch(() => {
+        if (isActive) {
+          setStartOrResumeError('Could not load your existing application. Please try again.');
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsStartingOrResuming(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [existingApplication, status]);
 
   useEffect(() => {
     const vacancyId = initialRecruitment.vacancyId;
@@ -791,7 +848,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
 
 
     // ── Fire SaveStep1 after step 2 (index 2) is validated ──
-    if (currentStep === 0) {
+    if (currentStep === 0 && applicationRecordId === 0) {
       if (!initialRecruitment.vacancyId) {
         setStartOrResumeError('Vacancy ID is missing for this recruitment.');
         return;
@@ -849,11 +906,10 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
 
         // Extract payment-related fields from resume data if provided by backend
         const paymentStatusFromApi = responseData.data && (responseData.data.paymentStatus || responseData.data.payment?.status || responseData.data.paymentStatus);
-        const paymentAmountFromApi = responseData.data && (responseData.data.paymentAmount || responseData.data.amount || responseData.data.payment?.amount);
+        const paymentAmountFromApi = responseData.data && (responseData.data.paidAmount || responseData.data.paymentAmount || responseData.data.amount || responseData.data.payment?.paidAmount || responseData.data.payment?.amount);
         const transactionRefFromApi = responseData.data && (responseData.data.transactionNumber || responseData.data.paymentReference || responseData.data.payment?.reference || responseData.data.orderNumber);
         const paidAtFromApi = responseData.data && (responseData.data.paidAt || responseData.data.payment?.paidAt || responseData.data.paymentDate);
         const paymentMethodFromApi = responseData.data && (responseData.data.paymentMethod || responseData.data.payment?.method);
-        const isPaymentCompleteFromApi = responseData.data && (responseData.data.isPaymentComplete || responseData.data.payment?.isComplete || responseData.data.isPaid);
 
         setForm((prev) => ({
           ...prev,
@@ -863,11 +919,6 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
           paymentDate: paidAtFromApi ?? prev.paymentDate,
           paymentMethod: paymentMethodFromApi ?? prev.paymentMethod,
         }));
-
-        // If backend reports payment success/completed, switch to submitted/read-only mode
-        if (isPaymentCompleteFromApi || (typeof paymentStatusFromApi === 'string' && /success/i.test(String(paymentStatusFromApi)))) {
-          setSubmitted(true);
-        }
 
         setApplicationRecordId(applicationId);
       } catch {
@@ -1294,7 +1345,10 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
   };
 
   const step = APPLICATION_STEPS[currentStep];
-  const isPaymentComplete = submitted || (form.paymentStatus && /success/i.test(String(form.paymentStatus)));
+  const isPaymentComplete = isReadOnly || submitted || (form.paymentStatus && /success/i.test(String(form.paymentStatus)));
+  const progressSteps = submitted
+    ? [...APPLICATION_STEPS, { id: '09', title: 'Submitted', description: 'Your application has been received.' }]
+    : APPLICATION_STEPS;
 
   return (
     <section className="bg-[radial-gradient(circle_at_top,_rgba(252,214,46,0.18),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#e2e8f0_100%)] py-10 md:py-16">
@@ -1311,20 +1365,20 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
           <div className="mt-8 rounded-3xl bg-white/5 p-4">
             <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-300">
               <span>Progress</span>
-              <span>{progress}</span>
+                <span>{submitted ? '100%' : progress}</span>
             </div>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-300 transition-all duration-300"
-                style={{ width: progress }}
+                style={{ width: submitted ? '100%' : progress }}
               />
             </div>
           </div>
 
           <div className="mt-8 space-y-3">
-            {APPLICATION_STEPS.map((item, index) => {
-              const isActive = index === currentStep;
-              const isDone = index < currentStep;
+            {progressSteps.map((item, index) => {
+              const isActive = !submitted && index === currentStep;
+              const isDone = submitted || index < currentStep;
 
               return (
                 <div
@@ -1359,19 +1413,30 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
         </aside>
 
         {submitted ? (
-          <div className="mb-6 rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-6 text-slate-900">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-              Application received
-            </p>
-            <p className="mt-2 text-lg font-semibold">
-              Your application and payment are complete.
-            </p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              The application is now read-only and the Payment step below shows your completed receipt.
-            </p>
+          <div className="rounded-[2rem] border border-emerald-200 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.12)] md:p-8">
+            <div className="rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-6 text-slate-900">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Application submitted</p>
+              <h2 className="mt-2 text-2xl font-semibold">Application received</h2>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                Your application has been submitted successfully. Your payment has been received and your application is now under review. You can revisit this page anytime to view your submitted application.
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <ReviewRow label="Application number" value={applicationNumber || form.applicationId || String(applicationRecordId) || 'N/A'} />
+              <ReviewRow label="Bank name" value={form.bankName || 'N/A'} />
+              <ReviewRow label="Post name" value={form.postName || 'N/A'} />
+              <ReviewRow label="Payment status" value="Paid" />
+              <ReviewRow label="Amount paid" value={form.paymentAmount ? `Rs. ${form.paymentAmount}` : 'N/A'} />
+              <ReviewRow label="Payment date" value={form.paymentDate || 'N/A'} />
+              <ReviewRow label="Payment method" value={form.paymentMethod || 'N/A'} />
+              <ReviewRow label="Transaction number" value={form.transactionNumber || 'N/A'} />
+              {receiptNumber ? <ReviewRow label="Receipt number" value={receiptNumber} /> : null}
+            </div>
           </div>
         ) : null}
 
+        {!submitted ? (
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.12)] md:p-8">
           <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 md:flex-row md:items-end md:justify-between">
             <div>
@@ -2393,6 +2458,7 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
             )}
           </div>
 
+          {!isReadOnly ? (
           <div className="mt-10 flex flex-col gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <button type="button" onClick={goBack} disabled={currentStep === 0} className="inline-flex items-center justify-center rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-900 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40">
               Previous step
@@ -2417,7 +2483,9 @@ export default function ApplicationWizard({ initialRecruitment }: ApplicationWiz
               </button>
             ) : null}
           </div>
+          ) : null}
         </div>
+        ) : null}
       </div>
     </section>
   );

@@ -102,6 +102,17 @@ export type EligibilityCriteria = {
   requiredDocument?: boolean;
 };
 
+export type CandidateApplicationSummary = {
+  applicationId?: number;
+  applicationNumber?: string | number;
+  vacancyId?: number;
+  currentStep?: number;
+  isPaymentComplete?: boolean;
+  isSubmitted?: boolean;
+  status?: string;
+  [key: string]: unknown;
+};
+
 export type Vacancy = {
   vacancyId?: number;
   id?: number;

@@ -78,6 +78,7 @@ export const API_ENDPOINTS = {
     step3: 'Application/SaveStep2',
     stepExperience: 'Application/SaveStep3',
     startOrResume: 'Application/StartOrResume',
+    myApplications: 'Application/MyApplications',
     getResumeData: '/Application/GetResumeData',
     uploadDocument: '/Application/UploadDocument',
   },
