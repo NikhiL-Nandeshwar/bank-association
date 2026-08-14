@@ -4,7 +4,7 @@
 import { useAuth } from '@/lib/useAuth';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes.constants';
-import { forwardRef, useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AdminBank, AdminRecruitment, AdminNews } from '@/types/adminDashboard';
 import { formatDate, isRecruitmentActive } from '@/utils/adminDashboardHelper';
 import { fetchBanksService, fetchRecruitmentsService, fetchNewsService, createBookService, deleteBankService, deleteCategoryService, deleteAuthorService, deleteBookService, deleteRecruitmentService, deleteNewsService, fetchBooksService } from '@/actions/api/admin.actions';
@@ -365,24 +365,28 @@ export default function AdminDashboardPage() {
             <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
                 <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-6 lg:self-start">
                     <div className="border-b border-slate-100 pb-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Admin</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7A2E92]">Admin</p>
                         <h1 className="mt-2 text-xl font-semibold text-slate-950">Dashboard</h1>
                     </div>
 
                     <nav className="mt-4 space-y-2">
                         <SidebarButton label="Overview" active={activeSection === 'overview'} onClick={() => setActiveSection('overview')} />
-                        <SidebarButton label="Bank Master" active={activeSection === 'banks'} onClick={() => setActiveSection('banks')} />
-                        <SidebarButton label="Category Master" active={activeSection === 'categories'} onClick={() => setActiveSection('categories')} />
-                        <SidebarButton label="Author Master" active={activeSection === 'authors'} onClick={() => setActiveSection('authors')} />
-                        <SidebarButton label="Book Master" active={activeSection === 'books'} onClick={() => setActiveSection('books')} />
-                        <SidebarButton label="Recruitment" active={activeSection === 'recruitments'} onClick={() => setActiveSection('recruitments')} />
-                        <SidebarButton label="News" active={activeSection === 'news'} onClick={() => setActiveSection('news')} />
+                        <SidebarMenuGroup label="Recruitment">
+                            <SidebarButton label="Bank Master" active={activeSection === 'banks'} onClick={() => setActiveSection('banks')} nested />
+                            <SidebarButton label="Recruitment" active={activeSection === 'recruitments'} onClick={() => setActiveSection('recruitments')} nested />
+                            <SidebarButton label="News" active={activeSection === 'news'} onClick={() => setActiveSection('news')} nested />
+                        </SidebarMenuGroup>
+                        <SidebarMenuGroup label="E-Book">
+                            <SidebarButton label="Book Master" active={activeSection === 'books'} onClick={() => setActiveSection('books')} nested />
+                            <SidebarButton label="Author" active={activeSection === 'authors'} onClick={() => setActiveSection('authors')} nested />
+                            <SidebarButton label="Category" active={activeSection === 'categories'} onClick={() => setActiveSection('categories')} nested />
+                        </SidebarMenuGroup>
                     </nav>
                 </aside>
 
                 <div className="space-y-6">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Recruitment management</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7A2E92]">Recruitment management</p>
                         <h2 className="mt-2 text-3xl font-semibold text-slate-950">Manage banks, recruitment notices, and news</h2>
                         <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
                             Add member banks, publish recruitment entries, create news, and review the latest records from one workspace.
@@ -1441,12 +1445,22 @@ export default function AdminDashboardPage() {
 const adminInputClassName =
     'mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-amber-100';
 
-function SidebarButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function SidebarMenuGroup({ label, children }: { label: string; children: ReactNode }) {
+    return (
+        <div className="pt-2">
+            <p className="px-3 pb-1  font-semibold uppercase tracking-[0.14em] text-[#7A2E92]">{label}</p>
+            <div className="space-y-1">{children}</div>
+        </div>
+    );
+}
+
+function SidebarButton({ label, active, onClick, nested = false }: { label: string; active: boolean; onClick: () => void; nested?: boolean }) {
     return (
         <button
             type="button"
             onClick={onClick}
-            className={`w-full rounded-md px-3 py-2.5 text-left text-sm font-semibold transition ${active ? 'bg-slate-700 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+            className={`w-full px-3 py-2.5 text-left font-semibold transition
+                 ${nested ? 'pl-6' : ''} ${active ? 'text-[#7A2E92] underline decoration-2 decoration-[#7A2E92] underline-offset-8' : 'text-slate-600 hover:text-[#7A2E92]'
                 }`}
         >
             {label}
