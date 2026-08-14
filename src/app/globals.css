@@ -66,6 +66,70 @@ body {
   background-size: 18px 18px, auto;
 }
 
+/* Keep wide admin tables usable on narrow touch screens. */
+.master-table-scroll {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: scroll;
+  overflow-y: auto;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-color: #9ca3af #f1f5f9;
+  scrollbar-width: auto;
+  scrollbar-gutter: stable both-edges;
+}
+
+.master-table-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.master-table-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+
+.master-table-scroll::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border: 2px solid #f1f5f9;
+  border-radius: 999px;
+}
+
+.master-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+@media (max-width: 767px) {
+  .master-table-scroll {
+    border: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #7a2e92 #f1f5f9;
+  }
+
+  /* Do not compress master-table columns to fit a phone screen. */
+  .master-table-scroll > table {
+    width: max-content;
+    min-width: 760px;
+  }
+
+  .master-table-scroll th,
+  .master-table-scroll td {
+    white-space: nowrap;
+  }
+
+  .master-table-scroll::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .master-table-scroll::-webkit-scrollbar-thumb {
+    background: #7a2e92;
+  }
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);

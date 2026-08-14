@@ -368,7 +368,7 @@ export default function AdminDashboardPage() {
 
     return (
         <section className="bg-slate-100 px-4 py-8">
-            <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+            <div className="mx-auto grid w-full max-w-7xl gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
                 <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-6 lg:self-start">
                     <div className="border-b border-slate-100 pb-4">
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7A2E92]">Admin</p>
@@ -390,7 +390,7 @@ export default function AdminDashboardPage() {
                     </nav>
                 </aside>
 
-                <div className="space-y-6">
+                <div className="min-w-0 space-y-6">
                     {activeSection === 'overview' ? (
                         <div className="space-y-8">
                             <div>
@@ -428,9 +428,8 @@ export default function AdminDashboardPage() {
                     ) : null}
 
                     {activeSection === 'banks' ? (
-                        <div className="space-y-5">
+                        <div className="space-y-6">
                             <MasterViewToggle view={masterView} onChange={setMasterView} addLabel="Add New Bank" />
-                            <div className="grid gap-6">
                             <div className={`${masterView === 'form' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm xl:mx-auto xl:w-full xl:max-w-2xl`}>
                                 <h2 className="text-xl font-semibold text-slate-900 mb-6">
                                     Bank Master
@@ -530,17 +529,15 @@ export default function AdminDashboardPage() {
                                 </form>
                             </div>
 
-                            <div className={masterView === 'list' ? '' : 'hidden'}>
+                            <div className={masterView === 'list' ? 'min-w-0' : 'hidden'}>
                                 <RecentlyAddedBanks banks={banks} onEdit={handleEditBank} onDelete={(item) => handleDeleteBank(item.bankId, item.bankName)} />
-                            </div>
                             </div>
                         </div>
                     ) : null}
 
                     {activeSection === 'categories' ? (
-                        <div className="space-y-5">
+                        <div className="space-y-6">
                             <MasterViewToggle view={masterView} onChange={setMasterView} addLabel="Add New Category" />
-                            <div className="grid gap-6">
                             <div className={`${masterView === 'form' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm xl:mx-auto xl:w-full xl:max-w-2xl`}>
                                 <h2 className="text-xl font-semibold text-slate-900 mb-6">Category Master</h2>
 
@@ -573,12 +570,12 @@ export default function AdminDashboardPage() {
                                 </form>
                             </div>
 
-                            <div className={`${masterView === 'list' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm`}>
+                            <div className={`${masterView === 'list' ? 'min-w-0' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm`}>
                                 <div className="mb-4 flex items-center justify-between gap-4">
                                     <h3 className="text-lg font-semibold">Recently added categories</h3>
                                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{categories.length} total</span>
                                 </div>
-                                <div className="max-h-[520px] overflow-auto">
+                                <MasterTableScroll className="max-h-[520px] overflow-x-scroll overflow-y-auto">
                                     <table className="min-w-[680px] w-full text-sm">
                                         <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                                             <tr>
@@ -619,16 +616,14 @@ export default function AdminDashboardPage() {
                                             ) : null}
                                         </tbody>
                                     </table>
-                                </div>
-                            </div>
+                                </MasterTableScroll>
                             </div>
                         </div>
                     ) : null}
 
                     {activeSection === 'authors' ? (
-                        <div className="space-y-5">
+                        <div className="space-y-6">
                             <MasterViewToggle view={masterView} onChange={setMasterView} addLabel="Add New Author" />
-                            <div className="grid gap-6">
                             <div className={`${masterView === 'form' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm xl:mx-auto xl:w-full xl:max-w-2xl`}>
                                 <h2 className="text-xl font-semibold text-slate-900 mb-6">Author Master</h2>
 
@@ -661,12 +656,12 @@ export default function AdminDashboardPage() {
                                 </form>
                             </div>
 
-                            <div className={`${masterView === 'list' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm`}>
+                            <div className={`${masterView === 'list' ? 'min-w-0' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm`}>
                                 <div className="mb-4 flex items-center justify-between gap-4">
                                     <h3 className="text-lg font-semibold">Recently added authors</h3>
                                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{authors.length} total</span>
                                 </div>
-                                <div className="max-h-[520px] overflow-auto">
+                                <MasterTableScroll className="max-h-[520px] overflow-x-scroll overflow-y-auto">
                                     <table className="min-w-[680px] w-full text-sm">
                                         <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                                             <tr>
@@ -707,16 +702,14 @@ export default function AdminDashboardPage() {
                                             ) : null}
                                         </tbody>
                                     </table>
-                                </div>
-                            </div>
+                                </MasterTableScroll>
                             </div>
                         </div>
                     ) : null}
 
                     {activeSection === 'books' ? (
-                        <div className="space-y-5">
+                        <div className="space-y-6">
                             <MasterViewToggle view={masterView} onChange={setMasterView} addLabel="Add New Book" />
-                            <div className="grid gap-6">
                             <div className={`${masterView === 'form' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm xl:mx-auto xl:w-full xl:max-w-5xl`}>
                                 <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                                     <h2 className="text-xl font-semibold text-slate-900">{editingBook ? 'Edit Book' : 'Add Book'}</h2>
@@ -746,9 +739,8 @@ export default function AdminDashboardPage() {
                                 />
                             </div>
 
-                            <div className={masterView === 'list' ? '' : 'hidden'}>
+                            <div className={masterView === 'list' ? 'min-w-0' : 'hidden'}>
                                 <RecentlyAddedBooks books={books} onEdit={handleEditBook} onDelete={(item) => handleDeleteBook(item.bookId, item.title)} />
-                            </div>
                             </div>
                         </div>
                     ) : null}
@@ -1289,7 +1281,7 @@ export default function AdminDashboardPage() {
                                 </form>
                             </div>
 
-                            <div className={masterView === 'list' ? '' : 'hidden'}>
+                            <div className={masterView === 'list' ? 'min-w-0' : 'hidden'}>
                             <RecentlyAddedRecruitments
                                 recruitments={recruitments}
                                 onEdit={(item) => {
@@ -1377,7 +1369,7 @@ export default function AdminDashboardPage() {
                                 </form>
                             </div>
 
-                            <div className={masterView === 'list' ? '' : 'hidden'}>
+                            <div className={masterView === 'list' ? 'min-w-0' : 'hidden'}>
                             <RecentlyAddedNews
                                 news={news}
                                 onEdit={(item) => {
@@ -1523,6 +1515,84 @@ function MasterViewToggle({ view, onChange, addLabel }: { view: 'list' | 'form';
     );
 }
 
+function MasterTableScroll({ children, className = '' }: { children: ReactNode; className?: string }) {
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [scrollState, setScrollState] = useState({ position: 0, max: 0 });
+
+    useEffect(() => {
+        const element = scrollRef.current;
+        if (!element) return;
+
+        const updateScrollState = () => {
+            setScrollState({
+                position: element.scrollLeft,
+                max: Math.max(0, element.scrollWidth - element.clientWidth),
+            });
+        };
+
+        updateScrollState();
+        const observer = new ResizeObserver(updateScrollState);
+        observer.observe(element);
+        Array.from(element.children).forEach((child) => observer.observe(child));
+        const contentObserver = new MutationObserver(updateScrollState);
+        contentObserver.observe(element, { childList: true, subtree: true });
+        const visibilityObserver = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    updateScrollState();
+                    window.requestAnimationFrame(updateScrollState);
+                }
+            },
+            { threshold: 0 },
+        );
+        visibilityObserver.observe(element);
+        const animationFrame = window.requestAnimationFrame(updateScrollState);
+        const delayedUpdate = window.setTimeout(updateScrollState, 150);
+        window.addEventListener('resize', updateScrollState);
+
+        return () => {
+            observer.disconnect();
+            contentObserver.disconnect();
+            visibilityObserver.disconnect();
+            window.cancelAnimationFrame(animationFrame);
+            window.clearTimeout(delayedUpdate);
+            window.removeEventListener('resize', updateScrollState);
+        };
+    }, [children]);
+
+    return (
+        <div className="min-w-0">
+            <div
+                ref={scrollRef}
+                onScroll={() => {
+                    const element = scrollRef.current;
+                    if (element) setScrollState((current) => ({ ...current, position: element.scrollLeft }));
+                }}
+                className={`master-table-scroll ${className}`}
+            >
+                {children}
+            </div>
+            {scrollState.max > 0 ? (
+                <div className="mt-2 flex min-w-0 items-center gap-2 md:hidden">
+                    <span className="shrink-0 text-xs text-slate-500">Scroll table</span>
+                    <input
+                        aria-label="Scroll table horizontally"
+                        type="range"
+                        min="0"
+                        max={scrollState.max}
+                        value={Math.min(scrollState.position, scrollState.max)}
+                        onChange={(event) => {
+                            const element = scrollRef.current;
+                            if (element) element.scrollLeft = Number(event.target.value);
+                        }}
+                        className="h-2 min-w-0 flex-1 cursor-pointer accent-[#7A2E92]"
+                    />
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
 function DashboardCard({ title, value, detail }: { title: string; value: number; detail: string }) {
     const cardVisuals = {
         'Banks added': { Icon: Building2, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]' },
@@ -1555,12 +1625,12 @@ function DashboardCard({ title, value, detail }: { title: string; value: number;
 
 function RecentlyAddedBanks({ banks, onEdit, onDelete }: { banks: AdminBank[]; onEdit?: (item: AdminBank) => void; onDelete?: (item: AdminBank) => void }) {
     return (
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
                 <h2 className="text-xl font-semibold text-slate-900">Recently added banks</h2>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{banks.length} total</span>
             </div>
-            <div className="mt-4 max-h-[520px] overflow-auto">
+            <MasterTableScroll className="mt-4 max-h-[520px] overflow-x-scroll overflow-y-auto">
                 <table className="min-w-[760px] w-full text-sm">
                     <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                         <tr>
@@ -1616,19 +1686,19 @@ function RecentlyAddedBanks({ banks, onEdit, onDelete }: { banks: AdminBank[]; o
                         ) : null}
                     </tbody>
                 </table>
-            </div>
+            </MasterTableScroll>
         </div>
     );
 }
 
 function RecentlyAddedBooks({ books, onEdit, onDelete }: { books: any[]; onEdit?: (item: any) => void; onDelete?: (item: any) => void }) {
     return (
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
                 <h2 className="text-xl font-semibold text-slate-900">Recently added books</h2>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{books.length} total</span>
             </div>
-            <div className="mt-4 max-h-[520px] overflow-auto">
+            <MasterTableScroll className="mt-4 max-h-[520px] overflow-x-scroll overflow-y-auto">
                 <table className="min-w-[760px] w-full text-sm">
                     <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                         <tr>
@@ -1679,7 +1749,7 @@ function RecentlyAddedBooks({ books, onEdit, onDelete }: { books: any[]; onEdit?
                         ) : null}
                     </tbody>
                 </table>
-            </div>
+            </MasterTableScroll>
         </div>
     );
 }
@@ -1708,7 +1778,7 @@ function RecentlyAddedRecruitments({
     const visibleRecruitments = recruitments.filter((item) => statusFilter === 'all' || getStatus(item) === statusFilter);
 
     return (
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h2 className="text-xl font-semibold text-slate-900">Recruitment list</h2>
@@ -1733,7 +1803,7 @@ function RecentlyAddedRecruitments({
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{visibleRecruitments.length} of {recruitments.length}</span>
                 </div>
             </div>
-            <div className="mt-4 max-h-[560px] overflow-auto">
+            <MasterTableScroll className="mt-4 max-h-[560px] overflow-x-scroll overflow-y-auto">
                 <table className="min-w-[980px] w-full text-sm">
                     <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                         <tr>
@@ -1795,20 +1865,20 @@ function RecentlyAddedRecruitments({
                         ) : null}
                     </tbody>
                 </table>
-            </div>
+            </MasterTableScroll>
         </div>
     );
 }
 
 function RecentlyAddedNews({ news, onEdit, onDelete }: { news: AdminNews[]; onEdit?: (item: AdminNews) => void; onDelete?: (item: AdminNews) => void }) {
     return (
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
                 <h2 className="text-xl font-semibold text-slate-900">Recently added news</h2>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{news.length} total</span>
             </div>
             <p className="mt-3 text-sm text-slate-500">News items displayed on the home page latest news ticker section.</p>
-            <div className="mt-4 max-h-[520px] overflow-auto">
+            <MasterTableScroll className="mt-4 max-h-[520px] overflow-x-scroll overflow-y-auto">
                 <table className="min-w-[860px] w-full text-sm">
                     <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                         <tr>
@@ -1855,7 +1925,7 @@ function RecentlyAddedNews({ news, onEdit, onDelete }: { news: AdminNews[]; onEd
                         ) : null}
                     </tbody>
                 </table>
-            </div>
+            </MasterTableScroll>
         </div>
     );
 }
