@@ -24,6 +24,7 @@ import { documentTypeOptions } from '@/constants/vacancy.constants';
 import { MasterOption } from '@/types/applicationSteps';
 import { getStates } from '@/actions/api';
 import { toMasterOptions } from '../recruitment/helper/applicationStepsHelper';
+import { BookOpen, BriefcaseBusiness, Building2, ChevronDown, Newspaper, Tags, Users } from 'lucide-react';
 
 const ELIGIBILITY_CRITERIA_TYPES = ['EDUCATION', 'COURSE'] as const;
 const ELIGIBILITY_CRITERIA_VALUES = {
@@ -69,6 +70,7 @@ const ELIGIBILITY_CRITERIA_DEFAULT_DECLARATIONS: Record<string, { declarationEng
  */
 export default function AdminDashboardPage() {
     const [activeSection, setActiveSection] = useState<'overview' | 'banks' | 'recruitments' | 'news' | 'categories' | 'authors' | 'books'>('overview');
+    const [masterView, setMasterView] = useState<'list' | 'form'>('list');
     const [banks, setBanks] = useState<AdminBank[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [authors, setAuthors] = useState<any[]>([]);
@@ -175,6 +177,7 @@ export default function AdminDashboardPage() {
 
     function handleEditBank(item: AdminBank) {
         setActiveSection('banks');
+        setMasterView('form');
         bank.startEdit(item);
     }
 
@@ -192,6 +195,7 @@ export default function AdminDashboardPage() {
 
     function handleEditCategory(item: any) {
         setActiveSection('categories');
+        setMasterView('form');
         categoryForm.startEdit(item);
     }
 
@@ -209,6 +213,7 @@ export default function AdminDashboardPage() {
 
     function handleEditAuthor(item: any) {
         setActiveSection('authors');
+        setMasterView('form');
         authorForm.startEdit(item);
     }
 
@@ -226,6 +231,7 @@ export default function AdminDashboardPage() {
 
     function handleEditBook(item: any) {
         setActiveSection('books');
+        setMasterView('form');
         setEditingBook(item);
     }
 
@@ -372,53 +378,60 @@ export default function AdminDashboardPage() {
                     <nav className="mt-4 space-y-2">
                         <SidebarButton label="Overview" active={activeSection === 'overview'} onClick={() => setActiveSection('overview')} />
                         <SidebarMenuGroup label="Recruitment">
-                            <SidebarButton label="Bank Master" active={activeSection === 'banks'} onClick={() => setActiveSection('banks')} nested />
-                            <SidebarButton label="Recruitment" active={activeSection === 'recruitments'} onClick={() => setActiveSection('recruitments')} nested />
-                            <SidebarButton label="News" active={activeSection === 'news'} onClick={() => setActiveSection('news')} nested />
+                            <SidebarButton label="Bank Master" active={activeSection === 'banks'} onClick={() => { setMasterView('list'); setActiveSection('banks'); }} nested />
+                            <SidebarButton label="Recruitment" active={activeSection === 'recruitments'} onClick={() => { setMasterView('list'); setActiveSection('recruitments'); }} nested />
+                            <SidebarButton label="News" active={activeSection === 'news'} onClick={() => { setMasterView('list'); setActiveSection('news'); }} nested />
                         </SidebarMenuGroup>
                         <SidebarMenuGroup label="E-Book">
-                            <SidebarButton label="Book Master" active={activeSection === 'books'} onClick={() => setActiveSection('books')} nested />
-                            <SidebarButton label="Author" active={activeSection === 'authors'} onClick={() => setActiveSection('authors')} nested />
-                            <SidebarButton label="Category" active={activeSection === 'categories'} onClick={() => setActiveSection('categories')} nested />
+                            <SidebarButton label="Book Master" active={activeSection === 'books'} onClick={() => { setMasterView('list'); setActiveSection('books'); }} nested />
+                            <SidebarButton label="Author" active={activeSection === 'authors'} onClick={() => { setMasterView('list'); setActiveSection('authors'); }} nested />
+                            <SidebarButton label="Category" active={activeSection === 'categories'} onClick={() => { setMasterView('list'); setActiveSection('categories'); }} nested />
                         </SidebarMenuGroup>
                     </nav>
                 </aside>
 
                 <div className="space-y-6">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7A2E92]">Recruitment management</p>
-                        <h2 className="mt-2 text-3xl font-semibold text-slate-950">Manage banks, recruitment notices, and news</h2>
-                        <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-                            Add member banks, publish recruitment entries, create news, and review the latest records from one workspace.
-                        </p>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <DashboardCard title="Banks added" value={banks.length} detail="Bank master records available for recruitment mapping." />
-                        <DashboardCard title="Recruitments added" value={recruitments.length} detail="Recruitment records loaded from the API." />
-                        <DashboardCard title="News added" value={news.length} detail="News items displayed on the latest news ticker." />
-                    </div>
-
                     {activeSection === 'overview' ? (
-                        <div className="grid gap-6 xl:grid-cols-2">
-                            <RecentlyAddedBanks banks={banks} />
-                            <RecentlyAddedRecruitments
-                                recruitments={recruitments}
-                                onEdit={(item) => {
-                                    setActiveSection('recruitments');
-                                    recruitment.startEdit(item);
-                                }}
-                                onUpload={(item) => actions.setUploadId(item.id)}
-                                onPublish={(item) => actions.publish(item.id)}
-                                onDelete={handleDeleteRecruitment}
-                                publishingRecruitmentId={actions.publishingId}
-                            />
+                        <div className="space-y-8">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7A2E92]">Dashboard overview</p>
+                                <h2 className="mt-2 text-3xl font-semibold text-slate-950">Manage recruitment and e-book content</h2>
+                                <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
+                                    Review your recruitment records and e-book library at a glance.
+                                </p>
+                            </div>
+
+                            <section aria-labelledby="recruitment-summary-heading">
+                                <div className="mb-4 flex items-center gap-3">
+                                    <h3 id="recruitment-summary-heading" className="text-lg font-semibold text-slate-900">Recruitment</h3>
+                                    <span className="h-px flex-1 bg-slate-200" />
+                                </div>
+                                <div className="grid gap-4 md:grid-cols-3">
+                                    <DashboardCard title="Banks added" value={banks.length} detail="Member banks available for recruitment mapping." />
+                                    <DashboardCard title="Recruitments added" value={recruitments.length} detail="Recruitment records created in the portal." />
+                                    <DashboardCard title="News added" value={news.length} detail="News items shown on the latest news ticker." />
+                                </div>
+                            </section>
+
+                            <section aria-labelledby="ebook-summary-heading">
+                                <div className="mb-4 flex items-center gap-3">
+                                    <h3 id="ebook-summary-heading" className="text-lg font-semibold text-slate-900">E-Book</h3>
+                                    <span className="h-px flex-1 bg-slate-200" />
+                                </div>
+                                <div className="grid gap-4 md:grid-cols-3">
+                                    <DashboardCard title="Books added" value={books.length} detail="Books available in the e-book library." />
+                                    <DashboardCard title="Authors added" value={authors.length} detail="Author records linked to the library." />
+                                    <DashboardCard title="Categories added" value={categories.length} detail="Categories used to organize e-books." />
+                                </div>
+                            </section>
                         </div>
                     ) : null}
 
                     {activeSection === 'banks' ? (
-                        <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
-                            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="space-y-5">
+                            <MasterViewToggle view={masterView} onChange={setMasterView} addLabel="Add New Bank" />
+                            <div className="grid gap-6">
+                            <div className={`${masterView === 'form' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm xl:mx-auto xl:w-full xl:max-w-2xl`}>
                                 <h2 className="text-xl font-semibold text-slate-900 mb-6">
                                     Bank Master
                                 </h2>
@@ -517,13 +530,18 @@ export default function AdminDashboardPage() {
                                 </form>
                             </div>
 
-                            <RecentlyAddedBanks banks={banks} onEdit={handleEditBank} onDelete={(item) => handleDeleteBank(item.bankId, item.bankName)} />
+                            <div className={masterView === 'list' ? '' : 'hidden'}>
+                                <RecentlyAddedBanks banks={banks} onEdit={handleEditBank} onDelete={(item) => handleDeleteBank(item.bankId, item.bankName)} />
+                            </div>
+                            </div>
                         </div>
                     ) : null}
 
                     {activeSection === 'categories' ? (
-                        <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
-                            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="space-y-5">
+                            <MasterViewToggle view={masterView} onChange={setMasterView} addLabel="Add New Category" />
+                            <div className="grid gap-6">
+                            <div className={`${masterView === 'form' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm xl:mx-auto xl:w-full xl:max-w-2xl`}>
                                 <h2 className="text-xl font-semibold text-slate-900 mb-6">Category Master</h2>
 
                                 <form
@@ -555,14 +573,14 @@ export default function AdminDashboardPage() {
                                 </form>
                             </div>
 
-                            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                            <div className={`${masterView === 'list' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm`}>
                                 <div className="mb-4 flex items-center justify-between gap-4">
                                     <h3 className="text-lg font-semibold">Recently added categories</h3>
                                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{categories.length} total</span>
                                 </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="bg-slate-50 text-slate-600">
+                                <div className="max-h-[520px] overflow-auto">
+                                    <table className="min-w-[680px] w-full text-sm">
+                                        <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                                             <tr>
                                                 <th className="px-3 py-3 text-left">Name</th>
                                                 <th className="px-3 py-3 text-left">Description</th>
@@ -603,12 +621,15 @@ export default function AdminDashboardPage() {
                                     </table>
                                 </div>
                             </div>
+                            </div>
                         </div>
                     ) : null}
 
                     {activeSection === 'authors' ? (
-                        <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
-                            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="space-y-5">
+                            <MasterViewToggle view={masterView} onChange={setMasterView} addLabel="Add New Author" />
+                            <div className="grid gap-6">
+                            <div className={`${masterView === 'form' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm xl:mx-auto xl:w-full xl:max-w-2xl`}>
                                 <h2 className="text-xl font-semibold text-slate-900 mb-6">Author Master</h2>
 
                                 <form
@@ -640,14 +661,14 @@ export default function AdminDashboardPage() {
                                 </form>
                             </div>
 
-                            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                            <div className={`${masterView === 'list' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm`}>
                                 <div className="mb-4 flex items-center justify-between gap-4">
                                     <h3 className="text-lg font-semibold">Recently added authors</h3>
                                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{authors.length} total</span>
                                 </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="bg-slate-50 text-slate-600">
+                                <div className="max-h-[520px] overflow-auto">
+                                    <table className="min-w-[680px] w-full text-sm">
+                                        <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                                             <tr>
                                                 <th className="px-3 py-3 text-left">Author</th>
                                                 <th className="px-3 py-3 text-left">Bio</th>
@@ -688,12 +709,15 @@ export default function AdminDashboardPage() {
                                     </table>
                                 </div>
                             </div>
+                            </div>
                         </div>
                     ) : null}
 
                     {activeSection === 'books' ? (
-                        <div className="grid gap-6 xl:grid-cols-[720px_minmax(0,1fr)]">
-                            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="space-y-5">
+                            <MasterViewToggle view={masterView} onChange={setMasterView} addLabel="Add New Book" />
+                            <div className="grid gap-6">
+                            <div className={`${masterView === 'form' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm xl:mx-auto xl:w-full xl:max-w-5xl`}>
                                 <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                                     <h2 className="text-xl font-semibold text-slate-900">{editingBook ? 'Edit Book' : 'Add Book'}</h2>
                                     {editingBook ? (
@@ -722,13 +746,17 @@ export default function AdminDashboardPage() {
                                 />
                             </div>
 
-                            <RecentlyAddedBooks books={books} onEdit={handleEditBook} onDelete={(item) => handleDeleteBook(item.bookId, item.title)} />
+                            <div className={masterView === 'list' ? '' : 'hidden'}>
+                                <RecentlyAddedBooks books={books} onEdit={handleEditBook} onDelete={(item) => handleDeleteBook(item.bookId, item.title)} />
+                            </div>
+                            </div>
                         </div>
                     ) : null}
 
                     {activeSection === 'recruitments' ? (
                         <div className="space-y-6">
-                            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                            <MasterViewToggle view={masterView} onChange={setMasterView} addLabel="Add New Recruitment" />
+                            <div className={`${masterView === 'form' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm`}>
                                 <h2 className="text-xl font-semibold text-slate-900 mb-6">
                                     Add Recruitment
                                 </h2>
@@ -1261,6 +1289,7 @@ export default function AdminDashboardPage() {
                                 </form>
                             </div>
 
+                            <div className={masterView === 'list' ? '' : 'hidden'}>
                             <RecentlyAddedRecruitments
                                 recruitments={recruitments}
                                 onEdit={(item) => {
@@ -1271,12 +1300,14 @@ export default function AdminDashboardPage() {
                                 onPublish={(item) => actions.publish(item.id)}
                                 publishingRecruitmentId={actions.publishingId}
                             />
+                            </div>
                         </div>
                     ) : null}
 
                     {activeSection === 'news' ? (
                         <div className="space-y-6">
-                            <div ref={newsFormRef} className={"rounded-lg border bg-white p-6 shadow-sm transition " + (newsForm.editingId ? "border-amber-300 ring-2 ring-amber-100 shadow-lg shadow-amber-50" : "border-slate-200")}>
+                            <MasterViewToggle view={masterView} onChange={setMasterView} addLabel="Add New News" />
+                            <div ref={newsFormRef} className={(masterView === 'form' ? '' : 'hidden ') + "rounded-lg border bg-white p-6 shadow-sm transition " + (newsForm.editingId ? "border-amber-300 ring-2 ring-amber-100 shadow-lg shadow-amber-50" : "border-slate-200")}>
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-xl font-semibold text-slate-900">
                                         {newsForm.editingId ? 'Edit News' : 'Add News'}
@@ -1346,14 +1377,17 @@ export default function AdminDashboardPage() {
                                 </form>
                             </div>
 
+                            <div className={masterView === 'list' ? '' : 'hidden'}>
                             <RecentlyAddedNews
                                 news={news}
                                 onEdit={(item) => {
                                     setActiveSection('news');
+                                    setMasterView('form');
                                     newsForm.startEdit(item);
                                 }}
                                 onDelete={(item) => handleDeleteNews(item.id, item.newsEng || item.newsMrt || '')}
                             />
+                            </div>
                         </div>
                     ) : null}
                 </div>
@@ -1468,17 +1502,53 @@ function SidebarButton({ label, active, onClick, nested = false }: { label: stri
     );
 }
 
-function DashboardCard({ title, value, detail }: { title: string; value: number; detail: string }) {
+function MasterViewToggle({ view, onChange, addLabel }: { view: 'list' | 'form'; onChange: (view: 'list' | 'form') => void; addLabel: string }) {
     return (
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+            <button
+                type="button"
+                onClick={() => onChange('list')}
+                className={`rounded-md px-4 py-2 text-sm font-semibold transition ${view === 'list' ? 'bg-[#7A2E92] text-white shadow-sm' : 'text-slate-600 hover:text-[#7A2E92]'}`}
+            >
+                List
+            </button>
+            <button
+                type="button"
+                onClick={() => onChange('form')}
+                className={`rounded-md px-4 py-2 text-sm font-semibold transition ${view === 'form' ? 'bg-[#7A2E92] text-white shadow-sm' : 'text-slate-600 hover:text-[#7A2E92]'}`}
+            >
+                {addLabel}
+            </button>
+        </div>
+    );
+}
+
+function DashboardCard({ title, value, detail }: { title: string; value: number; detail: string }) {
+    const cardVisuals = {
+        'Banks added': { Icon: Building2, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]' },
+        'Recruitments added': { Icon: BriefcaseBusiness, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]' },
+        'News added': { Icon: Newspaper, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]' },
+        'Books added': { Icon: BookOpen, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]' },
+        'Authors added': { Icon: Users, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]' },
+        'Categories added': { Icon: Tags, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]' },
+    } as const;
+    const visual = cardVisuals[title as keyof typeof cardVisuals] ?? cardVisuals['Banks added'];
+    const Icon = visual.Icon;
+
+    return (
+        <div className={`rounded-xl border border-slate-200 border-l-4 ${visual.accentClass} bg-white p-5 shadow-sm transition-shadow duration-200 hover:shadow-md`}>
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <p className="text-sm font-medium text-slate-600">{title}</p>
-                    <p className="mt-2 text-4xl font-semibold tracking-tight text-slate-950">{value}</p>
+                    <p className="text-base font-semibold text-slate-600">{title}</p>
+                    <p className="mt-2 text-[2.75rem] font-bold leading-none tracking-tight text-slate-950">{value}</p>
                 </div>
-                <span className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">Live</span>
+                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${visual.iconClass} shadow-sm`}>
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                </span>
             </div>
-            <p className="mt-4 text-sm leading-6 text-slate-500">{detail}</p>
+            <div className="mt-5 border-t border-slate-100 pt-3">
+                <p className="text-[15px] leading-6 text-slate-500">{detail}</p>
+            </div>
         </div>
     );
 }
@@ -1490,9 +1560,9 @@ function RecentlyAddedBanks({ banks, onEdit, onDelete }: { banks: AdminBank[]; o
                 <h2 className="text-xl font-semibold text-slate-900">Recently added banks</h2>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{banks.length} total</span>
             </div>
-            <div className="mt-4 overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-slate-600">
+            <div className="mt-4 max-h-[520px] overflow-auto">
+                <table className="min-w-[760px] w-full text-sm">
+                    <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                         <tr>
                             <th className="px-3 py-3 text-left">Bank</th>
                             <th className="px-3 py-3 text-left">Code</th>
@@ -1558,9 +1628,9 @@ function RecentlyAddedBooks({ books, onEdit, onDelete }: { books: any[]; onEdit?
                 <h2 className="text-xl font-semibold text-slate-900">Recently added books</h2>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{books.length} total</span>
             </div>
-            <div className="mt-4 overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-slate-600">
+            <div className="mt-4 max-h-[520px] overflow-auto">
+                <table className="min-w-[760px] w-full text-sm">
+                    <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                         <tr>
                             <th className="px-3 py-3 text-left">Title</th>
                             <th className="px-3 py-3 text-left">Author</th>
@@ -1629,16 +1699,43 @@ function RecentlyAddedRecruitments({
     onDelete?: (item: AdminRecruitment) => void;
     publishingRecruitmentId: number | null;
 }) {
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'published' | 'expired'>('all');
+    const getStatus = (item: AdminRecruitment) => {
+        if (item.isPublished) return 'published';
+        if (item.applicationEndDate && new Date(item.applicationEndDate) < new Date()) return 'expired';
+        return 'active';
+    };
+    const visibleRecruitments = recruitments.filter((item) => statusFilter === 'all' || getStatus(item) === statusFilter);
+
     return (
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
-                <h2 className="text-xl font-semibold text-slate-900">Recently added recruitments</h2>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{recruitments.length} total</span>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-xl font-semibold text-slate-900">Recruitment list</h2>
+                    <p className="mt-1 text-sm text-slate-500">Upload a vacancy notice PDF before you publish each recruitment listing.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium text-slate-600" htmlFor="recruitment-status-filter">Status</label>
+                    <div className="relative">
+                        <select
+                            id="recruitment-status-filter"
+                            value={statusFilter}
+                            onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
+                            className="appearance-none rounded-md border border-slate-300 bg-white py-2 pl-3 pr-10 text-sm font-semibold text-slate-700 outline-none focus:border-[#7A2E92] focus:ring-2 focus:ring-[#7A2E92]/30"
+                        >
+                            <option value="all">All statuses</option>
+                            <option value="active">Active</option>
+                            <option value="published">Published</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" aria-hidden="true" />
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{visibleRecruitments.length} of {recruitments.length}</span>
+                </div>
             </div>
-            <p className="mt-3 text-sm text-slate-500">Upload a vacancy notice PDF before you publish each recruitment listing.</p>
-            <div className="mt-4 overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-slate-600">
+            <div className="mt-4 max-h-[560px] overflow-auto">
+                <table className="min-w-[980px] w-full text-sm">
+                    <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                         <tr>
                             <th className="px-3 py-3 text-left">Code</th>
                             <th className="px-3 py-3 text-left">Bank</th>
@@ -1650,7 +1747,7 @@ function RecentlyAddedRecruitments({
                         </tr>
                     </thead>
                     <tbody>
-                        {recruitments.map((item) => (
+                        {visibleRecruitments.map((item) => (
                             <tr key={item.id} className="border-t">
                                 <td className="px-3 py-3 font-semibold">{item.code}</td>
                                 <td className="px-3 py-3">{item.bankName}</td>
@@ -1658,8 +1755,8 @@ function RecentlyAddedRecruitments({
                                 <td className="px-3 py-3 whitespace-nowrap">{formatDate(item.applicationStartDate) || 'To be announced'}</td>
                                 <td className="px-3 py-3 whitespace-nowrap">{formatDate(item.applicationEndDate) || 'To be announced'}</td>
                                 <td className="px-3 py-3">
-                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${item.isPublished ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                                        {item.isPublished ? 'Published' : item.status}
+                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatus(item) === 'published' ? 'bg-emerald-50 text-emerald-700' : getStatus(item) === 'expired' ? 'bg-rose-50 text-rose-700' : 'bg-violet-50 text-[#7A2E92]'}`}>
+                                        {getStatus(item).charAt(0).toUpperCase() + getStatus(item).slice(1)}
                                     </span>
                                 </td>
                                 <td className="px-3 py-3">
@@ -1691,9 +1788,9 @@ function RecentlyAddedRecruitments({
                                 </td>
                             </tr>
                         ))}
-                        {recruitments.length === 0 ? (
+                        {visibleRecruitments.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="px-3 py-6 text-center text-slate-500">No recruitment added yet.</td>
+                                <td colSpan={7} className="px-3 py-6 text-center text-slate-500">No recruitments match this status.</td>
                             </tr>
                         ) : null}
                     </tbody>
@@ -1711,9 +1808,9 @@ function RecentlyAddedNews({ news, onEdit, onDelete }: { news: AdminNews[]; onEd
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{news.length} total</span>
             </div>
             <p className="mt-3 text-sm text-slate-500">News items displayed on the home page latest news ticker section.</p>
-            <div className="mt-4 overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-slate-600">
+            <div className="mt-4 max-h-[520px] overflow-auto">
+                <table className="min-w-[860px] w-full text-sm">
+                    <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                         <tr>
                             <th className="px-3 py-3 text-left">English Text</th>
                             <th className="px-3 py-3 text-left">Marathi Text</th>
