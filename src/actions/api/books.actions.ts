@@ -21,7 +21,7 @@ export function createBook(formData: FormData) {
 
 export function updateBook(formData: FormData) {
   return apiRequest<Book>(API_ENDPOINTS.book.update, {
-    method: 'POST',
+    method: 'PUT',
     body: formData,
   });
 }
