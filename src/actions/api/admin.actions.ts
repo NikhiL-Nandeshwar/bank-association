@@ -5,7 +5,14 @@ import { createBank, getBanks, updateBank, deleteBank } from "./bank.actions";
 import { createNews, updateNews, getNews, deleteNews } from "./news.actions";
 import { createCategory, updateCategory, deleteCategory } from './category.actions';
 import { createAuthor, updateAuthor, deleteAuthor } from './author.actions';
-import { createBook, getBooks, updateBook, deleteBook } from './books.actions';
+import {
+  createBook,
+  getBooks,
+  updateBook,
+  deleteBook,
+  type BookFormPayload,
+  type UpdateBookPayload,
+} from './books.actions';
 
 export async function fetchBanksService() {
     const response = await getBanks();
@@ -73,13 +80,13 @@ export async function deleteAuthorService(authorId: number) {
     return deleteAuthor(authorId);
 }
 
-export async function createBookService(formData: FormData) {
-    const response = await createBook(formData as any);
+export async function createBookService(payload: BookFormPayload) {
+    const response = await createBook(payload);
     return response.data;
 }
 
-export async function updateBookService(formData: FormData) {
-    const response = await updateBook(formData as any);
+export async function updateBookService(payload: UpdateBookPayload) {
+    const response = await updateBook(payload);
     return response.data;
 }
 

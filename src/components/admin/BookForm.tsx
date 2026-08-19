@@ -80,25 +80,27 @@ export default function BookForm({ categories, authors, editingBook, onSaved, on
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const fd = new FormData();
-    fd.append('CategoryId', String(form.categoryId));
-    fd.append('AuthorId', String(form.authorId));
-    fd.append('Title', form.title);
-    fd.append('Description', form.description);
-    fd.append('Language', form.language);
-    fd.append('TotalPages', form.totalPages);
-    fd.append('PublishedYear', form.publishedYear);
-    fd.append('Isbn', form.isbn);
-    fd.append('Price', form.price);
-    fd.append('IsFeatured', String(form.isFeatured));
-    fd.append('TagsRaw', form.tagsRaw);
-    if (pdfFile) fd.append('PdfFile', pdfFile);
-    if (coverFile) fd.append('CoverFile', coverFile);
+    const payload = {
+      categoryId: form.categoryId,
+      authorId: form.authorId,
+      title: form.title,
+      description: form.description,
+      language: form.language,
+      totalPages: form.totalPages,
+      publishedYear: form.publishedYear,
+      isbn: form.isbn,
+      price: form.price,
+      isFeatured: form.isFeatured,
+      tagsRaw: form.tagsRaw,
+      pdfFile,
+      coverFile,
+    };
 
     try {
       setIsSaving(true);
-      const service = editingBook ? updateBookService : createBookService;
-      const data = await service(fd as any);
+      const data = editingBook
+        ? await updateBookService({ ...payload, bookId: editingBook.bookId })
+        : await createBookService(payload);
       toast.success(editingBook ? 'Book updated' : 'Book created');
       onSaved?.(data);
       if (!editingBook) {

@@ -1656,7 +1656,7 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
               <div className="space-y-8">
                 <div className="grid gap-6 md:grid-cols-2">
                   <FormField label="Email address" error={errors.email}>
-                    <input type="email" disabled value={user?.email} onChange={(event) => updateField('email', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                    <input type="email" value={user?.email} onChange={(event) => updateField('email', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
                   </FormField>
                   <FormField label="Mobile number" error={errors.phone}>
                     <input value={form.phone} onChange={(event) => updateField('phone', event.target.value.replace(/\D/g, '').slice(0, 10))} className={APPLICATION_INPUT_CLASS_NAME} placeholder="10-digit number" />
