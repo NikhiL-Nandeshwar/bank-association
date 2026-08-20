@@ -96,6 +96,15 @@ export default function Signup() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<SignupFieldErrors>({});
 
+    const handleMobileChange = (value: string) => {
+        const mobileNumber = value.replace(/\D/g, '').slice(0, 10);
+        setMobile(mobileNumber);
+
+        if (/^\d{10}$/.test(mobileNumber)) {
+            setFieldErrors((previous) => ({ ...previous, mobile: undefined }));
+        }
+    };
+
     useEffect(() => {
         if (!isCodeSent || countdown <= 0) return;
 
@@ -264,8 +273,10 @@ export default function Signup() {
                             label={content.mobile}
                             value={mobile}
                             error={fieldErrors.mobile}
-                            onChange={(e) => setMobile(e.target.value)}
+                            onChange={(e) => handleMobileChange(e.target.value)}
                             placeholder={content.mobilePlaceholder}
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             maxLength={10}
                         />
 

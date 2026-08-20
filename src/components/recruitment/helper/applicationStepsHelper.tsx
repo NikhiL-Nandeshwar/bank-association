@@ -1,6 +1,6 @@
 import { APPLICATION_INPUT_CLASS_NAME, EDUCATION_TEMPLATE, EMPTY_LANGUAGE_SKILLS, LanguageSkills, SUMMARY_TONE_CLASS_NAMES, SummaryTone } from "@/constants/application-wizard.constants";
 import { EligibilityCriteria, MasterItem, MasterListResponse } from "@/types/api.types";
-import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep1and2Payload, SaveStep3Payload, SaveStepExperiencePayload } from "@/types/applicationSteps";
+import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep1and2Payload, SaveStep3ValidationPayload, SaveStepExperiencePayload } from "@/types/applicationSteps";
 
 const EDUCATION_CRITERION_LEVEL_MAP: Record<string, string> = {
     SSC_10TH: 'SSC / 10th',
@@ -9,6 +9,9 @@ const EDUCATION_CRITERION_LEVEL_MAP: Record<string, string> = {
     POST_GRADUATION: 'Post Graduation',
     DIPLOMA: 'Diploma',
 };
+
+const PERSON_NAME_PATTERN = /^[A-Za-z\s]+$/;
+const MAX_PERSON_NAME_LENGTH = 40;
 
 export type ExistingDocument = {
     documentId: number;
@@ -91,7 +94,8 @@ export const initialState = (recruitment: ApplicationWizardProps['initialRecruit
     acceptedEligibilityCriteria: {},
     declarationAccepted: false,
     paymentStatus: '',
-    paymentAmount: '',
+    // Show the published recruitment fee before the payment gateway order is created.
+    paymentAmount: recruitment.applicationFee === undefined ? '' : String(recruitment.applicationFee),
     transactionNumber: '',
     paymentDate: '',
     paymentMethod: '',
@@ -140,11 +144,12 @@ function toIsoDateString(value: string) {
     return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
-export function buildSaveStep3Payload(form: FormState, applicationId: number): SaveStep3Payload {
+export function buildSaveStep3Payload(form: FormState, applicationId: number): SaveStep3ValidationPayload {
     return {
         applicationId,
         educations: form.educationEntries.map((entry, index) => ({
             educationId: entry.educationId ?? 0,
+            educationCategory: entry.level,
             educationLevel: entry.educationLevel ?? '',
             specialization: fieldValue(entry.specialization).trim(),
             organizationName: fieldValue(entry.institute).trim() || fieldValue(entry.board).trim(),
@@ -345,10 +350,15 @@ export function validateStep(
 
     if (step === 1) {
         if (!fieldValue(form.firstName).trim()) errors.firstName = 'First name is required.';
+        else if (!PERSON_NAME_PATTERN.test(fieldValue(form.firstName)) || fieldValue(form.firstName).length > MAX_PERSON_NAME_LENGTH) errors.firstName = 'First name can contain only letters and spaces, up to 40 characters.';
         if (!fieldValue(form.lastName).trim()) errors.lastName = 'Last name is required.';
+        else if (!PERSON_NAME_PATTERN.test(fieldValue(form.lastName)) || fieldValue(form.lastName).length > MAX_PERSON_NAME_LENGTH) errors.lastName = 'Last name can contain only letters and spaces, up to 40 characters.';
         if (!form.dateOfBirth) errors.dateOfBirth = 'Date of birth is required.';
         if (!fieldValue(form.ageAsOn).trim()) errors.ageAsOn = 'Age as on date is required.';
         if (!form.gender) errors.gender = 'Please select a gender.';
+        if (!/^\d{12}$/.test(fieldValue(form.aadhaarNumber))) {
+            errors.aadhaarNumber = 'Enter a valid 12-digit Aadhaar number.';
+        }
         if (!form.category) errors.category = 'Please select a category.';
         if (!fieldValue(form.caste).trim()) errors.caste = 'Caste is required.';
         if (!fieldValue(form.subCaste).trim()) errors.subCaste = 'Sub caste is required.';
@@ -360,7 +370,9 @@ export function validateStep(
             errors.husbandsName = 'Spouse name is required.';
         }
         if (!fieldValue(form.mothersName).trim()) errors.mothersName = "Mother's name is required.";
+        else if (!PERSON_NAME_PATTERN.test(fieldValue(form.mothersName)) || fieldValue(form.mothersName).length > MAX_PERSON_NAME_LENGTH) errors.mothersName = "Mother's name can contain only letters and spaces, up to 40 characters.";
         if (!fieldValue(form.fathersName).trim()) errors.fathersName = "Father's name is required.";
+        else if (!PERSON_NAME_PATTERN.test(fieldValue(form.fathersName)) || fieldValue(form.fathersName).length > MAX_PERSON_NAME_LENGTH) errors.fathersName = "Father's name can contain only letters and spaces, up to 40 characters.";
         if (!form.nationalityIndian) errors.nationalityIndian = 'Please confirm citizenship.';
     }
 

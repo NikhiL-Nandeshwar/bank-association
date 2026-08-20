@@ -556,6 +556,22 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
       (x) => x.value === id
     )?.label ?? id;
 
+  const getCountryName = (id: string) => countryOptions.find((x) => x.value === id)?.label ?? '';
+  const getStateName = (id: string) => stateOptions.find((x) => x.value === id)?.label ?? '';
+  const getDistrictName = (id: string) => districtOptions.find((x) => x.value === id)?.label ?? '';
+  const getTalukaName = (id: string) => talukaOptions.find((x) => x.value === id)?.label ?? '';
+
+  const reviewAddress = [
+    form.addressLine1,
+    form.addressLine2,
+    form.addressLine3,
+    getTalukaName(form.taluka),
+    getDistrictName(form.district),
+    getStateName(form.state),
+    getCountryName(form.country),
+    form.pincode,
+  ].filter((value) => value?.trim()).join(', ');
+
   const mandatoryEducationLevels = useMemo(
     () => getMandatoryEducationLevels(eligibilityCriteria),
     [eligibilityCriteria],
@@ -619,10 +635,41 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
   );
 
   const fullName = `${form.firstName} ${form.lastName}`.trim();
+  const autoFilledEmail = user?.email?.trim() || form.email;
+
+  const sanitizePersonName = (value: string) => value.replace(/[^A-Za-z\s]/g, '').slice(0, 40);
 
   const updateField = <K extends keyof FormState>(field: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const updateAadhaarNumber = (value: string) => {
+    const aadhaarNumber = value.replace(/\D/g, '').slice(0, 12);
+    setForm((prev) => ({ ...prev, aadhaarNumber }));
+    setErrors((prev) => ({
+      ...prev,
+      aadhaarNumber: prev.aadhaarNumber && !/^\d{12}$/.test(aadhaarNumber)
+        ? 'Enter a valid 12-digit Aadhaar number.'
+        : undefined,
+    }));
+  };
+
+  const updatePhoneNumber = (field: 'phone' | 'alternatePhone', value: string) => {
+    const phoneNumber = value.replace(/\D/g, '').slice(0, 10);
+    const isValid = field === 'alternatePhone'
+      ? !phoneNumber || /^\d{10}$/.test(phoneNumber)
+      : /^\d{10}$/.test(phoneNumber);
+
+    setForm((prev) => ({ ...prev, [field]: phoneNumber }));
+    setErrors((prev) => ({
+      ...prev,
+      [field]: prev[field] && !isValid
+        ? field === 'phone'
+          ? 'Enter a valid 10-digit phone number.'
+          : 'Enter a valid 10-digit alternate number.'
+        : undefined,
+    }));
   };
 
   const handleCategoryChange = (value: string) => {
@@ -748,7 +795,7 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
   function buildStep1and2Payload(f: FormState): SaveStep1and2Payload {
     return {
       vacancyId: initialRecruitment.vacancyId ?? 0,
-      aadhaarNumber: f.aadhaarNumber || '123456789123',
+      aadhaarNumber: f.aadhaarNumber || '',
       fullName: `${f.firstName} ${f.lastName}`.trim(),
       fullNameMarathi: f.fullNameMarathi || '',
       dateOfBirth: f.dateOfBirth
@@ -814,7 +861,7 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
 
     const nextErrors = validateStep(
       currentStep,
-      form,
+      { ...form, email: autoFilledEmail },
       eligibilityCriteria,
       uploadedDocuments,
       mandatoryDocuments,
@@ -1536,10 +1583,10 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
             {currentStep === 1 && (
               <div className="grid gap-6 md:grid-cols-2">
                 <FormField label="First name" error={errors.firstName}>
-                  <input value={form.firstName} placeholder='Enter your first name' onChange={(event) => updateField('firstName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                  <input value={form.firstName} maxLength={40} placeholder='Enter your first name' onChange={(event) => updateField('firstName', sanitizePersonName(event.target.value))} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Last name" error={errors.lastName}>
-                  <input value={form.lastName} placeholder='Enter your last name' onChange={(event) => updateField('lastName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                  <input value={form.lastName} maxLength={40} placeholder='Enter your last name' onChange={(event) => updateField('lastName', sanitizePersonName(event.target.value))} className={APPLICATION_INPUT_CLASS_NAME} />
                 </FormField>
                 <FormField label="Date of birth" error={errors.dateOfBirth}>
                   <input type="date" value={form.dateOfBirth} onChange={(event) => updateDateOfBirth(event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
@@ -1561,7 +1608,16 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
                   </select>
                 </FormField>
                 <FormField label="Aadhar No" error={errors.aadhaarNumber}>
-                  <input value={form.aadhaarNumber} placeholder='Enter your aadhar number' onChange={(event) => updateField('aadhaarNumber', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={12}
+                    value={form.aadhaarNumber}
+                    placeholder="Enter your 12-digit Aadhaar number"
+                    onChange={(event) => updateAadhaarNumber(event.target.value)}
+                    className={APPLICATION_INPUT_CLASS_NAME}
+                  />
                 </FormField>
                 <LookupField
                   label="Category"
@@ -1636,16 +1692,18 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
                 <FormField label="Mother's name" error={errors.mothersName}>
                   <input
                     value={form.mothersName}
+                    maxLength={40}
                     placeholder="Enter your mother name"
-                    onChange={(event) => updateField('mothersName', event.target.value)}
+                    onChange={(event) => updateField('mothersName', sanitizePersonName(event.target.value))}
                     className={APPLICATION_INPUT_CLASS_NAME}
                   />
                 </FormField>
                 <FormField label="Father's name" error={errors.fathersName}>
                   <input
                     value={form.fathersName}
+                    maxLength={40}
                     placeholder="Enter your father name"
-                    onChange={(event) => updateField('fathersName', event.target.value)}
+                    onChange={(event) => updateField('fathersName', sanitizePersonName(event.target.value))}
                     className={APPLICATION_INPUT_CLASS_NAME}
                   />
                 </FormField>
@@ -1656,13 +1714,18 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
               <div className="space-y-8">
                 <div className="grid gap-6 md:grid-cols-2">
                   <FormField label="Email address" error={errors.email}>
-                    <input type="email" value={user?.email} onChange={(event) => updateField('email', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                    <input
+                      type="email"
+                      value={autoFilledEmail}
+                      readOnly
+                      className={`${APPLICATION_INPUT_CLASS_NAME} cursor-not-allowed bg-slate-100 text-slate-500`}
+                    />
                   </FormField>
                   <FormField label="Mobile number" error={errors.phone}>
-                    <input value={form.phone} onChange={(event) => updateField('phone', event.target.value.replace(/\D/g, '').slice(0, 10))} className={APPLICATION_INPUT_CLASS_NAME} placeholder="10-digit number" />
+                    <input type="tel" inputMode="numeric" pattern="[0-9]*" maxLength={10} value={form.phone} onChange={(event) => updatePhoneNumber('phone', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="10-digit number" />
                   </FormField>
                   <FormField label="Alternate phone" error={errors.alternatePhone}>
-                    <input value={form.alternatePhone} onChange={(event) => updateField('alternatePhone', event.target.value.replace(/\D/g, '').slice(0, 10))} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Optional" />
+                    <input type="tel" inputMode="numeric" pattern="[0-9]*" maxLength={10} value={form.alternatePhone} onChange={(event) => updatePhoneNumber('alternatePhone', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Optional" />
                   </FormField>
                   <FormField label="Pincode" error={errors.pincode}>
                     <input value={form.pincode} onChange={(event) => updateField('pincode', event.target.value.replace(/\D/g, '').slice(0, 6))} className={APPLICATION_INPUT_CLASS_NAME} />
@@ -2194,7 +2257,7 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
 
                       <ReviewRow
                         label="Email"
-                        value={form.email || 'N/A'}
+                        value={autoFilledEmail || 'N/A'}
                       />
 
                       <ReviewRow
@@ -2209,14 +2272,7 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
 
                       <ReviewRow
                         label="Address"
-                        value={`${form.addressLine1 || ''}
-          ${form.addressLine2 || ''}
-          ${form.addressLine3 || ''}
-          ${form.taluka || ''}
-          ${form.district || ''}
-          ${form.state || ''}
-          ${form.country || ''}
-          ${form.pincode || ''}`}
+                        value={reviewAddress || 'N/A'}
                       />
                     </div>
 

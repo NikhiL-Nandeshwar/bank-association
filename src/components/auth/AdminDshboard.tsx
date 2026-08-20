@@ -4,7 +4,7 @@
 import { useAuth } from '@/lib/useAuth';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes.constants';
-import { forwardRef, useEffect, useRef, useState, type ReactNode } from 'react';
+import { forwardRef, useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { AdminBank, AdminRecruitment, AdminNews } from '@/types/adminDashboard';
 import { formatDate, isRecruitmentActive } from '@/utils/adminDashboardHelper';
 import { fetchBanksService, fetchRecruitmentsService, fetchNewsService, createBookService, deleteBankService, deleteCategoryService, deleteAuthorService, deleteBookService, deleteRecruitmentService, deleteNewsService, fetchBooksService } from '@/actions/api/admin.actions';
@@ -489,10 +489,16 @@ export default function AdminDashboardPage() {
                                     <AdminInput
                                         label="Contact phone"
                                         value={bank.form.contactPhone}
-                                        onChange={(v) =>
-                                            bank.setForm((p) => ({ ...p, contactPhone: v }))
-                                        }
+                                        onChange={(v) => {
+                                            const phoneNumber = v.replace(/\D/g, '').slice(0, 10);
+                                            bank.setForm((p) => ({ ...p, contactPhone: phoneNumber }));
+                                            if (/^\d{10}$/.test(phoneNumber)) bank.clearError('contactPhone');
+                                        }}
                                         error={bank.errors.contactPhone}
+                                        type="tel"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        maxLength={10}
                                     />
 
                                     <AdminInput
@@ -1935,6 +1941,9 @@ type AdminInputProps = {
     value: string;
     onChange: (value: string) => void;
     type?: string;
+    inputMode?: InputHTMLAttributes<HTMLInputElement>['inputMode'];
+    pattern?: string;
+    maxLength?: number;
     required?: boolean;
     error?: string;
 };
@@ -1945,6 +1954,9 @@ const AdminInput = forwardRef<HTMLInputElement, AdminInputProps>(function AdminI
         value,
         onChange,
         type = 'text',
+        inputMode,
+        pattern,
+        maxLength,
         required = false,
         error,
     },
@@ -1956,6 +1968,9 @@ const AdminInput = forwardRef<HTMLInputElement, AdminInputProps>(function AdminI
             <input
                 ref={ref}
                 type={type}
+                inputMode={inputMode}
+                pattern={pattern}
+                maxLength={maxLength}
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
                 required={required}

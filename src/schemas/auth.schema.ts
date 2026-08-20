@@ -38,7 +38,7 @@ export const fullNameSchema = z
 export const mobileSchema = z
   .string()
   .trim()
-  .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number.');
+  .regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number.');
 
 export const signupSchema = z.object({
   fullName: fullNameSchema,
@@ -47,7 +47,7 @@ export const signupSchema = z.object({
     .string()
     .trim()
     .refine(
-      (value) => value === '' || /^[6-9]\d{9}$/.test(value),
+      (value) => value === '' || /^\d{10}$/.test(value),
       'Enter a valid 10-digit mobile number.'
     )
     .optional(),

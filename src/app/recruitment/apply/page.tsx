@@ -111,6 +111,7 @@ export default function RecruitmentApplyPage() {
         name: query.name ?? 'Kolhapur Zilla Nagari Banks Sahakari Association Ltd. recruitment',
         postName: selectedVacancy?.postName || query.post,
         bankName: selectedVacancy?.bankName || query.bankName,
+        applicationFee: selectedVacancy?.applicationFee,
         eligibilityCriteria: selectedVacancy?.eligibilityCriteria ?? [],
       }}
       existingApplication={query.applicationId && query.mode ? {

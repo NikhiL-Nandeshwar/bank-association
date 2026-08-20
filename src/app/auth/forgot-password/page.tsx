@@ -12,7 +12,7 @@ import FormInput from '@/components/ui/FormInput';
 import SubmitButton from '@/components/ui/SubmitButton';
 
 // Actions
-import { forgotPassword, resetPassword, verifyOtp } from '@/actions/api';
+import { forgotPassword, resetPassword, verifyForgotPasswordOtp, verifyOtp } from '@/actions/api';
 
 // Constants
 import { PASSWORD_RECOVERY_COPY } from '@/constants/auth.constants';
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
 
     try {
       setIsSubmitting(true);
-      await verifyOtp(parsedPayload.data);
+      await verifyForgotPasswordOtp(parsedPayload.data);
       setStep('password');
       setNotice(content.verifiedNotice);
       toast.success(content.verifiedNotice);

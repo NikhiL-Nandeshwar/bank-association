@@ -9,7 +9,7 @@ const maybeIsoDateSchema = z.union([
 
 export const saveStep3EducationSchema = z.object({
   educationId: z.coerce.number().int('Education ID must be a whole number.').nonnegative('Education ID cannot be negative.'),
-  educationLevel: z.string().trim().min(1, 'Education level is required.'),
+  educationLevel: z.string().trim(),
   specialization: maybeBlankStringSchema,
   organizationName: maybeBlankStringSchema,
   percentageOrCGPA: z.coerce.number().min(0, 'Percentage or CGPA cannot be negative.'),
@@ -19,25 +19,58 @@ export const saveStep3EducationSchema = z.object({
   sortOrder: z.coerce.number().int('Sort order must be a whole number.').nonnegative('Sort order cannot be negative.'),
 });
 
+const saveStep3EducationValidationSchema = saveStep3EducationSchema.extend({
+  // This identifies the fixed UI card (e.g. Graduation), while educationLevel
+  // contains the applicant's qualification (e.g. BTECH).
+  educationCategory: z.string().trim(),
+});
+
+function hasEducationDetails(education: z.infer<typeof saveStep3EducationValidationSchema>) {
+  return Boolean(
+    education.educationLevel ||
+      education.specialization.trim() ||
+      education.organizationName.trim() ||
+      education.percentageOrCGPA ||
+      education.className.trim() ||
+      education.passedMonthYear.trim() ||
+      education.passedDate,
+  );
+}
+
 export function createSaveStep3Schema(mandatoryEducationLevels: string[]) {
   return z
     .object({
       applicationId: z.coerce.number().int('Application ID must be a whole number.').nonnegative('Application ID cannot be negative.'),
-      educations: z.array(saveStep3EducationSchema).min(1, 'Add at least one education row.'),
+      educations: z.array(saveStep3EducationValidationSchema).min(1, 'Add at least one education row.'),
     })
     .superRefine((value, ctx) => {
       value.educations.forEach((education, index) => {
-        if (!mandatoryEducationLevels.includes(education.educationLevel)) {
+        const isMandatory = mandatoryEducationLevels.includes(education.educationCategory);
+        const hasDetails = hasEducationDetails(education);
+        const entryPath = ['educations', index] as const;
+
+        // Unused optional cards should not block the applicant from continuing.
+        if (!isMandatory && !hasDetails) {
           return;
         }
 
-        const entryPath = ['educations', index] as const;
+        if (!education.educationLevel) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [...entryPath, 'educationLevel'],
+            message: 'Education level is required.',
+          });
+        }
+
+        if (!isMandatory) {
+          return;
+        }
 
         if (!education.organizationName.trim()) {
           ctx.addIssue({
             code: 'custom',
             path: [...entryPath, 'organizationName'],
-            message: `${education.educationLevel} organization name is required.`,
+            message: `${education.educationCategory} organization name is required.`,
           });
         }
 
@@ -45,7 +78,7 @@ export function createSaveStep3Schema(mandatoryEducationLevels: string[]) {
           ctx.addIssue({
             code: 'custom',
             path: [...entryPath, 'passedMonthYear'],
-            message: `${education.educationLevel} passed month/year is required.`,
+            message: `${education.educationCategory} passed month/year is required.`,
           });
         }
 
@@ -61,7 +94,7 @@ export function createSaveStep3Schema(mandatoryEducationLevels: string[]) {
           ctx.addIssue({
             code: 'custom',
             path: [...entryPath, 'className'],
-            message: `${education.educationLevel} class/grade is required.`,
+            message: `${education.educationCategory} class/grade is required.`,
           });
         }
 
@@ -69,7 +102,7 @@ export function createSaveStep3Schema(mandatoryEducationLevels: string[]) {
           ctx.addIssue({
             code: 'custom',
             path: [...entryPath, 'specialization'],
-            message: `${education.educationLevel} specialization is required.`,
+            message: `${education.educationCategory} specialization is required.`,
           });
         }
 
@@ -77,11 +110,19 @@ export function createSaveStep3Schema(mandatoryEducationLevels: string[]) {
           ctx.addIssue({
             code: 'custom',
             path: [...entryPath, 'percentageOrCGPA'],
-            message: `${education.educationLevel} percentage or CGPA is required.`,
+            message: `${education.educationCategory} percentage or CGPA is required.`,
           });
         }
       });
-    });
+    })
+    .transform(({ applicationId, educations }) => ({
+      applicationId,
+      // The API receives only rows the applicant actually completed; the
+      // category is client-side validation context and is not part of its contract.
+      educations: educations
+        .filter(hasEducationDetails)
+        .map(({ educationCategory: _educationCategory, ...education }) => education),
+    }));
 }
 
 export type SaveStep3EducationPayload = z.infer<typeof saveStep3EducationSchema>;

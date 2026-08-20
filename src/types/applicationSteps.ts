@@ -8,6 +8,7 @@ export type ApplicationWizardProps = {
     name: string;
     postName?: string;
     bankName?: string;
+    applicationFee?: number;
     eligibilityCriteria?: EligibilityCriteria[];
   };
   existingApplication?: {
@@ -145,9 +146,17 @@ export type SaveStep3EducationPayload = {
   sortOrder: number;
 };
 
+export type SaveStep3ValidationEducationPayload = SaveStep3EducationPayload & {
+  educationCategory: string;
+};
+
 export type SaveStep3Payload = {
   applicationId: number;
   educations: SaveStep3EducationPayload[];
+};
+
+export type SaveStep3ValidationPayload = Omit<SaveStep3Payload, 'educations'> & {
+  educations: SaveStep3ValidationEducationPayload[];
 };
 
 export type SaveStepExperiencePayload = {

@@ -6,7 +6,7 @@ import { ADMIN_DASHBOARD_MESSAGES } from "@/app/admin/dashboard/messages";
 import { emptyBankForm } from "@/constants/adminDashboard";
 import { STORAGE_KEYS } from "@/constants/storage.constants";
 import { createBankSchema, updateBankSchema } from "@/schemas/bank.schema";
-import { AdminBank, BankFormErrors } from "@/types/adminDashboard";
+import { AdminBank, BankFormErrors, BankFormField } from "@/types/adminDashboard";
 import { writeStoredList } from "@/utils/adminDashboardHelper";
 import { getZodFieldErrors } from "@/utils/validation";
 import { useState } from "react";
@@ -37,6 +37,10 @@ export function useBankForm(banks: AdminBank[], setBanks: any) {
         setEditingId(null);
         setForm(emptyBankForm);
         setErrors({});
+    };
+
+    const clearError = (field: BankFormField) => {
+        setErrors((previous) => ({ ...previous, [field]: undefined }));
     };
 
     const submit = async () => {
@@ -111,5 +115,5 @@ export function useBankForm(banks: AdminBank[], setBanks: any) {
         }
     };
 
-    return { form, setForm, errors, message, isSaving, editingId, submit, startEdit, cancelEdit };
+    return { form, setForm, errors, message, isSaving, editingId, submit, startEdit, cancelEdit, clearError };
 }
