@@ -301,7 +301,7 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
       const moduleScript = document.createElement('script');
       moduleScript.id = 'billdesk-sdk-module';
       moduleScript.type = 'module';
-      moduleScript.src = 'https://uat1.billdesk.com/merchant-uat/websdk/shared/billdesksdk.esm.js';
+      moduleScript.src = 'https://pay.billdesk.com/websdk/shared/billdesksdk.esm.js';
       moduleScript.async = true;
       moduleScript.onload = () => {
         console.log('BillDesk ESM SDK loaded successfully', {
@@ -1329,7 +1329,7 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
       }));
 
       const flowConfig = {
-        merchantId: 'KOLZILAUAT',
+        merchantId: 'KOPBASSOV2',
         bdOrderId,
         authToken,
         returnUrl: 'https://www.kopbankasso-recruit-book.com/payment/billdesk-return?module=APPLICATION',
