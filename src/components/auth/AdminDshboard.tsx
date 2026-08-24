@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes.constants';
 import { forwardRef, useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { AdminBank, AdminRecruitment, AdminNews } from '@/types/adminDashboard';
-import { formatDate, isRecruitmentActive } from '@/utils/adminDashboardHelper';
-import { fetchBanksService, fetchRecruitmentsService, fetchNewsService, createBookService, deleteBankService, deleteCategoryService, deleteAuthorService, deleteBookService, deleteRecruitmentService, deleteNewsService, fetchBooksService } from '@/actions/api/admin.actions';
+import { formatDate } from '@/utils/adminDashboardHelper';
+import { fetchBanksService, fetchRecruitmentsService, fetchNewsService, createBookService, deleteBankService, deleteCategoryService, deleteAuthorService, toggleBookActiveService, deleteRecruitmentService, deleteNewsService, fetchBooksService } from '@/actions/api/admin.actions';
 import { getCategories } from '@/actions/api/category.actions';
 import { getAuthors } from '@/actions/api/author.actions';
 import { useBankForm } from '@/hooks/useBankForm';
@@ -72,6 +72,8 @@ export default function AdminDashboardPage() {
     const [activeSection, setActiveSection] = useState<'overview' | 'banks' | 'recruitments' | 'news' | 'categories' | 'authors' | 'books'>('overview');
     const [masterView, setMasterView] = useState<'list' | 'form'>('list');
     const [banks, setBanks] = useState<AdminBank[]>([]);
+    const [bankStatusFilter, setBankStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
+    const [bookStatusFilter, setBookStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
     const [categories, setCategories] = useState<any[]>([]);
     const [authors, setAuthors] = useState<any[]>([]);
     const [books, setBooks] = useState<any[]>([]);
@@ -163,15 +165,19 @@ export default function AdminDashboardPage() {
         });
     }
 
-    async function handleDeleteBank(bankId: number, bankName: string) {
+    async function handleToggleBankActive(bank: AdminBank) {
+        const action = bank.isActive ? 'Deactivate' : 'Activate';
         openDeleteDialog(
-            'Delete bank',
-            `Are you sure you want to delete ${bankName}? This action cannot be undone.`,
+            `${action} bank`,
+            `Are you sure you want to ${action.toLowerCase()} ${bank.bankName}?`,
             async () => {
-                await deleteBankService(bankId);
-                setBanks((prev) => prev.filter((bank) => bank.bankId !== bankId));
-                toast.success('Bank deleted successfully.');
-            }
+                await deleteBankService(bank.bankId);
+                setBanks((prev) => prev.map((item) =>
+                    item.bankId === bank.bankId ? { ...item, isActive: !item.isActive } : item
+                ));
+                toast.success(`Bank ${action.toLowerCase()}d successfully.`);
+            },
+            action
         );
     }
 
@@ -217,42 +223,59 @@ export default function AdminDashboardPage() {
         authorForm.startEdit(item);
     }
 
-    async function handleDeleteBook(bookId: number, bookTitle: string) {
+    async function handleToggleBookActive(book: any) {
+        const action = book.isActive ? 'Deactivate' : 'Activate';
         openDeleteDialog(
-            'Delete book',
-            `Are you sure you want to delete "${bookTitle}"? This action cannot be undone.`,
+            `${action} book`,
+            `Are you sure you want to ${action.toLowerCase()} "${book.title}"?`,
             async () => {
-                await deleteBookService(bookId);
-                setBooks((prev) => prev.filter((item) => item.bookId !== bookId));
-                toast.success('Book deleted successfully.');
-            }
+                await toggleBookActiveService(book.bookId);
+                setBooks((prev) => prev.map((item) =>
+                    item.bookId === book.bookId ? { ...item, isActive: !item.isActive } : item
+                ));
+                toast.success(`Book ${action.toLowerCase()}d successfully.`);
+            },
+            action
         );
     }
 
     function handleEditBook(item: any) {
         setActiveSection('books');
+        const normalizeName = (value: unknown) => String(value ?? '').trim().toLowerCase();
+        const category = categories.find((entry) =>
+            normalizeName(entry.categoryName) === normalizeName(item.categoryName)
+        );
+        const author = authors.find((entry) =>
+            normalizeName(entry.authorName) === normalizeName(item.authorName)
+        );
+
+        setEditingBook({
+            ...item,
+            categoryId: item.categoryId ?? category?.categoryId ?? '',
+            authorId: item.authorId ?? author?.authorId ?? '',
+        });
+
         setMasterView('form');
-        setEditingBook(item);
     }
 
     function handleCancelBookEdit() {
         setEditingBook(null);
+        setMasterView('list');
     }
 
-    async function handleDeleteRecruitment(item: AdminRecruitment) {
-        if (isRecruitmentActive(item)) {
-            toast.error('Active recruitment cannot be deleted.');
-            return;
-        }
-
+    async function handleToggleRecruitmentActive(item: AdminRecruitment) {
+        const action = item.isActive ? 'Deactivate' : 'Activate';
         openDeleteDialog(
-            'Delete recruitment',
-            `Are you sure you want to delete recruitment ${item.code}? This action cannot be undone.`,
+            `${action} recruitment`,
+            `Are you sure you want to ${action.toLowerCase()} recruitment ${item.code}?`,
             async () => {
                 await deleteRecruitmentService(item.id);
-                setRecruitments((prev) => prev.filter((record) => record.id !== item.id));
-                toast.success('Recruitment deleted successfully.');
-            }
+                setRecruitments((prev) => prev.map((record) =>
+                    record.id === item.id ? { ...record, isActive: !record.isActive } : record
+                ));
+                toast.success(`Recruitment ${action.toLowerCase()}d successfully.`);
+            },
+            action
         );
     }
 
@@ -271,8 +294,8 @@ export default function AdminDashboardPage() {
     const recruitment = useRecruitmentForm(loadRecruitments);
     const actions = useRecruitmentActions(loadRecruitments);
     const newsForm = useNewsForm(news, setNews);
-    const categoryForm = useCategoryForm(categories, setCategories);
-    const authorForm = useAuthorForm(authors, setAuthors);
+    const categoryForm = useCategoryForm(categories, setCategories, () => setMasterView('list'));
+    const authorForm = useAuthorForm(authors, setAuthors, () => setMasterView('list'));
     const newsFormRef = useRef<HTMLDivElement>(null);
     const newsEngInputRef = useRef<HTMLInputElement>(null);
 
@@ -407,9 +430,9 @@ export default function AdminDashboardPage() {
                                     <span className="h-px flex-1 bg-slate-200" />
                                 </div>
                                 <div className="grid gap-4 md:grid-cols-3">
-                                    <DashboardCard title="Banks added" value={banks.length} detail="Member banks available for recruitment mapping." />
+                                    <DashboardCard title="Banks added" value={banks.length} detail="Banks available for recruitment mapping." />
                                     <DashboardCard title="Recruitments added" value={recruitments.length} detail="Recruitment records created in the portal." />
-                                    <DashboardCard title="News added" value={news.length} detail="News items shown on the latest news ticker." />
+                                    <DashboardCard title="News added" value={news.length} detail="News items to show as latest news ticker." />
                                 </div>
                             </section>
 
@@ -536,7 +559,13 @@ export default function AdminDashboardPage() {
                             </div>
 
                             <div className={masterView === 'list' ? 'min-w-0' : 'hidden'}>
-                                <RecentlyAddedBanks banks={banks} onEdit={handleEditBank} onDelete={(item) => handleDeleteBank(item.bankId, item.bankName)} />
+                                <RecentlyAddedBanks
+                                    banks={banks}
+                                    statusFilter={bankStatusFilter}
+                                    onStatusFilterChange={setBankStatusFilter}
+                                    onEdit={handleEditBank}
+                                    onToggleActive={handleToggleBankActive}
+                                />
                             </div>
                         </div>
                     ) : null}
@@ -564,7 +593,10 @@ export default function AdminDashboardPage() {
                                     {categoryForm.editingId && (
                                         <button
                                             type="button"
-                                            onClick={categoryForm.cancelEdit}
+                                            onClick={() => {
+                                                categoryForm.cancelEdit();
+                                                setMasterView('list');
+                                            }}
                                             className="w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                                         >
                                             Cancel edit
@@ -650,7 +682,10 @@ export default function AdminDashboardPage() {
                                         {authorForm.editingId && (
                                             <button
                                                 type="button"
-                                                onClick={authorForm.cancelEdit}
+                                                onClick={() => {
+                                                    authorForm.cancelEdit();
+                                                    setMasterView('list');
+                                                }}
                                                 className="w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                                             >
                                                 Cancel edit
@@ -739,6 +774,7 @@ export default function AdminDashboardPage() {
                                             setBooks((prev) => prev.map((item) => (item.bookId === book.bookId ? book : item)));
                                         } else {
                                             setBooks((prev) => [book, ...prev]);
+                                            setMasterView('list');
                                         }
                                     }}
                                     onCancel={handleCancelBookEdit}
@@ -746,7 +782,13 @@ export default function AdminDashboardPage() {
                             </div>
 
                             <div className={masterView === 'list' ? 'min-w-0' : 'hidden'}>
-                                <RecentlyAddedBooks books={books} onEdit={handleEditBook} onDelete={(item) => handleDeleteBook(item.bookId, item.title)} />
+                                <RecentlyAddedBooks
+                                    books={books}
+                                    statusFilter={bookStatusFilter}
+                                    onStatusFilterChange={setBookStatusFilter}
+                                    onEdit={handleEditBook}
+                                    onToggleActive={handleToggleBookActive}
+                                />
                             </div>
                         </div>
                     ) : null}
@@ -756,13 +798,18 @@ export default function AdminDashboardPage() {
                             <MasterViewToggle view={masterView} onChange={setMasterView} addLabel="Add New Recruitment" />
                             <div className={`${masterView === 'form' ? '' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm`}>
                                 <h2 className="text-xl font-semibold text-slate-900 mb-6">
-                                    Add Recruitment
+                                    {recruitment.editingId ? 'Edit Recruitment' : 'Add Recruitment'}
                                 </h2>
 
                                 <form
-                                    onSubmit={(e) => {
+                                    onSubmit={async (e) => {
                                         e.preventDefault();
-                                        recruitment.submit();
+                                        const wasEditing = recruitment.editingId !== null;
+                                        const saved = await recruitment.submit();
+
+                                        if (wasEditing && saved) {
+                                            setMasterView('list');
+                                        }
                                     }}
                                     className="grid grid-cols-1 md:grid-cols-2 gap-4"
                                 >
@@ -1272,17 +1319,31 @@ export default function AdminDashboardPage() {
                                             </label>
                                         </div>
 
-                                        <button
-                                            type="submit"
-                                            disabled={recruitment.isSaving}
-                                            className="rounded-md bg-amber-300 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-amber-400 disabled:opacity-60"
-                                        >
-                                            {recruitment.isSaving
-                                                ? 'Saving...'
-                                                : recruitment.editingId
-                                                    ? 'Update recruitment'
-                                                    : 'Add recruitment'}
-                                        </button>
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                                            {recruitment.editingId ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        recruitment.cancelEdit();
+                                                        setMasterView('list');
+                                                    }}
+                                                    className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                                >
+                                                    Cancel edit
+                                                </button>
+                                            ) : null}
+                                            <button
+                                                type="submit"
+                                                disabled={recruitment.isSaving}
+                                                className="rounded-md bg-amber-300 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-amber-400 disabled:opacity-60"
+                                            >
+                                                {recruitment.isSaving
+                                                    ? 'Saving...'
+                                                    : recruitment.editingId
+                                                        ? 'Update recruitment'
+                                                        : 'Add recruitment'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </form>
                             </div>
@@ -1292,11 +1353,11 @@ export default function AdminDashboardPage() {
                                 recruitments={recruitments}
                                 onEdit={(item) => {
                                     setActiveSection('recruitments');
+                                    setMasterView('form');
                                     recruitment.startEdit(item);
                                 }}
                                 onUpload={(item) => actions.setUploadId(item.id)}
-                                onPublish={(item) => actions.publish(item.id)}
-                                publishingRecruitmentId={actions.publishingId}
+                                onToggleActive={handleToggleRecruitmentActive}
                             />
                             </div>
                         </div>
@@ -1601,12 +1662,12 @@ function MasterTableScroll({ children, className = '' }: { children: ReactNode; 
 
 function DashboardCard({ title, value, detail }: { title: string; value: number; detail: string }) {
     const cardVisuals = {
-        'Banks added': { Icon: Building2, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]' },
-        'Recruitments added': { Icon: BriefcaseBusiness, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]' },
-        'News added': { Icon: Newspaper, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]' },
-        'Books added': { Icon: BookOpen, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]' },
-        'Authors added': { Icon: Users, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]' },
-        'Categories added': { Icon: Tags, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]' },
+        'Banks added': { Icon: Building2, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]', valueClass: 'text-[#498991]' },
+        'Recruitments added': { Icon: BriefcaseBusiness, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]', valueClass: 'text-[#498991]' },
+        'News added': { Icon: Newspaper, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]', valueClass: 'text-[#498991]' },
+        'Books added': { Icon: BookOpen, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]', valueClass: 'text-[#498991]' },
+        'Authors added': { Icon: Users, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]', valueClass: 'text-[#498991]' },
+        'Categories added': { Icon: Tags, iconClass: 'bg-[#e8f4f5] text-[#2d6f78]', accentClass: 'border-l-[#75aeb5]', valueClass: 'text-[#498991]' },
     } as const;
     const visual = cardVisuals[title as keyof typeof cardVisuals] ?? cardVisuals['Banks added'];
     const Icon = visual.Icon;
@@ -1616,7 +1677,7 @@ function DashboardCard({ title, value, detail }: { title: string; value: number;
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <p className="text-base font-semibold text-slate-600">{title}</p>
-                    <p className="mt-2 text-[2.75rem] font-bold leading-none tracking-tight text-slate-950">{value}</p>
+                    <p className={`mt-2 text-[2.75rem] font-bold leading-none tracking-tight ${visual.valueClass}`}>{value}</p>
                 </div>
                 <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${visual.iconClass} shadow-sm`}>
                     <Icon className="h-5 w-5" aria-hidden="true" />
@@ -1629,12 +1690,41 @@ function DashboardCard({ title, value, detail }: { title: string; value: number;
     );
 }
 
-function RecentlyAddedBanks({ banks, onEdit, onDelete }: { banks: AdminBank[]; onEdit?: (item: AdminBank) => void; onDelete?: (item: AdminBank) => void }) {
+function RecentlyAddedBanks({
+    banks,
+    statusFilter,
+    onStatusFilterChange,
+    onEdit,
+    onToggleActive,
+}: {
+    banks: AdminBank[];
+    statusFilter: 'active' | 'inactive' | 'all';
+    onStatusFilterChange: (filter: 'active' | 'inactive' | 'all') => void;
+    onEdit?: (item: AdminBank) => void;
+    onToggleActive?: (item: AdminBank) => void;
+}) {
+    const filteredBanks = banks.filter((bank) =>
+        statusFilter === 'all' || (statusFilter === 'active' ? bank.isActive : !bank.isActive)
+    );
+
     return (
         <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <h2 className="text-xl font-semibold text-slate-900">Recently added banks</h2>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{banks.length} total</span>
+                <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium text-slate-600" htmlFor="bank-status-filter">Show</label>
+                    <select
+                        id="bank-status-filter"
+                        value={statusFilter}
+                        onChange={(event) => onStatusFilterChange(event.target.value as 'active' | 'inactive' | 'all')}
+                        className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-500"
+                    >
+                        <option value="active">Currently Active</option>
+                        <option value="inactive">Deactivated</option>
+                        <option value="all">All banks</option>
+                    </select>
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{filteredBanks.length} shown</span>
+                </div>
             </div>
             <MasterTableScroll className="mt-4 max-h-[520px] overflow-x-scroll overflow-y-auto">
                 <table className="min-w-[760px] w-full text-sm">
@@ -1644,11 +1734,11 @@ function RecentlyAddedBanks({ banks, onEdit, onDelete }: { banks: AdminBank[]; o
                             <th className="px-3 py-3 text-left">Code</th>
                             <th className="px-3 py-3 text-left">Contact</th>
                             <th className="px-3 py-3 text-left">Phone</th>
-                            {(onEdit || onDelete) && <th className="px-3 py-3 text-left">Actions</th>}
+                            {(onEdit || onToggleActive) && <th className="px-3 py-3 text-left">Actions</th>}
                         </tr>
                     </thead>
                     <tbody>
-                        {banks.map((bank, index) => (
+                        {filteredBanks.map((bank, index) => (
                             <tr key={`${bank.bankId}-${bank.contactEmail}-${index}`} className="border-t">
                                 <td className="px-3 py-3 font-semibold text-slate-900">
                                     <div className="flex items-center gap-3">
@@ -1659,7 +1749,7 @@ function RecentlyAddedBanks({ banks, onEdit, onDelete }: { banks: AdminBank[]; o
                                 <td className="px-3 py-3 text-slate-600">{bank.bankCode || 'NA'}</td>
                                 <td className="px-3 py-3 text-slate-600">{bank.contactEmail}</td>
                                 <td className="px-3 py-3 text-slate-600">{bank.contactPhone}</td>
-                                {(onEdit || onDelete) && (
+                                {(onEdit || onToggleActive) && (
                                     <td className="px-3 py-3">
                                         <div className="flex flex-wrap gap-2">
                                             {onEdit && (
@@ -1671,13 +1761,15 @@ function RecentlyAddedBanks({ banks, onEdit, onDelete }: { banks: AdminBank[]; o
                                                     Edit
                                                 </button>
                                             )}
-                                            {onDelete && (
+                                            {onToggleActive && (
                                                 <button
                                                     type="button"
-                                                    onClick={() => onDelete(bank)}
-                                                    className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                                    onClick={() => onToggleActive(bank)}
+                                                    className={bank.isActive
+                                                        ? 'rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50'
+                                                        : 'rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50'}
                                                 >
-                                                    Delete
+                                                    {bank.isActive ? 'Deactivate' : 'Activate'}
                                                 </button>
                                             )}
                                         </div>
@@ -1685,9 +1777,9 @@ function RecentlyAddedBanks({ banks, onEdit, onDelete }: { banks: AdminBank[]; o
                                 )}
                             </tr>
                         ))}
-                        {banks.length === 0 ? (
+                        {filteredBanks.length === 0 ? (
                             <tr>
-                                <td colSpan={onEdit || onDelete ? 5 : 4} className="px-3 py-6 text-center text-slate-500">No bank added yet.</td>
+                                <td colSpan={onEdit || onToggleActive ? 5 : 4} className="px-3 py-6 text-center text-slate-500">No banks match the selected filter.</td>
                             </tr>
                         ) : null}
                     </tbody>
@@ -1697,12 +1789,41 @@ function RecentlyAddedBanks({ banks, onEdit, onDelete }: { banks: AdminBank[]; o
     );
 }
 
-function RecentlyAddedBooks({ books, onEdit, onDelete }: { books: any[]; onEdit?: (item: any) => void; onDelete?: (item: any) => void }) {
+function RecentlyAddedBooks({
+    books,
+    statusFilter,
+    onStatusFilterChange,
+    onEdit,
+    onToggleActive,
+}: {
+    books: any[];
+    statusFilter: 'active' | 'inactive' | 'all';
+    onStatusFilterChange: (filter: 'active' | 'inactive' | 'all') => void;
+    onEdit?: (item: any) => void;
+    onToggleActive?: (item: any) => void;
+}) {
+    const filteredBooks = books.filter((book) =>
+        statusFilter === 'all' || (statusFilter === 'active' ? book.isActive : !book.isActive)
+    );
+
     return (
         <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
                 <h2 className="text-xl font-semibold text-slate-900">Recently added books</h2>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{books.length} total</span>
+                <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium text-slate-600" htmlFor="book-status-filter">Show</label>
+                    <select
+                        id="book-status-filter"
+                        value={statusFilter}
+                        onChange={(event) => onStatusFilterChange(event.target.value as 'active' | 'inactive' | 'all')}
+                        className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-500"
+                    >
+                        <option value="active">Currently Active</option>
+                        <option value="inactive">Deactivated</option>
+                        <option value="all">All books</option>
+                    </select>
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{filteredBooks.length} shown</span>
+                </div>
             </div>
             <MasterTableScroll className="mt-4 max-h-[520px] overflow-x-scroll overflow-y-auto">
                 <table className="min-w-[760px] w-full text-sm">
@@ -1712,17 +1833,17 @@ function RecentlyAddedBooks({ books, onEdit, onDelete }: { books: any[]; onEdit?
                             <th className="px-3 py-3 text-left">Author</th>
                             <th className="px-3 py-3 text-left">Category</th>
                             <th className="px-3 py-3 text-left">Price</th>
-                            {(onEdit || onDelete) && <th className="px-3 py-3 text-left">Actions</th>}
+                            {(onEdit || onToggleActive) && <th className="px-3 py-3 text-left">Actions</th>}
                         </tr>
                     </thead>
                     <tbody>
-                        {books.map((book) => (
+                        {filteredBooks.map((book) => (
                             <tr key={book.bookId} className="border-t">
                                 <td className="px-3 py-3 font-semibold text-slate-900">{book.title}</td>
                                 <td className="px-3 py-3 text-slate-600">{book.authorName}</td>
                                 <td className="px-3 py-3 text-slate-600">{book.categoryName}</td>
                                 <td className="px-3 py-3 text-slate-600">{book.price}</td>
-                                {(onEdit || onDelete) && (
+                                {(onEdit || onToggleActive) && (
                                     <td className="px-3 py-3">
                                         <div className="flex flex-wrap gap-2">
                                             {onEdit && (
@@ -1734,13 +1855,15 @@ function RecentlyAddedBooks({ books, onEdit, onDelete }: { books: any[]; onEdit?
                                                     Edit
                                                 </button>
                                             )}
-                                            {onDelete && (
+                                            {onToggleActive && (
                                                 <button
                                                     type="button"
-                                                    onClick={() => onDelete(book)}
-                                                    className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                                    onClick={() => onToggleActive(book)}
+                                                    className={book.isActive
+                                                        ? 'rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50'
+                                                        : 'rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50'}
                                                 >
-                                                    Delete
+                                                    {book.isActive ? 'Deactivate' : 'Activate'}
                                                 </button>
                                             )}
                                         </div>
@@ -1748,9 +1871,9 @@ function RecentlyAddedBooks({ books, onEdit, onDelete }: { books: any[]; onEdit?
                                 )}
                             </tr>
                         ))}
-                        {books.length === 0 ? (
+                        {filteredBooks.length === 0 ? (
                             <tr>
-                                <td colSpan={onEdit || onDelete ? 5 : 4} className="px-3 py-6 text-center text-slate-500">No books added yet.</td>
+                                <td colSpan={onEdit || onToggleActive ? 5 : 4} className="px-3 py-6 text-center text-slate-500">No books match the selected filter.</td>
                             </tr>
                         ) : null}
                     </tbody>
@@ -1764,33 +1887,38 @@ function RecentlyAddedRecruitments({
     recruitments,
     onEdit,
     onUpload,
-    onPublish,
-    onDelete,
-    publishingRecruitmentId,
+    onToggleActive,
 }: {
     recruitments: AdminRecruitment[];
     onEdit: (item: AdminRecruitment) => void;
     onUpload: (item: AdminRecruitment) => void;
-    onPublish: (item: AdminRecruitment) => void;
-    onDelete?: (item: AdminRecruitment) => void;
-    publishingRecruitmentId: number | null;
+    onToggleActive: (item: AdminRecruitment) => void;
 }) {
-    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'published' | 'expired'>('all');
-    const getStatus = (item: AdminRecruitment) => {
-        if (item.isPublished) return 'published';
-        if (item.applicationEndDate && new Date(item.applicationEndDate) < new Date()) return 'expired';
-        return 'active';
-    };
-    const visibleRecruitments = recruitments.filter((item) => statusFilter === 'all' || getStatus(item) === statusFilter);
+    const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed'>('all');
+    const [bankSearch, setBankSearch] = useState('');
+    const getStatus = (item: AdminRecruitment) => item.status.toLowerCase() === 'open' ? 'open' : 'closed';
+    const visibleRecruitments = recruitments.filter((item) =>
+        (statusFilter === 'all' || getStatus(item) === statusFilter)
+        && item.bankName.toLowerCase().includes(bankSearch.trim().toLowerCase())
+    );
 
     return (
         <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h2 className="text-xl font-semibold text-slate-900">Recruitment list</h2>
-                    <p className="mt-1 text-sm text-slate-500">Upload a vacancy notice PDF before you publish each recruitment listing.</p>
+                    <p className="mt-1 text-sm text-slate-500">Manage recruitment details, notice PDFs, and availability.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                    <label className="sr-only" htmlFor="recruitment-bank-search">Search by bank name</label>
+                    <input
+                        id="recruitment-bank-search"
+                        type="search"
+                        value={bankSearch}
+                        onChange={(event) => setBankSearch(event.target.value)}
+                        placeholder="Search by bank name"
+                        className="w-52 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-[#7A2E92] focus:ring-2 focus:ring-[#7A2E92]/30"
+                    />
                     <label className="text-sm font-medium text-slate-600" htmlFor="recruitment-status-filter">Status</label>
                     <div className="relative">
                         <select
@@ -1800,9 +1928,8 @@ function RecentlyAddedRecruitments({
                             className="appearance-none rounded-md border border-slate-300 bg-white py-2 pl-3 pr-10 text-sm font-semibold text-slate-700 outline-none focus:border-[#7A2E92] focus:ring-2 focus:ring-[#7A2E92]/30"
                         >
                             <option value="all">All statuses</option>
-                            <option value="active">Active</option>
-                            <option value="published">Published</option>
-                            <option value="expired">Expired</option>
+                            <option value="open">Open</option>
+                            <option value="closed">Closed</option>
                         </select>
                         <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" aria-hidden="true" />
                     </div>
@@ -1831,42 +1958,42 @@ function RecentlyAddedRecruitments({
                                 <td className="px-3 py-3 whitespace-nowrap">{formatDate(item.applicationStartDate) || 'To be announced'}</td>
                                 <td className="px-3 py-3 whitespace-nowrap">{formatDate(item.applicationEndDate) || 'To be announced'}</td>
                                 <td className="px-3 py-3">
-                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatus(item) === 'published' ? 'bg-emerald-50 text-emerald-700' : getStatus(item) === 'expired' ? 'bg-rose-50 text-rose-700' : 'bg-violet-50 text-[#7A2E92]'}`}>
+                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatus(item) === 'open' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                                         {getStatus(item).charAt(0).toUpperCase() + getStatus(item).slice(1)}
                                     </span>
                                 </td>
                                 <td className="px-3 py-3">
                                     <div className="flex flex-wrap gap-2">
-                                        <button type="button" onClick={() => onUpload(item)} className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">
-                                            {item.noticePdfUrl ? 'Replace PDF' : 'Upload PDF'}
-                                        </button>
                                         <button
                                             type="button"
-                                            onClick={() => onPublish(item)}
-                                            disabled={item.isPublished || publishingRecruitmentId === item.id || !item.noticePdfUrl}
-                                            className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:opacity-60"
+                                            onClick={() => onEdit(item)}
+                                            className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                                         >
-                                            {publishingRecruitmentId === item.id ? 'Publishing...' : item.isPublished ? 'Published' : 'Publish'}
+                                            Edit
                                         </button>
-                                        {onDelete && (
-                                            <button
-                                                type="button"
-                                                onClick={() => onDelete(item)}
-                                                className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
-                                            >
-                                                Delete
-                                            </button>
-                                        )}
+                                        {getStatus(item) === 'open' ? (
+                                            <>
+                                                <button type="button" onClick={() => onUpload(item)} className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                                                    Replace PDF
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onToggleActive(item)}
+                                                    className={item.isActive
+                                                        ? 'rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50'
+                                                        : 'rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50'}
+                                                >
+                                                    {item.isActive ? 'Deactivate' : 'Activate'}
+                                                </button>
+                                            </>
+                                        ) : null}
                                     </div>
-                                    {!item.noticePdfUrl && !item.isPublished ? (
-                                        <p className="mt-2 text-xs text-slate-500">Upload the notice PDF before publishing.</p>
-                                    ) : null}
                                 </td>
                             </tr>
                         ))}
                         {visibleRecruitments.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="px-3 py-6 text-center text-slate-500">No recruitments match this status.</td>
+                                <td colSpan={7} className="px-3 py-6 text-center text-slate-500">No recruitments match the selected filters.</td>
                             </tr>
                         ) : null}
                     </tbody>

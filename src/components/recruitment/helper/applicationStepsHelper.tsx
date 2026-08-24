@@ -1,5 +1,5 @@
 import { APPLICATION_INPUT_CLASS_NAME, EDUCATION_TEMPLATE, EMPTY_LANGUAGE_SKILLS, LanguageSkills, SUMMARY_TONE_CLASS_NAMES, SummaryTone } from "@/constants/application-wizard.constants";
-import { EligibilityCriteria, MasterItem, MasterListResponse } from "@/types/api.types";
+import { EligibilityCriteria, MasterItem, MasterListResponse, PaymentReceipt } from "@/types/api.types";
 import { ApplicationWizardProps, ExperienceEntry, FormState, MasterOption, SaveStep1and2Payload, SaveStep3ValidationPayload, SaveStepExperiencePayload } from "@/types/applicationSteps";
 
 const EDUCATION_CRITERION_LEVEL_MAP: Record<string, string> = {
@@ -11,7 +11,16 @@ const EDUCATION_CRITERION_LEVEL_MAP: Record<string, string> = {
 };
 
 const PERSON_NAME_PATTERN = /^[A-Za-z\s]+$/;
-const MAX_PERSON_NAME_LENGTH = 40;
+export const MAX_PERSON_NAME_LENGTH = 40;
+export const MAX_ADDRESS_LENGTH = 120;
+export const MAX_EDUCATION_TEXT_LENGTH = 100;
+export const MAX_EDUCATION_LEVEL_LENGTH = 50;
+export const MAX_CLASS_NAME_LENGTH = 40;
+export const MAX_PERCENTAGE_OR_CGPA_LENGTH = 10;
+export const MAX_EXPERIENCE_TEXT_LENGTH = 100;
+const PERCENTAGE_OR_CGPA_PATTERN = /^\d+(\.\d+)?$/;
+const MIN_APPLICANT_AGE = 16;
+const MAX_APPLICANT_AGE = 80;
 
 export type ExistingDocument = {
     documentId: number;
@@ -40,6 +49,8 @@ export type ErrorMap =
         degree?: string;
         mscitCertificate?: string;
         cccCertificate?: string;
+        educationFieldErrors?: Record<string, string>;
+        experienceFieldErrors?: Record<string, string>;
     };
 
 export const initialState = (recruitment: ApplicationWizardProps['initialRecruitment']): FormState => ({
@@ -112,6 +123,102 @@ export function fieldValue(value: unknown) {
 
 export function hasLanguageSelected(skills: LanguageSkills) {
     return Object.values(skills ?? {}).some((language) => Object.values(language).some(Boolean));
+}
+
+export function sanitizePercentageOrCgpa(value: string) {
+    let next = '';
+    let hasDecimal = false;
+
+    for (const char of value) {
+        if (next.length >= MAX_PERCENTAGE_OR_CGPA_LENGTH) {
+            break;
+        }
+
+        if (char >= '0' && char <= '9') {
+            next += char;
+        } else if (char === '.' && !hasDecimal) {
+            hasDecimal = true;
+            next += char;
+        }
+    }
+
+    return next;
+}
+
+export function sanitizeLimitedText(value: string, maxLength: number) {
+    return value.slice(0, maxLength);
+}
+
+function isFutureMonthYear(value: string) {
+    if (!/^\d{4}-\d{2}$/.test(value)) {
+        return false;
+    }
+
+    const [year, month] = value.split('-').map(Number);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    return year > currentYear || (year === currentYear && month > currentMonth);
+}
+
+function isFutureDate(value: string) {
+    if (!value) {
+        return false;
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return true;
+    }
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return parsed > today;
+}
+
+function getAgeInYears(dateOfBirth: string) {
+    const birthDate = new Date(dateOfBirth);
+    if (Number.isNaN(birthDate.getTime())) {
+        return null;
+    }
+
+    const today = new Date();
+    let years = today.getFullYear() - birthDate.getFullYear();
+    const monthDelta = today.getMonth() - birthDate.getMonth();
+
+    if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) {
+        years -= 1;
+    }
+
+    return years;
+}
+
+function validatePercentageOrCgpa(value: string, required: boolean) {
+    const score = value.trim();
+
+    if (!score) {
+        return required ? 'Percentage or CGPA is required.' : undefined;
+    }
+
+    if (score.length > MAX_PERCENTAGE_OR_CGPA_LENGTH) {
+        return `Percentage or CGPA can be at most ${MAX_PERCENTAGE_OR_CGPA_LENGTH} characters.`;
+    }
+
+    if (!PERCENTAGE_OR_CGPA_PATTERN.test(score)) {
+        return 'Enter a number such as 8 or 8.5. Letters are not allowed.';
+    }
+
+    const numericScore = Number(score);
+    if (!Number.isFinite(numericScore) || numericScore <= 0) {
+        return 'Enter a valid percentage or CGPA greater than 0.';
+    }
+
+    if (numericScore > 100) {
+        return 'Percentage or CGPA cannot be greater than 100.';
+    }
+
+    return undefined;
 }
 
 export function getMandatoryEducationLevels(criteria?: EligibilityCriteria[]) {
@@ -353,7 +460,20 @@ export function validateStep(
         else if (!PERSON_NAME_PATTERN.test(fieldValue(form.firstName)) || fieldValue(form.firstName).length > MAX_PERSON_NAME_LENGTH) errors.firstName = 'First name can contain only letters and spaces, up to 40 characters.';
         if (!fieldValue(form.lastName).trim()) errors.lastName = 'Last name is required.';
         else if (!PERSON_NAME_PATTERN.test(fieldValue(form.lastName)) || fieldValue(form.lastName).length > MAX_PERSON_NAME_LENGTH) errors.lastName = 'Last name can contain only letters and spaces, up to 40 characters.';
-        if (!form.dateOfBirth) errors.dateOfBirth = 'Date of birth is required.';
+        if (!form.dateOfBirth) {
+            errors.dateOfBirth = 'Date of birth is required.';
+        } else if (isFutureDate(form.dateOfBirth)) {
+            errors.dateOfBirth = 'Date of birth cannot be in the future.';
+        } else {
+            const ageInYears = getAgeInYears(form.dateOfBirth);
+            if (ageInYears === null) {
+                errors.dateOfBirth = 'Enter a valid date of birth.';
+            } else if (ageInYears < MIN_APPLICANT_AGE) {
+                errors.dateOfBirth = `Applicant must be at least ${MIN_APPLICANT_AGE} years old.`;
+            } else if (ageInYears > MAX_APPLICANT_AGE) {
+                errors.dateOfBirth = 'Enter a valid date of birth.';
+            }
+        }
         if (!fieldValue(form.ageAsOn).trim()) errors.ageAsOn = 'Age as on date is required.';
         if (!form.gender) errors.gender = 'Please select a gender.';
         if (!/^\d{12}$/.test(fieldValue(form.aadhaarNumber))) {
@@ -368,6 +488,8 @@ export function validateStep(
         if (!form.maritalStatus) errors.maritalStatus = 'Please select marital status.';
         if (form.maritalStatus === 'Married' && !fieldValue(form.husbandsName).trim()) {
             errors.husbandsName = 'Spouse name is required.';
+        } else if (fieldValue(form.husbandsName).trim() && (!PERSON_NAME_PATTERN.test(fieldValue(form.husbandsName)) || fieldValue(form.husbandsName).length > MAX_PERSON_NAME_LENGTH)) {
+            errors.husbandsName = 'Spouse name can contain only letters and spaces, up to 40 characters.';
         }
         if (!fieldValue(form.mothersName).trim()) errors.mothersName = "Mother's name is required.";
         else if (!PERSON_NAME_PATTERN.test(fieldValue(form.mothersName)) || fieldValue(form.mothersName).length > MAX_PERSON_NAME_LENGTH) errors.mothersName = "Mother's name can contain only letters and spaces, up to 40 characters.";
@@ -385,7 +507,19 @@ export function validateStep(
 
         if (!/^\d{10}$/.test(fieldValue(form.phone))) errors.phone = 'Enter a valid 10-digit phone number.';
         if (form.alternatePhone && !/^\d{10}$/.test(form.alternatePhone)) errors.alternatePhone = 'Enter a valid 10-digit alternate number.';
+        if (form.alternatePhone && form.alternatePhone === fieldValue(form.phone)) {
+            errors.alternatePhone = 'Alternate number should be different from the primary mobile number.';
+        }
         if (!fieldValue(form.addressLine1).trim()) errors.addressLine1 = 'Address line 1 is required.';
+        else if (fieldValue(form.addressLine1).trim().length > MAX_ADDRESS_LENGTH) {
+            errors.addressLine1 = `Address line 1 can be at most ${MAX_ADDRESS_LENGTH} characters.`;
+        }
+        if (fieldValue(form.addressLine2).length > MAX_ADDRESS_LENGTH) {
+            errors.addressLine2 = `Address line 2 can be at most ${MAX_ADDRESS_LENGTH} characters.`;
+        }
+        if (fieldValue(form.addressLine3).length > MAX_ADDRESS_LENGTH) {
+            errors.addressLine3 = `Address line 3 can be at most ${MAX_ADDRESS_LENGTH} characters.`;
+        }
         if (!fieldValue(form.country).trim()) errors.country = 'Country is required.';
         if (!fieldValue(form.taluka).trim()) errors.taluka = 'Taluka is required.';
         if (!fieldValue(form.district).trim()) errors.district = 'District is required.';
@@ -393,6 +527,57 @@ export function validateStep(
         if (!fieldValue(form.state).trim()) errors.state = 'State is required.';
         if (!/^\d{6}$/.test(fieldValue(form.pincode))) errors.pincode = 'Enter a valid 6-digit pincode.';
         if (!hasLanguageSelected(form.languageSkills)) errors.languageSkills = 'Select at least one language ability.';
+    }
+
+    if (step === 3) {
+        const mandatoryEducationLevels = getMandatoryEducationLevels(eligibilityCriteria);
+
+        form.educationEntries.forEach((entry) => {
+            const isMandatory = mandatoryEducationLevels.includes(entry.level);
+            const hasDetails = Boolean(
+                fieldValue(entry.institute).trim() ||
+                fieldValue(entry.educationLevel).trim() ||
+                fieldValue(entry.specialization).trim() ||
+                fieldValue(entry.score).trim() ||
+                fieldValue(entry.className).trim() ||
+                fieldValue(entry.passedMonthYear).trim(),
+            );
+
+            if (!isMandatory && !hasDetails) return;
+
+            const prefix = entry.level;
+            const textFields = [
+                ['Institute / organization', fieldValue(entry.institute), MAX_EDUCATION_TEXT_LENGTH],
+                ['Education level', fieldValue(entry.educationLevel), MAX_EDUCATION_LEVEL_LENGTH],
+                ['Specialization', fieldValue(entry.specialization), MAX_EDUCATION_TEXT_LENGTH],
+                ['Class / grade', fieldValue(entry.className), MAX_CLASS_NAME_LENGTH],
+            ] as const;
+
+            for (const [label, value, maxLength] of textFields) {
+                if (isMandatory && !value.trim()) {
+                    errors.educationEntries = `${prefix} ${label.toLowerCase()} is required.`;
+                    return;
+                }
+                if (value.length > maxLength) {
+                    errors.educationEntries = `${prefix} ${label.toLowerCase()} can be at most ${maxLength} characters.`;
+                    return;
+                }
+            }
+
+            const scoreError = validatePercentageOrCgpa(fieldValue(entry.score), isMandatory);
+            if (scoreError) {
+                errors.educationEntries = `${prefix}: ${scoreError}`;
+                return;
+            }
+
+            if (isMandatory && !fieldValue(entry.passedMonthYear).trim()) {
+                errors.educationEntries = `${prefix} passed month and year is required.`;
+                return;
+            }
+            if (fieldValue(entry.passedMonthYear).trim() && isFutureMonthYear(fieldValue(entry.passedMonthYear))) {
+                errors.educationEntries = `${prefix} passed month and year cannot be in the future.`;
+            }
+        });
     }
 
     if (step === 4) {
@@ -740,6 +925,153 @@ export function HallTicketPreview({ form, fullName }: { form: FormState; fullNam
             </div>
         </div>
     );
+}
+
+function formatReceiptAmount(amount: number, currency: string) {
+    const code = currency || 'INR';
+
+    try {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: code,
+            maximumFractionDigits: 2,
+        }).format(amount);
+    } catch {
+        return `${code} ${amount}`;
+    }
+}
+
+export function PaymentReceiptPreview({
+    receipt,
+    onDownload,
+}: {
+    receipt: PaymentReceipt;
+    onDownload: () => void;
+}) {
+    const application = receipt.application;
+
+    return (
+        <div className="mt-8 overflow-hidden rounded-[1.5rem] border border-emerald-300 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+            <div className="flex flex-col gap-4 border-b border-emerald-200 bg-white px-6 py-5 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">Payment receipt</p>
+                    <h2 className="mt-2 text-2xl font-semibold text-slate-900">{receipt.orgName || 'Payment Receipt'}</h2>
+                    {receipt.orgAddress ? <p className="mt-1 text-sm text-slate-600">{receipt.orgAddress}</p> : null}
+                </div>
+                <div className="flex flex-col items-stretch gap-3 sm:items-end">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-right">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Receipt No.</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">{receipt.receiptNumber}</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onDownload}
+                        className="inline-flex items-center justify-center rounded-full bg-[#fcd62e] px-5 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400"
+                    >
+                        Download / Print
+                    </button>
+                </div>
+            </div>
+
+            <div id="payment-receipt-print" className="p-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <TicketDetail label="Paid on" value={receipt.formattedPaidAt || receipt.paidAt || 'N/A'} />
+                    <TicketDetail label="Amount" value={formatReceiptAmount(receipt.amount, receipt.currency)} />
+                    <TicketDetail label="Status" value={receipt.status || 'N/A'} />
+                    <TicketDetail label="Payment method" value={receipt.paymentMethod || 'N/A'} />
+                    <TicketDetail label="Transaction ID" value={receipt.bdTransactionId || 'N/A'} />
+                    <TicketDetail label="Order ID" value={receipt.bdOrderId || 'N/A'} />
+                    <TicketDetail label="Payer name" value={receipt.payerName || 'N/A'} />
+                    <TicketDetail label="Payer email" value={receipt.payerEmail || 'N/A'} />
+                    <TicketDetail label="Payer mobile" value={receipt.payerMobile || 'N/A'} />
+                    {application ? (
+                        <>
+                            <TicketDetail label="Application number" value={application.applicationNumber || 'N/A'} />
+                            <TicketDetail label="Candidate name" value={application.candidateName || 'N/A'} />
+                            <TicketDetail label="Post name" value={application.postName || 'N/A'} />
+                            <TicketDetail label="Bank name" value={application.bankName || 'N/A'} />
+                        </>
+                    ) : null}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export function printPaymentReceipt(receipt: PaymentReceipt) {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    const escapeHtml = (value: string) =>
+        value
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+
+    const application = receipt.application;
+    const amount = escapeHtml(formatReceiptAmount(receipt.amount, receipt.currency));
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=900,height=1000');
+
+    if (!printWindow) {
+        window.print();
+        return;
+    }
+
+    const text = (value?: string | null) => escapeHtml(value || 'N/A');
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>${text(receipt.receiptNumber || 'Payment Receipt')}</title>
+    <style>
+      body { font-family: Arial, sans-serif; color: #0f172a; padding: 32px; }
+      h1 { font-size: 22px; margin: 0 0 4px; }
+      p { margin: 0; }
+      .muted { color: #475569; font-size: 13px; }
+      .header { display: flex; justify-content: space-between; border-bottom: 2px solid #059669; padding-bottom: 16px; margin-bottom: 24px; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+      .label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; }
+      .value { font-size: 14px; font-weight: 700; margin-top: 4px; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div>
+        <p class="muted">PAYMENT RECEIPT</p>
+        <h1>${text(receipt.orgName || 'Payment Receipt')}</h1>
+        <p class="muted">${escapeHtml(receipt.orgAddress || '')}</p>
+      </div>
+      <div style="text-align:right">
+        <p class="label">Receipt No.</p>
+        <p class="value">${text(receipt.receiptNumber)}</p>
+      </div>
+    </div>
+    <div class="grid">
+      <div><p class="label">Paid on</p><p class="value">${text(receipt.formattedPaidAt || receipt.paidAt)}</p></div>
+      <div><p class="label">Amount</p><p class="value">${amount}</p></div>
+      <div><p class="label">Status</p><p class="value">${text(receipt.status)}</p></div>
+      <div><p class="label">Payment method</p><p class="value">${text(receipt.paymentMethod)}</p></div>
+      <div><p class="label">Transaction ID</p><p class="value">${text(receipt.bdTransactionId)}</p></div>
+      <div><p class="label">Order ID</p><p class="value">${text(receipt.bdOrderId)}</p></div>
+      <div><p class="label">Payer name</p><p class="value">${text(receipt.payerName)}</p></div>
+      <div><p class="label">Payer email</p><p class="value">${text(receipt.payerEmail)}</p></div>
+      <div><p class="label">Payer mobile</p><p class="value">${text(receipt.payerMobile)}</p></div>
+      ${application ? `
+      <div><p class="label">Application number</p><p class="value">${text(application.applicationNumber)}</p></div>
+      <div><p class="label">Candidate name</p><p class="value">${text(application.candidateName)}</p></div>
+      <div><p class="label">Post name</p><p class="value">${text(application.postName)}</p></div>
+      <div><p class="label">Bank name</p><p class="value">${text(application.bankName)}</p></div>
+      ` : ''}
+    </div>
+  </body>
+</html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
 }
 
 export function TicketDetail({ label, value }: { label: string; value: string }) {

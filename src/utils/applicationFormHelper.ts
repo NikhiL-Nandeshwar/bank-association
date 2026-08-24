@@ -1,4 +1,5 @@
 import { getAuthToken } from "@/lib/auth-storage";
+import { API_BASE_URL } from "@/constants/api.constants";
 
 export function extractApplicationId(data: unknown): number {
   if (typeof data === 'number' && Number.isFinite(data)) {
@@ -67,8 +68,14 @@ export async function getAuthenticatedFileUrl(
     fileUrl: string,
 ): Promise<string> {
     const token = getAuthToken();
+    const resolvedFileUrl = /^[a-z][a-z\d+.-]*:/i.test(fileUrl)
+        ? fileUrl
+        : new URL(
+            fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`,
+            new URL(API_BASE_URL).origin,
+        ).toString();
 
-    const response = await fetch(fileUrl, {
+    const response = await fetch(resolvedFileUrl, {
         headers: {
             Authorization: `Bearer ${token}`,
         },

@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+const MAX_EDUCATION_TEXT_LENGTH = 100;
+const MAX_EDUCATION_LEVEL_LENGTH = 50;
+const MAX_CLASS_NAME_LENGTH = 40;
+const MAX_PERCENTAGE_OR_CGPA = 100;
+
 const maybeBlankStringSchema = z.string();
 
 const maybeIsoDateSchema = z.union([
@@ -9,11 +14,12 @@ const maybeIsoDateSchema = z.union([
 
 export const saveStep3EducationSchema = z.object({
   educationId: z.coerce.number().int('Education ID must be a whole number.').nonnegative('Education ID cannot be negative.'),
-  educationLevel: z.string().trim(),
-  specialization: maybeBlankStringSchema,
-  organizationName: maybeBlankStringSchema,
-  percentageOrCGPA: z.coerce.number().min(0, 'Percentage or CGPA cannot be negative.'),
-  className: maybeBlankStringSchema,
+  educationLevel: z.string().trim().max(MAX_EDUCATION_LEVEL_LENGTH, `Education level can be at most ${MAX_EDUCATION_LEVEL_LENGTH} characters.`),
+  educationCategory: z.string().trim().optional(),
+  specialization: maybeBlankStringSchema.max(MAX_EDUCATION_TEXT_LENGTH, `Specialization can be at most ${MAX_EDUCATION_TEXT_LENGTH} characters.`),
+  organizationName: maybeBlankStringSchema.max(MAX_EDUCATION_TEXT_LENGTH, `Organization name can be at most ${MAX_EDUCATION_TEXT_LENGTH} characters.`),
+  percentageOrCGPA: z.coerce.number().min(0, 'Percentage or CGPA cannot be negative.').max(MAX_PERCENTAGE_OR_CGPA, 'Percentage or CGPA cannot be greater than 100.'),
+  className: maybeBlankStringSchema.max(MAX_CLASS_NAME_LENGTH, `Class/grade can be at most ${MAX_CLASS_NAME_LENGTH} characters.`),
   passedMonthYear: maybeBlankStringSchema,
   passedDate: maybeIsoDateSchema,
   sortOrder: z.coerce.number().int('Sort order must be a whole number.').nonnegative('Sort order cannot be negative.'),
@@ -117,11 +123,7 @@ export function createSaveStep3Schema(mandatoryEducationLevels: string[]) {
     })
     .transform(({ applicationId, educations }) => ({
       applicationId,
-      // The API receives only rows the applicant actually completed; the
-      // category is client-side validation context and is not part of its contract.
-      educations: educations
-        .filter(hasEducationDetails)
-        .map(({ educationCategory: _educationCategory, ...education }) => education),
+      educations: educations.filter(hasEducationDetails),
     }));
 }
 

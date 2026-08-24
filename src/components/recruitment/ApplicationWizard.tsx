@@ -14,8 +14,8 @@ import { getEligibilityCriteria } from '@/actions/api/vacancy.actions';
 import { useEffect, useMemo, useState } from 'react';
 import type { EligibilityCriteria } from '@/types/api.types';
 import { ApplicationWizardProps, ExperienceEntry, FormState, SaveStep1and2Payload } from '@/types/applicationSteps';
-import { calculateAgeAsOn, buildSaveStep3Payload, buildSaveStepExperiencePayload, ErrorMap, FormField, getMandatoryEducationLevels, getSelectedMasterId, HallTicketPreview, initialState, LookupField, normalizeFormState, ReviewRow, sortEligibilityCriteria, SummaryCard, validateStep, YesNoButtons, hasExperienceDetails } from './helper/applicationStepsHelper';
-import { getResumeData, initiateApplicationPayment, saveStep1and2, saveStep3, saveStepExperience, startOrResumeApplication, uploadDocument } from '@/actions/api/application.actions';
+import { calculateAgeAsOn, buildSaveStep3Payload, buildSaveStepExperiencePayload, ErrorMap, FormField, getMandatoryEducationLevels, getSelectedMasterId, initialState, LookupField, MAX_CLASS_NAME_LENGTH, MAX_EDUCATION_LEVEL_LENGTH, MAX_EDUCATION_TEXT_LENGTH, MAX_PERCENTAGE_OR_CGPA_LENGTH, normalizeFormState, PaymentReceiptPreview, printPaymentReceipt, ReviewRow, sanitizeLimitedText, sanitizePercentageOrCgpa, sortEligibilityCriteria, SummaryCard, validateStep, YesNoButtons, hasExperienceDetails } from './helper/applicationStepsHelper';
+import { getPaymentReceipt, getResumeData, initiateApplicationPayment, saveStep1and2, saveStep3, saveStepExperience, startOrResumeApplication, uploadDocument } from '@/actions/api/application.actions';
 import { createSaveStep3Schema, createSaveStepExperienceSchema } from '@/schemas/application.schema';
 import { useAuth } from '@/lib/useAuth';
 import { toast } from 'sonner';
@@ -29,7 +29,9 @@ import { useTalukas } from '@/hooks/useTalukas';
 import { useCastes } from '@/hooks/useCastes';
 import { useSubCastes } from '@/hooks/useSubCastes';
 import { DocumentUploadCard } from '../common/DocumentUploadCard';
-import { mapDocuments, mapStep1ToFormState } from '@/utils/helper/applicationResumeMapper';
+import { mapDocuments, mapEducationEntries, mapExperienceEntries, mapStep1ToFormState, resolveResumeWizardStep } from '@/utils/helper/applicationResumeMapper';
+import { extractMerchantOrderIdFromRecord, readReceiptMerchantOrderId, saveReceiptMerchantOrderId } from '@/utils/paymentReceipt';
+import type { PaymentReceipt } from '@/types/api.types';
 
 /**
  * ApplicationWizard component manages the multi-step application form for bank recruitment. 
@@ -44,7 +46,10 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
   const [formState, setForm] = useState<FormState>(() => initialState(initialRecruitment));
   const [errors, setErrors] = useState<ErrorMap>({});
   const [submitted, setSubmitted] = useState(false);
-  const [showHallTicket, setShowHallTicket] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [paymentReceipt, setPaymentReceipt] = useState<PaymentReceipt | null>(null);
+  const [isLoadingReceipt, setIsLoadingReceipt] = useState(false);
+  const [merchantOrderId, setMerchantOrderId] = useState('');
   const [eligibilityCriteria, setEligibilityCriteria] = useState<EligibilityCriteria[]>(
     initialRecruitment.eligibilityCriteria ?? [],
   );
@@ -99,28 +104,24 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
     window.sessionStorage.removeItem(BILLDESK_REFRESH_KEY);
   };
 
-  const hydrateResumeResponse = (resumeResponse: { data?: any }) => {
+  const hydrateResumeResponse = (resumeResponse: { data?: any }, applicationId?: number) => {
     const responseData = resumeResponse as { data?: any };
     const step1 = responseData.data?.step1;
-    const educationStep = responseData.data?.step2;
-    const experienceStep = responseData.data?.step3;
-    const documentStep = responseData.data?.step4;
+    const educationStep =
+      responseData.data?.step2 ??
+      responseData.data?.educations ??
+      responseData.data?.education;
+    const experienceStep =
+      responseData.data?.step3 ??
+      responseData.data?.experiences ??
+      responseData.data?.experience;
+    const documentStep =
+      responseData.data?.step4 ??
+      responseData.data?.documents;
 
     if (documentStep?.length) {
       setUploadedDocuments(
         mapDocuments(documentStep)
-      );
-    }
-
-    if (step1) {
-      setForm((prev) =>
-        mapStep1ToFormState(
-          prev,
-          step1,
-          educationStep ?? [],
-          experienceStep ?? [],
-          user?.email
-        )
       );
     }
 
@@ -181,16 +182,45 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
       responseData.data.isPaid
     );
 
-    setForm((prev) => ({
-      ...prev,
-      paymentStatus: paymentStatusFromApi ?? prev.paymentStatus,
-      paymentAmount: paymentAmountFromApi ?? prev.paymentAmount,
-      transactionNumber: transactionRefFromApi ?? prev.transactionNumber,
-      paymentDate: paidAtFromApi ?? prev.paymentDate,
-      paymentMethod: paymentMethodFromApi ?? prev.paymentMethod,
-    }));
+    setForm((prev) => {
+      const mapped = step1
+        ? mapStep1ToFormState(
+            prev,
+            step1,
+            educationStep ?? [],
+            experienceStep ?? [],
+            user?.email
+          )
+        : {
+            ...prev,
+            educationEntries: mapEducationEntries(prev.educationEntries, educationStep ?? []),
+            experienceEntries: mapExperienceEntries(prev.experienceEntries, experienceStep ?? []),
+          };
+
+      return {
+        ...mapped,
+        paymentStatus: paymentStatusFromApi ?? mapped.paymentStatus,
+        paymentAmount: paymentAmountFromApi ?? mapped.paymentAmount,
+        transactionNumber: transactionRefFromApi ?? mapped.transactionNumber,
+        paymentDate: paidAtFromApi ?? mapped.paymentDate,
+        paymentMethod: paymentMethodFromApi ?? mapped.paymentMethod,
+      };
+    });
     setReceiptNumber(receiptNumberFromApi ?? '');
     setApplicationNumber(applicationNumberFromApi ? String(applicationNumberFromApi) : '');
+
+    const resolvedApplicationId = applicationId || applicationRecordId;
+    const merchantOrderFromApi = extractMerchantOrderIdFromRecord(responseData.data);
+    const storedMerchantOrderId = resolvedApplicationId ? readReceiptMerchantOrderId(resolvedApplicationId) : null;
+    const resolvedMerchantOrderId = merchantOrderFromApi || storedMerchantOrderId || '';
+
+    if (resolvedMerchantOrderId) {
+      setMerchantOrderId(resolvedMerchantOrderId);
+
+      if (resolvedApplicationId) {
+        saveReceiptMerchantOrderId(resolvedApplicationId, resolvedMerchantOrderId);
+      }
+    }
 
     if (isSubmittedFromApi) {
       setSubmitted(true);
@@ -222,11 +252,11 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
 
     if (isSubmittedFromApi || isPaymentCompleteFromApi) {
       setCurrentStep(APPLICATION_STEPS.length - 1);
-    } else if (currentStepFromApi) {
-      setCurrentStep(Math.max(0, currentStepFromApi - 1));
+    } else {
+      setCurrentStep(resolveResumeWizardStep(resumeData));
     }
 
-    hydrateResumeResponse(resumeResponse);
+    hydrateResumeResponse(resumeResponse, applicationId);
   };
 
   const loadExistingApplication = async (applicationId: number, readOnly: boolean) => {
@@ -234,13 +264,13 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
     const resumeResponse = await getResumeData(applicationId);
     const resumeData = (resumeResponse as { data?: any }).data;
 
-    hydrateResumeResponse(resumeResponse);
+    hydrateResumeResponse(resumeResponse, applicationId);
 
     if (readOnly) {
       setSubmitted(true);
       setCurrentStep(APPLICATION_STEPS.length - 1);
-    } else if (resumeData?.currentStep) {
-      setCurrentStep(Math.max(0, resumeData.currentStep - 1));
+    } else {
+      setCurrentStep(resolveResumeWizardStep(resumeData));
     }
   };
 
@@ -407,7 +437,9 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
     setCurrentStep(0);
     setErrors({});
     setSubmitted(false);
-    setShowHallTicket(false);
+    setShowReceipt(false);
+    setPaymentReceipt(null);
+    setMerchantOrderId('');
     setEligibilityCriteria(initialRecruitment.eligibilityCriteria ?? []);
     setIsStartingOrResuming(false);
     setStartOrResumeError(null);
@@ -418,6 +450,7 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
     setApplicationRecordId(0);
     setApplicationNumber('');
     setReceiptNumber('');
+    setIsLoadingReceipt(false);
   }, [initialRecruitment]); // re-init when recruitment changes
 
   useEffect(() => {
@@ -908,66 +941,16 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
         const response = await startOrResumeApplication(initialRecruitment.vacancyId);
         const applicationId = extractApplicationId(response.data);
         const resumeResponse = await getResumeData(applicationId);
+        const resumeData = (resumeResponse as { data?: any }).data;
+        const resumeStep = resolveResumeWizardStep(resumeData);
 
-        const currentStepFromApi = (
-          resumeResponse as {
-            data?: {
-              currentStep?: number;
-            };
-          }
-        ).data?.currentStep;
-
-        if (currentStepFromApi) {
-          setCurrentStep(Math.max(0, currentStepFromApi - 1));
-        }
-
-        const responseData = resumeResponse as {
-          data?: any;
-        };
-
-        console.log('RESUME DATA', responseData.data);
-
-        const step1 = responseData.data?.step1;
-        const educationStep = responseData.data?.step2;
-        const experienceStep = responseData.data?.step3;
-        const documentStep = responseData.data?.step4;
-        console.log('DOCUMENT STEP', documentStep);
-
-        if (documentStep?.length) {
-          setUploadedDocuments(
-            mapDocuments(documentStep)
-          );
-        }
-
-        if (step1) {
-          setForm((prev) =>
-            mapStep1ToFormState(
-              prev,
-              step1,
-              educationStep ?? [],
-              experienceStep ?? [],
-              user?.email
-            )
-          );
-        }
-
-        // Extract payment-related fields from resume data if provided by backend
-        const paymentStatusFromApi = responseData.data && (responseData.data.paymentStatus || responseData.data.payment?.status || responseData.data.paymentStatus);
-        const paymentAmountFromApi = responseData.data && (responseData.data.paidAmount || responseData.data.paymentAmount || responseData.data.amount || responseData.data.payment?.paidAmount || responseData.data.payment?.amount);
-        const transactionRefFromApi = responseData.data && (responseData.data.transactionNumber || responseData.data.paymentReference || responseData.data.payment?.reference || responseData.data.orderNumber);
-        const paidAtFromApi = responseData.data && (responseData.data.paidAt || responseData.data.payment?.paidAt || responseData.data.paymentDate);
-        const paymentMethodFromApi = responseData.data && (responseData.data.paymentMethod || responseData.data.payment?.method);
-
-        setForm((prev) => ({
-          ...prev,
-          paymentStatus: paymentStatusFromApi ?? prev.paymentStatus,
-          paymentAmount: paymentAmountFromApi ?? prev.paymentAmount,
-          transactionNumber: transactionRefFromApi ?? prev.transactionNumber,
-          paymentDate: paidAtFromApi ?? prev.paymentDate,
-          paymentMethod: paymentMethodFromApi ?? prev.paymentMethod,
-        }));
-
+        hydrateResumeResponse(resumeResponse, applicationId);
         setApplicationRecordId(applicationId);
+
+        if (resumeStep > 0) {
+          setCurrentStep(resumeStep);
+          return;
+        }
       } catch {
         setStartOrResumeError('Could not start or resume your application. Please try again.');
         return;
@@ -1123,6 +1106,41 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
   const goBack = () => {
     setErrors({});
     setCurrentStep((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleViewOrDownloadReceipt = async () => {
+    const storedMerchantOrderId =
+      merchantOrderId ||
+      (applicationRecordId ? readReceiptMerchantOrderId(applicationRecordId) : null) ||
+      '';
+
+    if (!storedMerchantOrderId) {
+      toast.error('Receipt is not available yet. Please try again after payment is confirmed.');
+      return;
+    }
+
+    if (paymentReceipt) {
+      setShowReceipt(true);
+      return;
+    }
+
+    setIsLoadingReceipt(true);
+
+    try {
+      const response = await getPaymentReceipt(storedMerchantOrderId);
+      setMerchantOrderId(storedMerchantOrderId);
+      setPaymentReceipt(response.data);
+      setShowReceipt(true);
+
+      if (response.data?.receiptNumber) {
+        setReceiptNumber(response.data.receiptNumber);
+      }
+    } catch (error) {
+      console.error('Failed to load payment receipt', error);
+      toast.error(error instanceof Error ? error.message : 'Could not load the payment receipt.');
+    } finally {
+      setIsLoadingReceipt(false);
+    }
   };
 
   const extractPaymentReference = (data: unknown) => {
@@ -1338,6 +1356,8 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
       } as const;
 
       if (typeof window !== 'undefined' && merchantOrderId) {
+        setMerchantOrderId(merchantOrderId);
+        saveReceiptMerchantOrderId(applicationRecordId, merchantOrderId);
         window.sessionStorage.setItem(
           'billdesk_application_merchant_order_id',
           merchantOrderId,
@@ -1480,6 +1500,24 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
               <ReviewRow label="Transaction number" value={form.transactionNumber || 'N/A'} />
               {receiptNumber ? <ReviewRow label="Receipt number" value={receiptNumber} /> : null}
             </div>
+
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={handleViewOrDownloadReceipt}
+                disabled={isLoadingReceipt}
+                className="inline-flex items-center justify-center rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLoadingReceipt ? 'Loading receipt...' : 'View / Download Receipt'}
+              </button>
+            </div>
+
+            {showReceipt && paymentReceipt ? (
+              <PaymentReceiptPreview
+                receipt={paymentReceipt}
+                onDownload={() => printPaymentReceipt(paymentReceipt)}
+              />
+            ) : null}
           </div>
         ) : null}
 
@@ -1852,7 +1890,8 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
                           </span>
                           <input
                             value={entry.institute}
-                            onChange={(event) => updateEducation(index, 'institute', event.target.value)}
+                            maxLength={MAX_EDUCATION_TEXT_LENGTH}
+                            onChange={(event) => updateEducation(index, 'institute', sanitizeLimitedText(event.target.value, MAX_EDUCATION_TEXT_LENGTH))}
                             className={APPLICATION_INPUT_CLASS_NAME}
                             placeholder={isMandatory ? 'Required' : 'Optional'}
                           />
@@ -1861,7 +1900,8 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
                           <span className="text-sm font-semibold text-slate-800">Education Level{isMandatory ? ' *' : ''}</span>
                           <input
                             value={entry.educationLevel}
-                            onChange={(event) => updateEducation(index, 'educationLevel', event.target.value)}
+                            maxLength={MAX_EDUCATION_LEVEL_LENGTH}
+                            onChange={(event) => updateEducation(index, 'educationLevel', sanitizeLimitedText(event.target.value, MAX_EDUCATION_LEVEL_LENGTH))}
                             className={APPLICATION_INPUT_CLASS_NAME}
                             placeholder={isMandatory ? 'Required' : 'Optional'}
                           />
@@ -1872,7 +1912,8 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
                           </span>
                           <input
                             value={entry.specialization}
-                            onChange={(event) => updateEducation(index, 'specialization', event.target.value)}
+                            maxLength={MAX_EDUCATION_TEXT_LENGTH}
+                            onChange={(event) => updateEducation(index, 'specialization', sanitizeLimitedText(event.target.value, MAX_EDUCATION_TEXT_LENGTH))}
                             className={APPLICATION_INPUT_CLASS_NAME}
                             placeholder={isMandatory ? 'Required' : 'Optional'}
                           />
@@ -1882,8 +1923,12 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
                             Percentage / CGPA{isMandatory ? ' *' : ''}
                           </span>
                           <input
+                            type="text"
+                            inputMode="decimal"
+                            pattern="[0-9]*[.]?[0-9]*"
+                            maxLength={MAX_PERCENTAGE_OR_CGPA_LENGTH}
                             value={entry.score}
-                            onChange={(event) => updateEducation(index, 'score', event.target.value)}
+                            onChange={(event) => updateEducation(index, 'score', sanitizePercentageOrCgpa(event.target.value))}
                             className={APPLICATION_INPUT_CLASS_NAME}
                             placeholder={isMandatory ? 'Required' : 'Optional'}
                           />
@@ -1892,7 +1937,8 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
                           <span className="text-sm font-semibold text-slate-800">Class / grade{isMandatory ? ' *' : ''}</span>
                           <input
                             value={entry.className}
-                            onChange={(event) => updateEducation(index, 'className', event.target.value)}
+                            maxLength={MAX_CLASS_NAME_LENGTH}
+                            onChange={(event) => updateEducation(index, 'className', sanitizeLimitedText(event.target.value, MAX_CLASS_NAME_LENGTH))}
                             className={APPLICATION_INPUT_CLASS_NAME}
                             placeholder={isMandatory ? 'Required' : 'Optional'}
                           />
@@ -2493,6 +2539,14 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
                         {form.paymentMethod ? <p><span className="font-semibold">Method:</span> {form.paymentMethod}</p> : null}
                         {form.paymentDate ? <p><span className="font-semibold">Paid on:</span> {form.paymentDate}</p> : null}
                       </div>
+                      <button
+                        type="button"
+                        onClick={handleViewOrDownloadReceipt}
+                        disabled={isLoadingReceipt}
+                        className="w-full rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isLoadingReceipt ? 'Loading receipt...' : 'View / Download Receipt'}
+                      </button>
                     </div>
                   ) : (
                     <button
@@ -2512,6 +2566,12 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
                 </div>
               </div>
             )}
+            {currentStep === 7 && showReceipt && paymentReceipt ? (
+              <PaymentReceiptPreview
+                receipt={paymentReceipt}
+                onDownload={() => printPaymentReceipt(paymentReceipt)}
+              />
+            ) : null}
           </div>
 
           {!isReadOnly ? (

@@ -137,6 +137,7 @@ export type SaveStep1and2Payload = {
 export type SaveStep3EducationPayload = {
   educationId: number;
   educationLevel: string;
+  educationCategory?: string;
   specialization: string;
   organizationName: string;
   percentageOrCGPA: number;

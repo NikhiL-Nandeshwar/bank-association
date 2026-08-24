@@ -102,6 +102,37 @@ export type EligibilityCriteria = {
   requiredDocument?: boolean;
 };
 
+export type PaymentReceiptApplication = {
+  applicationNumber: string;
+  candidateName: string;
+  candidateNameMrt?: string | null;
+  postName: string;
+  postNameMrt?: string | null;
+  bankName: string;
+  applicationFee: number;
+  vacancyId: string;
+};
+
+export type PaymentReceipt = {
+  receiptNumber: string;
+  paidAt: string;
+  formattedPaidAt: string;
+  moduleType: string;
+  amount: number;
+  currency: string;
+  status: string;
+  bdTransactionId: string;
+  bdOrderId: string;
+  paymentMethod: string;
+  payerName: string;
+  payerEmail: string;
+  payerMobile: string;
+  application: PaymentReceiptApplication | null;
+  book: unknown | null;
+  orgName: string;
+  orgAddress: string;
+};
+
 export type CandidateApplicationSummary = {
   applicationId?: number;
   applicationNumber?: string | number;
@@ -139,6 +170,8 @@ export type Vacancy = {
   status?: string;
   isPublished?: boolean;
   publishedAt?: string | null;
+  isActive?: boolean;
+  isOpen?: boolean;
 };
 
 export type News = {

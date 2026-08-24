@@ -13,7 +13,7 @@ export const emptyCategoryForm = {
   sortOrder: 0,
 };
 
-export function useCategoryForm(categories: any[], setCategories: any) {
+export function useCategoryForm(categories: any[], setCategories: any, onUpdateSuccess?: () => void) {
   const [form, setForm] = useState(emptyCategoryForm);
   const [errors, setErrors] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -40,6 +40,7 @@ export function useCategoryForm(categories: any[], setCategories: any) {
 
         setCategories(next);
         toast.success(ADMIN_DASHBOARD_MESSAGES.category?.saveSuccess ?? 'Category updated successfully.');
+        onUpdateSuccess?.();
       } catch {
         toast.error(ADMIN_DASHBOARD_MESSAGES.category?.saveFailed ?? 'Failed to update category.');
       } finally {

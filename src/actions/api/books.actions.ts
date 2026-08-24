@@ -31,6 +31,7 @@ export function buildBookFormData(
 
   if (options?.bookId != null && options.bookId !== '') {
     formData.append('BookId', String(options.bookId));
+    formData.append('IsActive', 'true');
   }
 
   formData.append('CategoryId', String(payload.categoryId));
@@ -46,11 +47,11 @@ export function buildBookFormData(
   formData.append('TagsRaw', payload.tagsRaw);
 
   if (payload.pdfFile) {
-    formData.append('PdfFile', payload.pdfFile);
+    formData.append(options?.bookId != null ? 'NewPdfFile' : 'PdfFile', payload.pdfFile);
   }
 
   if (payload.coverFile) {
-    formData.append('CoverFile', payload.coverFile);
+    formData.append(options?.bookId != null ? 'NewCoverFile' : 'CoverFile', payload.coverFile);
   }
 
   return formData;
@@ -87,14 +88,8 @@ export function deleteBook(bookId: number) {
   });
 }
 
-export function getBookById(bookId: number) {
-  return apiRequest<Book>(API_ENDPOINTS.book.getById(bookId), {
-    method: 'GET',
-  });
-}
-
 export function toggleBookActive(bookId: number) {
   return apiRequest<Book>(API_ENDPOINTS.book.toggleActive(bookId), {
-    method: 'POST',
+    method: 'PATCH',
   });
 }

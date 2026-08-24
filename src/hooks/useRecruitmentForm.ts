@@ -46,7 +46,7 @@ export function useRecruitmentForm(loadRecruitments: () => Promise<void>) {
     if (!form.bankId) {
       setErrors({ bankId: ADMIN_DASHBOARD_MESSAGES.recruitment.bankRequired });
       toast.error(ADMIN_DASHBOARD_MESSAGES.recruitment.bankRequired);
-      return;
+      return false;
     }
 
     const parsed = createVacancySchema.safeParse({
@@ -60,7 +60,7 @@ export function useRecruitmentForm(loadRecruitments: () => Promise<void>) {
 
       setErrors(getZodFieldErrors(parsed.error));
       toast.error(ADMIN_DASHBOARD_MESSAGES.recruitment.validationError);
-      return;
+      return false;
     }
 
     setErrors({});
@@ -79,6 +79,7 @@ export function useRecruitmentForm(loadRecruitments: () => Promise<void>) {
 
       setForm(emptyRecruitmentForm);
       setEditingId(null);
+      return true;
 
     } catch (error) {
       const msg = getErrorMessage(
@@ -90,6 +91,7 @@ export function useRecruitmentForm(loadRecruitments: () => Promise<void>) {
 
       setMessage(msg);
       toast.error(msg);
+      return false;
 
     } finally {
       setIsSaving(false);

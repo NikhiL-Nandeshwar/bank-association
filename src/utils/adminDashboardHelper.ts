@@ -80,6 +80,7 @@ export function formatApiBank(item: Bank): AdminBank {
     contactEmail: item.contactEmail ?? '',
     contactPhone: item.contactPhone ?? '',
     logoUrl: item.logoUrl ?? '',
+    isActive: item.isActive,
   };
 }
 
@@ -100,6 +101,7 @@ export function formatApiRecruitment(item: Vacancy): AdminRecruitment {
         contactEmail: '',
         contactPhone: '',
         logoUrl: '',
+        isActive: true,
       },
       id,
     ),
@@ -122,5 +124,7 @@ export function formatApiRecruitment(item: Vacancy): AdminRecruitment {
     eligibilityCriteria: item.eligibilityCriteria ?? undefined,
     status: item.status || 'Open',
     isPublished: Boolean(item.isPublished) || item.status?.toLowerCase() === 'published',
+    isActive: item.isActive ?? true,
+    isOpen: item.isOpen ?? item.status?.toLowerCase() === 'open',
   };
 }

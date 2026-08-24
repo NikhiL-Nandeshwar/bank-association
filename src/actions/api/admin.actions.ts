@@ -10,6 +10,7 @@ import {
   getBooks,
   updateBook,
   deleteBook,
+  toggleBookActive,
   type BookFormPayload,
   type UpdateBookPayload,
 } from './books.actions';
@@ -92,6 +93,10 @@ export async function updateBookService(payload: UpdateBookPayload) {
 
 export async function deleteBookService(bookId: number) {
     return deleteBook(bookId);
+}
+
+export async function toggleBookActiveService(bookId: number) {
+    return toggleBookActive(bookId);
 }
 
 export async function saveRecruitmentService(

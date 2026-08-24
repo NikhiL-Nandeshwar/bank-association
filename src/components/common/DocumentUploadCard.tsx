@@ -2,27 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ExistingDocument } from "../recruitment/helper/applicationStepsHelper";
 import { toast } from "sonner";
 import { CheckCircle2, FileText, Trash2, Upload } from "lucide-react";
-import { getAuthToken } from "@/lib/auth-storage";
-
-async function getAuthenticatedFileUrl(
-    fileUrl: string,
-): Promise<string> {
-    const token = getAuthToken();
-
-    const response = await fetch(fileUrl, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
-
-    if (!response.ok) {
-        throw new Error('Failed to load file');
-    }
-
-    const blob = await response.blob();
-
-    return URL.createObjectURL(blob);
-}
+import { getAuthenticatedFileUrl } from "@/utils/applicationFormHelper";
 
 export function DocumentUploadCard({
     label,
@@ -76,7 +56,12 @@ export function DocumentUploadCard({
                     setPreviewUrl(url);
                 }
             })
-            .catch(console.error);
+            .catch(() => {
+                // A preview is optional; the applicant can still replace or view the document.
+                if (mounted) {
+                    setPreviewUrl(null);
+                }
+            });
 
         return () => {
             mounted = false;

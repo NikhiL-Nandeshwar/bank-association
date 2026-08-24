@@ -64,7 +64,7 @@ export default function DeleteConfirmationDialog({
               disabled={isSubmitting}
               className="min-w-[130px]"
             >
-              {isSubmitting ? 'Deleting...' : confirmText}
+              {isSubmitting ? `${confirmText}...` : confirmText}
             </Button>
           </div>
         </div>

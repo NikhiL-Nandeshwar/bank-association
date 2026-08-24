@@ -16,7 +16,7 @@ export interface CreateAuthorResponse {
   authorId: number;
 }
 
-export function useAuthorForm(authors: any[], setAuthors: any) {
+export function useAuthorForm(authors: any[], setAuthors: any, onUpdateSuccess?: () => void) {
   const [form, setForm] = useState(emptyAuthorForm);
   const [errors, setErrors] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -43,6 +43,7 @@ export function useAuthorForm(authors: any[], setAuthors: any) {
 
         setAuthors(next);
         toast.success(ADMIN_DASHBOARD_MESSAGES.author?.saveSuccess ?? 'Author updated successfully.');
+        onUpdateSuccess?.();
       } catch {
         toast.error(ADMIN_DASHBOARD_MESSAGES.author?.saveFailed ?? 'Failed to update author.');
       } finally {

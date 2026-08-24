@@ -30,7 +30,7 @@ export const API_ENDPOINTS = {
     create: 'vacancy/create',
     getAll: 'vacancy/getall',
     update: 'Vacancy/Update',
-    delete: (vacancyId: number) => `Vacancy/ToggleActive?bankId=${vacancyId}`,
+    delete: (vacancyId: number) => `Vacancy/ToggleActive?vacancyId=${vacancyId}`,
     publish: 'Vacancy/Publish',
     uploadNoticePdf: 'Vacancy/UploadNoticePdf',
     getPublicList: 'Vacancy/GetPublicList',
@@ -85,13 +85,13 @@ export const API_ENDPOINTS = {
   payment: {
     initiateApplication: 'Payment/InitiateApplication',
     status: 'Payment/Status',
+    receipt: 'Payment/GetReceipt',
   },
   book: {
     create: 'Book/Create',
     update: 'Book/Update',
     delete: (bookId: number) => `Book/Delete/${bookId}`,
     getAll: 'Book/GetAll',
-    getById: (bookId: number) => `Book/GetById/${bookId}`,
-    toggleActive: (bookId: number) => `Book/ToggleActive/${bookId}`,
+    toggleActive: (bookId: number) => `Book/Toggle?id=${bookId}`,
   },
 } as const;

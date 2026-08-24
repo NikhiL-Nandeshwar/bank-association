@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import { getApplicationPaymentStatus } from '@/actions/api/application.actions';
 import { ROUTES } from '@/constants/routes.constants';
+import { saveReceiptMerchantOrderId } from '@/utils/paymentReceipt';
 
 const SESSION_KEYS = {
   merchantOrderId: 'billdesk_application_merchant_order_id',
@@ -93,6 +94,11 @@ export default function PaymentCallbackPage() {
       if (paymentStatus === 'SUCCESS') {
         if (typeof window !== 'undefined') {
           window.sessionStorage.setItem(SESSION_KEYS.refreshApplication, '1');
+          const applicationId = window.sessionStorage.getItem(SESSION_KEYS.applicationId);
+
+          if (merchantOrderId && applicationId) {
+            saveReceiptMerchantOrderId(applicationId, merchantOrderId);
+          }
         }
 
         setStatus('success');

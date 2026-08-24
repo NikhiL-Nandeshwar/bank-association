@@ -94,6 +94,7 @@ export function useBankForm(banks: AdminBank[], setBanks: any) {
         const localBank: AdminBank = {
             bankId: Date.now(),
             ...parsed.data,
+            isActive: true,
         };
 
         try {

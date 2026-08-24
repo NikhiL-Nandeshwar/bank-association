@@ -1,6 +1,6 @@
 import { apiRequest } from '@/actions/api/client';
 import { API_ENDPOINTS } from '@/constants/api.constants';
-import type { CandidateApplicationSummary } from '@/types/api.types';
+import type { CandidateApplicationSummary, PaymentReceipt } from '@/types/api.types';
 import { SaveStep1and2Payload, SaveStep3Payload, SaveStepExperiencePayload } from '@/types/applicationSteps';
 
 export async function startOrResumeApplication(vacancyId: number) {
@@ -66,6 +66,15 @@ export async function initiateApplicationPayment(applicationId: number, paymentM
 export async function getApplicationPaymentStatus(merchantOrderId: string) {
   return apiRequest<unknown>(
     `${API_ENDPOINTS.payment.status}?merchantOrderId=${encodeURIComponent(merchantOrderId)}`,
+    {
+      method: 'GET',
+    }
+  );
+}
+
+export async function getPaymentReceipt(merchantOrderId: string) {
+  return apiRequest<PaymentReceipt>(
+    `${API_ENDPOINTS.payment.receipt}?merchantOrderId=${encodeURIComponent(merchantOrderId)}`,
     {
       method: 'GET',
     }

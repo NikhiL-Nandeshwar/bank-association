@@ -10,6 +10,7 @@ export type AdminBank = {
     contactEmail: string;
     contactPhone: string;
     logoUrl: string;
+    isActive: boolean;
 };
 
 export type AdminRecruitment = {
@@ -37,6 +38,8 @@ export type AdminRecruitment = {
     eligibilityCriteria?: EligibilityCriteria[];
     status: string;
     isPublished: boolean;
+    isActive: boolean;
+    isOpen: boolean;
 };
 
 export type BankForm = typeof emptyBankForm;
