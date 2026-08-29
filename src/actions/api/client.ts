@@ -22,6 +22,7 @@ type ApiRequestOptions = Omit<RequestInit, 'body'> & {
 let refreshPromise: Promise<void> | null = null;
 
 function buildUrl(path: string) {
+  if (/^https?:\/\//i.test(path)) return path;
   const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
   return `${API_BASE_URL}/${normalizedPath}`;
 }
@@ -203,4 +204,27 @@ export async function apiRequest<T>(
   }
 
   return payload;
+}
+
+export async function apiRequestBlob(path: string, isRetry = false): Promise<Blob> {
+  await ensureValidToken();
+  const authToken = getAuthToken();
+  const response = await fetch(buildUrl(path), {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/pdf, application/octet-stream, application/json',
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    },
+  });
+  if (response.status === 401 && !isRetry && getRefreshToken()) {
+    await refreshAccessToken();
+    return apiRequestBlob(path, true);
+  }
+  if (!response.ok) {
+    let message = 'Unable to load the purchased book PDF.';
+    try { message = (await response.json() as { message?: string }).message || message; } catch { /* non-JSON error */ }
+    throw new ApiError(message, response.status);
+  }
+  return response.blob();
 }

@@ -90,6 +90,8 @@ export const API_ENDPOINTS = {
   },
   library: {
     getMyLibrary: 'Library/GetMyLibrary',
+    getLibraryBook: 'Library/GetLibraryBook',
+    updateReadingProgress: 'Library/UpdateReadingProgress',
   },
   book: {
     create: 'Book/Create',

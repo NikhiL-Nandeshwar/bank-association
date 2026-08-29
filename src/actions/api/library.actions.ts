@@ -1,5 +1,5 @@
 import { API_ENDPOINTS } from '@/constants/api.constants';
-import { apiRequest } from './client';
+import { apiRequest, apiRequestBlob } from './client';
 
 export type MyLibraryBook = {
   libraryId: number;
@@ -24,6 +24,23 @@ export type MyLibrary = {
   books: MyLibraryBook[];
 };
 
+export type LibraryBook = MyLibraryBook & { pdfUrl: string };
+
 export function getMyLibrary() {
   return apiRequest<MyLibrary>(API_ENDPOINTS.library.getMyLibrary, { method: 'GET' });
+}
+
+export function getLibraryBook(bookId: number) {
+  return apiRequest<LibraryBook>(`${API_ENDPOINTS.library.getLibraryBook}?bookId=${encodeURIComponent(bookId)}`, { method: 'GET' });
+}
+
+export function getPurchasedBookPdf(pdfUrl: string) {
+  return apiRequestBlob(pdfUrl);
+}
+
+export function updateReadingProgress(libraryId: number, lastPageRead: number) {
+  return apiRequest<unknown>(API_ENDPOINTS.library.updateReadingProgress, {
+    method: 'POST',
+    body: { libraryId, lastPageRead },
+  });
 }
