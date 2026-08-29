@@ -6,3 +6,4 @@ export * from '@/actions/api/client';
 export * from '@/actions/api/vacancy.actions';
 export * from '@/actions/api/news.actions';
 export * from '@/actions/api/application.actions';
+export * from '@/actions/api/library.actions';

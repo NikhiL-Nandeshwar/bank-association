@@ -63,6 +63,16 @@ export async function initiateApplicationPayment(applicationId: number, paymentM
   );
 }
 
+/** Starts a BillDesk order for an eBook. Coupon codes are optional and omitted when blank. */
+export async function initiateBookPayment(bookId: number, couponCode?: string) {
+  const query = new URLSearchParams({ bookId: String(bookId) });
+  if (couponCode?.trim()) query.set('couponCode', couponCode.trim());
+
+  return apiRequest<unknown>(`${API_ENDPOINTS.payment.initiateBook}?${query.toString()}`, {
+    method: 'POST',
+  });
+}
+
 export async function getApplicationPaymentStatus(merchantOrderId: string) {
   return apiRequest<unknown>(
     `${API_ENDPOINTS.payment.status}?merchantOrderId=${encodeURIComponent(merchantOrderId)}`,

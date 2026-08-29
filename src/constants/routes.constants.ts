@@ -8,4 +8,5 @@ export const ROUTES = {
   login: '/auth/login',
   signup: '/auth/signup',
   forgotPassword: '/auth/forgot-password',
+  myBooks: '/my-books',
 } as const;

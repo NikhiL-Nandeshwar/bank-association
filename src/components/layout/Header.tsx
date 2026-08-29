@@ -19,6 +19,8 @@ import { ROUTES } from '@/constants/routes.constants';
 import { usePortalLanguage } from '@/lib/usePortalLanguage';
 import { useAuth } from '@/lib/useAuth';
 import { cn } from '@/utils/classnames';
+import { ShoppingCart } from 'lucide-react';
+import { useCart } from '@/lib/cart';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -28,6 +30,7 @@ export default function Header() {
   const router = useRouter();
   const { language, setLanguage } = usePortalLanguage();
   const { user, logout, status } = useAuth();
+  const { count: cartCount, clear: clearCart } = useCart();
   const content = HEADER_COPY[language];
   const pathname = usePathname();
   const hideLanguage = (pathname?.startsWith(ROUTES.eBook) ?? false) || (pathname?.startsWith('/bookslist') ?? false);
@@ -72,6 +75,7 @@ export default function Header() {
     try {
       await logout();
     } finally {
+      clearCart();
       router.replace(ROUTES.login);
     }
   };
@@ -181,7 +185,7 @@ export default function Header() {
           )}
 
           {status === 'loading' ? null : user ? (
-            <div ref={userMenuRef} className="relative z-50">
+            <div ref={userMenuRef} className="relative z-50 flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsUserMenuOpen((prev) => !prev)}
@@ -200,6 +204,11 @@ export default function Header() {
                 </svg>
               </button>
 
+              <Link href="/cart" aria-label={`Cart${cartCount ? `, ${cartCount} items` : ''}`} className="relative inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-slate-600">
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 ? <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[#fcd62e] px-1 text-center text-xs font-bold text-slate-900">{cartCount}</span> : null}
+              </Link>
+
               {isUserMenuOpen && (
                 <div className="absolute right-0 top-full z-50 mt-0 w-40 rounded-md border border-[#7A2E92]/10 bg-gray-200 py-1 shadow-xl ring-1 ring-black/10">
                   <button
@@ -212,6 +221,13 @@ export default function Header() {
                   >
                     Change Password
                   </button>
+                  <Link
+                    href={ROUTES.myBooks}
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="block w-full px-3 py-1 text-left text-sm text-[#7A2E92] hover:bg-[#7A2E92]/50 hover:text-white"
+                  >
+                    My Books
+                  </Link>
                   <button
                     type="button"
                     onClick={handleLogout}
@@ -305,6 +321,9 @@ export default function Header() {
 
             {status === 'loading' ? null : user ? (
               <>
+                <Link href="/cart" onClick={closeMenu} className="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 text-white">
+                  <ShoppingCart className="h-5 w-5" /> Cart {cartCount > 0 ? `(${cartCount})` : ''}
+                </Link>
                 <div className="mt-2 flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 text-white">
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fcd62e] text-slate-900">
                     <span className="text-sm font-semibold">
@@ -327,6 +346,13 @@ export default function Header() {
                 >
                   Change Password
                 </button>
+                <Link
+                  href={ROUTES.myBooks}
+                  onClick={closeMenu}
+                  className="rounded-xl bg-white/10 px-4 py-3 text-left text-white transition hover:bg-white/20"
+                >
+                  My Books
+                </Link>
 
                 <button
                   type="button"

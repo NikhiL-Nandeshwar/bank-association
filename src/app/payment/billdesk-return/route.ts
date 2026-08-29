@@ -37,6 +37,7 @@ export async function POST(request: Request) {
     console.warn('BillDesk return POST received without transaction_response');
   }
 
-  const redirectUrl = new URL('/payment/callback?module=APPLICATION', request.url);
+  const paymentModule = new URL(request.url).searchParams.get('module') === 'BOOK' ? 'BOOK' : 'APPLICATION';
+  const redirectUrl = new URL(`/payment/callback?module=${paymentModule}`, request.url);
   return NextResponse.redirect(redirectUrl.toString(), 303);
 }

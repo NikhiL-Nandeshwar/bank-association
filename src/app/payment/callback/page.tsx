@@ -13,6 +13,7 @@ const SESSION_KEYS = {
   bdOrderId: 'billdesk_application_bd_order_id',
   applicationId: 'billdesk_application_application_id',
   refreshApplication: 'billdesk_application_refresh_needed',
+  bookMerchantOrderId: 'billdesk_book_merchant_order_id',
 };
 
 const MAX_POLL_ATTEMPTS = 10;
@@ -27,14 +28,17 @@ function clearBillDeskSessionStorage() {
   window.sessionStorage.removeItem(SESSION_KEYS.paymentId);
   window.sessionStorage.removeItem(SESSION_KEYS.bdOrderId);
   window.sessionStorage.removeItem(SESSION_KEYS.applicationId);
+  window.sessionStorage.removeItem(SESSION_KEYS.bookMerchantOrderId);
 }
 
-function readStoredMerchantOrderId() {
+function readStoredMerchantOrderId(module?: string) {
   if (typeof window === 'undefined') {
     return null;
   }
 
-  return window.sessionStorage.getItem(SESSION_KEYS.merchantOrderId);
+  return module === 'BOOK'
+    ? window.sessionStorage.getItem(SESSION_KEYS.bookMerchantOrderId)
+    : window.sessionStorage.getItem(SESSION_KEYS.merchantOrderId);
 }
 
 export default function PaymentCallbackPage() {
@@ -56,10 +60,11 @@ export default function PaymentCallbackPage() {
 
   const moduleParam = queryParams.get('module');
   const isApplicationModule = moduleParam === 'APPLICATION';
-  const merchantOrderId = useMemo(() => readStoredMerchantOrderId(), []);
+  const isBookModule = moduleParam === 'BOOK';
+  const merchantOrderId = useMemo(() => readStoredMerchantOrderId(moduleParam ?? undefined), [moduleParam]);
 
   const verifyPayment = async () => {
-    if (!merchantOrderId || !isApplicationModule) {
+    if (!merchantOrderId || (!isApplicationModule && !isBookModule)) {
       setStatus('unknown');
       setMessage(
         'Payment status cannot be identified at this time. Please return to your application and retry payment.'
@@ -93,7 +98,7 @@ export default function PaymentCallbackPage() {
 
       if (paymentStatus === 'SUCCESS') {
         if (typeof window !== 'undefined') {
-          window.sessionStorage.setItem(SESSION_KEYS.refreshApplication, '1');
+          if (isApplicationModule) window.sessionStorage.setItem(SESSION_KEYS.refreshApplication, '1');
           const applicationId = window.sessionStorage.getItem(SESSION_KEYS.applicationId);
 
           if (merchantOrderId && applicationId) {
@@ -102,7 +107,7 @@ export default function PaymentCallbackPage() {
         }
 
         setStatus('success');
-        setMessage('Payment Successful');
+        setMessage(isBookModule ? 'Book Purchase Successful' : 'Payment Successful');
         clearBillDeskSessionStorage();
         return;
       }
@@ -150,9 +155,7 @@ export default function PaymentCallbackPage() {
     router.push(ROUTES.apply);
   };
 
-  const goToRecruitment = () => {
-    router.push(ROUTES.recruitment);
-  };
+  const goToBooks = () => router.push('/bookslist');
 
   const renderAction = () => {
     if (status === 'success') {
@@ -160,9 +163,9 @@ export default function PaymentCallbackPage() {
         <button
           type="button"
           className="rounded-md bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-500"
-          onClick={goToApplication}
+          onClick={isBookModule ? goToBooks : goToApplication}
         >
-          Continue to Application
+          {isBookModule ? 'Back to E-Books' : 'Continue to Application'}
         </button>
       );
     }
@@ -180,9 +183,9 @@ export default function PaymentCallbackPage() {
           <button
             type="button"
             className="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-            onClick={goToApplication}
+          onClick={isBookModule ? goToBooks : goToApplication}
           >
-            Return to Application
+            {isBookModule ? 'Back to E-Books' : 'Return to Application'}
           </button>
         </div>
       );
@@ -199,7 +202,9 @@ export default function PaymentCallbackPage() {
     if (status === 'success') {
       return (
         <div className="space-y-4">
-          <p className="text-slate-900 text-xl font-semibold">Payment Successful</p>
+          <p className="text-slate-900 text-xl font-semibold">
+            {isBookModule ? 'Book Purchase Successful' : 'Payment Successful'}
+          </p>
           {paymentAmount ? <p>Amount: Rs. {paymentAmount}</p> : null}
           {receiptReference ? <p>Receipt: {receiptReference}</p> : null}
         </div>
@@ -239,16 +244,22 @@ export default function PaymentCallbackPage() {
             {status === 'success' ? (
               <>
                 <p className="text-slate-900">
-                  Your payment has been successfully verified and your application has been submitted successfully.
+                  {isBookModule
+                    ? 'Your book has been purchased successfully.'
+                    : 'Your payment has been successfully verified and your application has been submitted successfully.'}
                 </p>
-                <p className="mt-2">
-                  You can now view your submitted application at any time from the recruitment portal.
-                </p>
+                {!isBookModule ? (
+                  <p className="mt-2">
+                    You can now view your submitted application at any time from the recruitment portal.
+                  </p>
+                ) : null}
               </>
             ) : (
               <>
                 <p>
-                  This page verifies your payment with the recruitment system. Please wait while we confirm the payment status.
+                  {isBookModule
+                    ? 'This page verifies your book payment. Please wait while we confirm the payment status.'
+                    : 'This page verifies your payment with the recruitment system. Please wait while we confirm the payment status.'}
                 </p>
                 {!merchantOrderId && (
                   <p className="mt-2 text-sm text-amber-700">

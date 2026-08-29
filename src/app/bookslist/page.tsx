@@ -157,7 +157,7 @@ export default function BooksPage() {
                             ₹{book.price.toLocaleString('en-IN')}
                           </div>
 
-                          <div className="flex items-center gap-1 text-sm text-slate-500">
+                          <div className="flex items-center gap-1 font-semibold text-lg text-slate-700">
                             <BookOpen className="h-4 w-4" />
                             पहा
                           </div>

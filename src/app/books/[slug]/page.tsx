@@ -3,18 +3,111 @@
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { ShoppingCart } from 'lucide-react'
 
 // Note: Header/Footer are provided by the root layout — do not render them here.
 import { BookCover } from '@/components/common/BookCover'
 import { booksFetcher } from '@/lib/ebook'
 import type { Book } from '@/types/eBook'
+import { useAuth } from '@/lib/useAuth'
+import { initiateBookPayment } from '@/actions/api/application.actions'
+import { useCart } from '@/lib/cart'
 
 export default function BookDetailPage() {
   const params = useParams()
   const slug = params?.slug as string | undefined
+  const router = useRouter()
+  const { status } = useAuth()
+  const { add: addCartItem } = useCart()
   const [book, setBook] = useState<Book | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [couponCode, setCouponCode] = useState('')
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [cartMessage, setCartMessage] = useState<string | null>(null)
+
+  const extractString = (value: unknown, keys: string[]): string | undefined => {
+    if (!value || typeof value !== 'object') return undefined
+    const record = value as Record<string, unknown>
+    for (const key of keys) if (typeof record[key] === 'string' && record[key]) return record[key] as string
+    return typeof record.data === 'object' ? extractString(record.data, keys) : undefined
+  }
+
+  const startPayment = async () => {
+    if (!book) return
+    if (status !== 'authenticated') {
+      window.sessionStorage.setItem('pending-book-action', JSON.stringify({ action: 'buy', bookId: book.bookId }))
+      router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`)
+      return
+    }
+    setPaymentError(null)
+    setIsProcessingPayment(true)
+    try {
+      const response = await initiateBookPayment(book.bookId, couponCode)
+      const data = response.data
+      const bdOrderId = extractString(data, ['bdOrderId', 'bdorderid'])
+      const authToken = extractString(data, ['authToken', 'auth_token'])
+      const merchantOrderId = extractString(data, ['merchantOrderId', 'merchantorderid', 'merchant_order_id', 'orderId'])
+      if (!bdOrderId || !authToken || typeof window.loadBillDeskSdk !== 'function') {
+        throw new Error('The payment service did not return a complete BillDesk order. Please try again.')
+      }
+      if (merchantOrderId) window.sessionStorage.setItem('billdesk_book_merchant_order_id', merchantOrderId)
+      window.loadBillDeskSdk({
+        flowConfig: {
+          merchantId: 'KOPBASSOV2',
+          bdOrderId,
+          authToken,
+          returnUrl: 'https://www.kopbankasso-recruit-book.com/payment/billdesk-return?module=BOOK',
+          childWindow: false,
+          retryCount: 3,
+        },
+        flowType: 'payments',
+        responseHandler: () => toast.info('Payment response received. Verifying payment...'),
+      })
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : 'Could not initiate payment. Please try again.'
+      setPaymentError(message)
+      toast.error(message)
+    } finally {
+      setIsProcessingPayment(false)
+    }
+  }
+
+  const addToCart = () => {
+    if (!book) return
+    if (status !== 'authenticated') {
+      window.sessionStorage.setItem('pending-book-action', JSON.stringify({ action: 'cart', bookId: book.bookId }))
+      router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`)
+      return
+    }
+    if (!addCartItem(book.bookId)) {
+      setCartMessage('This book is already in your cart.')
+      return
+    }
+    setCartMessage('Book added to cart.')
+    toast.success('Book added to cart.')
+  }
+
+  useEffect(() => {
+    if (status !== 'authenticated' || !book || typeof window === 'undefined') return
+    const raw = window.sessionStorage.getItem('pending-book-action')
+    if (!raw) return
+    try {
+      const pending = JSON.parse(raw) as { action?: string; bookId?: number }
+      if (pending.action === 'buy' && pending.bookId === book.bookId) {
+        window.sessionStorage.removeItem('pending-book-action')
+        void startPayment()
+      } else if (pending.action === 'cart' && pending.bookId === book.bookId) {
+        window.sessionStorage.removeItem('pending-book-action')
+        addToCart()
+      }
+    } catch { window.sessionStorage.removeItem('pending-book-action') }
+  // The action handlers intentionally run only when the authenticated book changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, book])
 
   useEffect(() => {
     if (!slug) return
@@ -29,7 +122,7 @@ export default function BookDetailPage() {
         } else {
           setBook(found)
         }
-      } catch (e) {
+      } catch {
         setError('लोड करताना त्रुटी आली')
       } finally {
         setIsLoading(false)
@@ -38,6 +131,16 @@ export default function BookDetailPage() {
 
     void load()
   }, [slug])
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || document.getElementById('billdesk-sdk-module')) return
+    const script = document.createElement('script')
+    script.id = 'billdesk-sdk-module'
+    script.type = 'module'
+    script.src = 'https://pay.billdesk.com/websdk/shared/billdesksdk.esm.js'
+    script.async = true
+    document.head.appendChild(script)
+  }, [])
 
   return (
     <main className="min-h-screen">
@@ -81,10 +184,19 @@ export default function BookDetailPage() {
 
                 <p className="text-base text-slate-700">{book.description ?? book.shortSummary ?? 'No description available.'}</p>
 
-                <div className="flex gap-3">
-                  <a href="#" className="inline-flex items-center justify-center rounded-full bg-[#7A2E92] px-6 py-3 text-white">Buy Now</a>
-                  <a href="#" className="inline-flex items-center justify-center rounded-full border px-6 py-3">Add to cart</a>
+                <div className="flex flex-wrap items-center gap-3">
+                  {!book.isOwned ? <>
+                    <button type="button" disabled={isProcessingPayment} onClick={startPayment} className="inline-flex items-center justify-center rounded-full bg-[#7A2E92] px-6 py-3 text-white disabled:opacity-60">
+                      {isProcessingPayment ? 'Starting payment…' : 'Buy Now'}
+                    </button>
+                    <input aria-label="Coupon code (optional)" value={couponCode} onChange={(event) => setCouponCode(event.target.value)} placeholder="Coupon code (optional)" className="rounded-full border px-4 py-3 text-sm" />
+                    <button type="button" onClick={addToCart} className="group inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#7A2E92]/30 bg-white px-6 py-3 font-semibold text-[#7A2E92] shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#7A2E92] hover:bg-[#7A2E92] hover:text-white hover:shadow-lg active:translate-y-0">
+                      <ShoppingCart className="h-4 w-4 transition-transform group-hover:scale-110" /> Add to cart
+                    </button>
+                  </> : <button type="button" className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-6 py-3 text-white">Read Now</button>}
                 </div>
+                {paymentError ? <p className="text-sm text-red-600">{paymentError}</p> : null}
+                {cartMessage ? <p className="text-sm text-emerald-700">{cartMessage}</p> : null}
               </div>
             </div>
           </section>

@@ -84,8 +84,12 @@ export const API_ENDPOINTS = {
   },
   payment: {
     initiateApplication: 'Payment/InitiateApplication',
+    initiateBook: 'Payment/InitiateBook',
     status: 'Payment/Status',
     receipt: 'Payment/GetReceipt',
+  },
+  library: {
+    getMyLibrary: 'Library/GetMyLibrary',
   },
   book: {
     create: 'Book/Create',
