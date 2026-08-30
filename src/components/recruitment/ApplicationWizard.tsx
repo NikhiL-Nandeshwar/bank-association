@@ -185,17 +185,17 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
     setForm((prev) => {
       const mapped = step1
         ? mapStep1ToFormState(
-            prev,
-            step1,
-            educationStep ?? [],
-            experienceStep ?? [],
-            user?.email
-          )
+          prev,
+          step1,
+          educationStep ?? [],
+          experienceStep ?? [],
+          user?.email
+        )
         : {
-            ...prev,
-            educationEntries: mapEducationEntries(prev.educationEntries, educationStep ?? []),
-            experienceEntries: mapExperienceEntries(prev.experienceEntries, experienceStep ?? []),
-          };
+          ...prev,
+          educationEntries: mapEducationEntries(prev.educationEntries, educationStep ?? []),
+          experienceEntries: mapExperienceEntries(prev.experienceEntries, experienceStep ?? []),
+        };
 
       return {
         ...mapped,
@@ -906,9 +906,15 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
       setErrors(nextErrors);
 
       const firstError = Object.values(nextErrors).find(Boolean);
-
       if (firstError) {
-        toast.error(firstError);
+        const errorMessage =
+          typeof firstError === 'string'
+            ? firstError
+            : Object.values(firstError).find(
+              (value) => typeof value === 'string'
+            ) || 'Something went wrong';
+
+        toast.error(errorMessage);
       }
 
       const firstField = Object.keys(nextErrors)[0];
@@ -1432,7 +1438,7 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
           <div className="mt-8 rounded-3xl bg-white/5 p-4">
             <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-300">
               <span>Progress</span>
-                <span>{submitted ? '100%' : progress}</span>
+              <span>{submitted ? '100%' : progress}</span>
             </div>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
               <div
@@ -1522,438 +1528,438 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
         ) : null}
 
         {!submitted ? (
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.12)] md:p-8">
-          <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                Step {currentStep + 1} of {APPLICATION_STEPS.length}
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-900">{step.title}</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">{step.description}</p>
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.12)] md:p-8">
+            <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                  Step {currentStep + 1} of {APPLICATION_STEPS.length}
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold text-slate-900">{step.title}</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">{step.description}</p>
+              </div>
+              <div className="rounded-3xl bg-slate-50 px-5 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Selected recruitment</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{form.recruitmentCode}</p>
+                <p className="mt-1 max-w-sm text-sm text-slate-600">{form.recruitmentName}</p>
+              </div>
             </div>
-            <div className="rounded-3xl bg-slate-50 px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Selected recruitment</p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">{form.recruitmentCode}</p>
-              <p className="mt-1 max-w-sm text-sm text-slate-600">{form.recruitmentName}</p>
-            </div>
-          </div>
 
-          <div className="mt-8 space-y-8">
-            {currentStep === 0 && (
-              <>
+            <div className="mt-8 space-y-8">
+              {currentStep === 0 && (
+                <>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <FormField label="Application ID" error={errors.applicationId}>
+                      <input
+                        value={form.applicationId}
+                        disabled
+                        className={`${APPLICATION_INPUT_CLASS_NAME} cursor-not-allowed bg-slate-100 text-slate-500`}
+                        placeholder="Generated automatically"
+                      />
+                    </FormField>
+                    <FormField label="Recruitment code" error={errors.recruitmentCode}>
+                      <input value={form.recruitmentCode} onChange={(event) => updateField('recruitmentCode', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="KM-016" />
+                    </FormField>
+                    <FormField label="Bank name" error={errors.bankName}>
+                      <input value={form.bankName} onChange={(event) => updateField('bankName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                    </FormField>
+                    <FormField label="Post name" error={errors.postName}>
+                      <input value={form.postName} onChange={(event) => updateField('postName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Clerk / Officer / Assistant" />
+                    </FormField>
+                    <FormField label="Employment type">
+                      <select value={form.employmentType} onChange={(event) => updateField('employmentType', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
+                        <option value="full-time">Full-time</option>
+                        <option value="contract">Contract</option>
+                        <option value="trainee">Trainee</option>
+                      </select>
+                    </FormField>
+                    <FormField label="Recruitment title" error={errors.recruitmentName}>
+                      <textarea value={form.recruitmentName} onChange={(event) => updateField('recruitmentName', event.target.value)} className={`${APPLICATION_INPUT_CLASS_NAME} min-h-32`} placeholder="Name of the recruitment" />
+                    </FormField>
+                  </div>
+
+
+
+                  {isEligibilityLoading ? (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                      <p className="text-sm font-semibold text-slate-900">Loading eligibility criteria...</p>
+                      <p className="mt-1 text-xs text-slate-600">We are fetching the vacancy-specific criteria for this recruitment.</p>
+                    </div>
+                  ) : eligibilityCriteria.length > 0 ? (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
+                      <div className="mb-4">
+                        <h3 className="text-sm font-semibold text-slate-900">Eligibility Criteria</h3>
+                        <p className="mt-1 text-xs text-slate-600">Please confirm that you meet all the following mandatory criteria to proceed with the application.</p>
+                      </div>
+                      {errors.acceptedEligibilityCriteria && (
+                        <p className="mb-4 text-sm font-semibold text-red-600">{errors.acceptedEligibilityCriteria}</p>
+                      )}
+                      <div className="space-y-3">
+                        {sortEligibilityCriteria(eligibilityCriteria)
+                          .map((criteria, index) => (
+                            <label key={index} className="flex items-start gap-3 rounded-lg border border-white bg-white p-3 transition hover:border-amber-300">
+                              <input
+                                type="checkbox"
+                                checked={form.acceptedEligibilityCriteria[index] || false}
+                                onChange={() => toggleEligibilityCriteria(index)}
+                                className="mt-1 h-5 w-5 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                              />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-slate-900">{criteria.declarationEng}</p>
+                                <p className="mt-1 text-xs text-slate-600">{criteria.declarationMrt}</p>
+                                {criteria.isMandatory && <span className="mt-1 inline-block rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">Mandatory</span>}
+                              </div>
+                            </label>
+                          ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                      <h3 className="text-sm font-semibold text-slate-900">Eligibility Criteria</h3>
+                      <p className="mt-1 text-xs text-slate-600">
+                        No vacancy-specific eligibility criteria were returned for this recruitment.
+                      </p>
+                    </div>
+                  )}
+                  {startOrResumeError ? <p className="text-sm font-semibold text-rose-600">{startOrResumeError}</p> : null}
+                </>
+              )}
+
+              {currentStep === 1 && (
                 <div className="grid gap-6 md:grid-cols-2">
-                  <FormField label="Application ID" error={errors.applicationId}>
+                  <FormField label="First name" error={errors.firstName}>
+                    <input value={form.firstName} maxLength={40} placeholder='Enter your first name' onChange={(event) => updateField('firstName', sanitizePersonName(event.target.value))} className={APPLICATION_INPUT_CLASS_NAME} />
+                  </FormField>
+                  <FormField label="Last name" error={errors.lastName}>
+                    <input value={form.lastName} maxLength={40} placeholder='Enter your last name' onChange={(event) => updateField('lastName', sanitizePersonName(event.target.value))} className={APPLICATION_INPUT_CLASS_NAME} />
+                  </FormField>
+                  <FormField label="Date of birth" error={errors.dateOfBirth}>
+                    <input type="date" value={form.dateOfBirth} onChange={(event) => updateDateOfBirth(event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                  </FormField>
+                  <FormField label="Age as on today" error={errors.ageAsOn}>
                     <input
-                      value={form.applicationId}
+                      value={form.ageAsOn}
                       disabled
                       className={`${APPLICATION_INPUT_CLASS_NAME} cursor-not-allowed bg-slate-100 text-slate-500`}
-                      placeholder="Generated automatically"
+                      placeholder="Calculated after date of birth"
                     />
                   </FormField>
-                  <FormField label="Recruitment code" error={errors.recruitmentCode}>
-                    <input value={form.recruitmentCode} onChange={(event) => updateField('recruitmentCode', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="KM-016" />
-                  </FormField>
-                  <FormField label="Bank name" error={errors.bankName}>
-                    <input value={form.bankName} onChange={(event) => updateField('bankName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                  </FormField>
-                  <FormField label="Post name" error={errors.postName}>
-                    <input value={form.postName} onChange={(event) => updateField('postName', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Clerk / Officer / Assistant" />
-                  </FormField>
-                  <FormField label="Employment type">
-                    <select value={form.employmentType} onChange={(event) => updateField('employmentType', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
-                      <option value="full-time">Full-time</option>
-                      <option value="contract">Contract</option>
-                      <option value="trainee">Trainee</option>
+                  <FormField label="Gender" error={errors.gender}>
+                    <select value={form.gender} onChange={(event) => updateField('gender', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
+                      <option value="">Select gender</option>
+                      <option value="MALE">Male</option>
+                      <option value="FEMALE">Female</option>
+                      <option value="OTHER">Other</option>
                     </select>
                   </FormField>
-                  <FormField label="Recruitment title" error={errors.recruitmentName}>
-                    <textarea value={form.recruitmentName} onChange={(event) => updateField('recruitmentName', event.target.value)} className={`${APPLICATION_INPUT_CLASS_NAME} min-h-32`} placeholder="Name of the recruitment" />
-                  </FormField>
-                </div>
-
-
-
-                {isEligibilityLoading ? (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                    <p className="text-sm font-semibold text-slate-900">Loading eligibility criteria...</p>
-                    <p className="mt-1 text-xs text-slate-600">We are fetching the vacancy-specific criteria for this recruitment.</p>
-                  </div>
-                ) : eligibilityCriteria.length > 0 ? (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-                    <div className="mb-4">
-                      <h3 className="text-sm font-semibold text-slate-900">Eligibility Criteria</h3>
-                      <p className="mt-1 text-xs text-slate-600">Please confirm that you meet all the following mandatory criteria to proceed with the application.</p>
-                    </div>
-                    {errors.acceptedEligibilityCriteria && (
-                      <p className="mb-4 text-sm font-semibold text-red-600">{errors.acceptedEligibilityCriteria}</p>
-                    )}
-                    <div className="space-y-3">
-                      {sortEligibilityCriteria(eligibilityCriteria)
-                        .map((criteria, index) => (
-                          <label key={index} className="flex items-start gap-3 rounded-lg border border-white bg-white p-3 transition hover:border-amber-300">
-                            <input
-                              type="checkbox"
-                              checked={form.acceptedEligibilityCriteria[index] || false}
-                              onChange={() => toggleEligibilityCriteria(index)}
-                              className="mt-1 h-5 w-5 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
-                            />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-slate-900">{criteria.declarationEng}</p>
-                              <p className="mt-1 text-xs text-slate-600">{criteria.declarationMrt}</p>
-                              {criteria.isMandatory && <span className="mt-1 inline-block rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">Mandatory</span>}
-                            </div>
-                          </label>
-                        ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                    <h3 className="text-sm font-semibold text-slate-900">Eligibility Criteria</h3>
-                    <p className="mt-1 text-xs text-slate-600">
-                      No vacancy-specific eligibility criteria were returned for this recruitment.
-                    </p>
-                  </div>
-                )}
-                {startOrResumeError ? <p className="text-sm font-semibold text-rose-600">{startOrResumeError}</p> : null}
-              </>
-            )}
-
-            {currentStep === 1 && (
-              <div className="grid gap-6 md:grid-cols-2">
-                <FormField label="First name" error={errors.firstName}>
-                  <input value={form.firstName} maxLength={40} placeholder='Enter your first name' onChange={(event) => updateField('firstName', sanitizePersonName(event.target.value))} className={APPLICATION_INPUT_CLASS_NAME} />
-                </FormField>
-                <FormField label="Last name" error={errors.lastName}>
-                  <input value={form.lastName} maxLength={40} placeholder='Enter your last name' onChange={(event) => updateField('lastName', sanitizePersonName(event.target.value))} className={APPLICATION_INPUT_CLASS_NAME} />
-                </FormField>
-                <FormField label="Date of birth" error={errors.dateOfBirth}>
-                  <input type="date" value={form.dateOfBirth} onChange={(event) => updateDateOfBirth(event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                </FormField>
-                <FormField label="Age as on today" error={errors.ageAsOn}>
-                  <input
-                    value={form.ageAsOn}
-                    disabled
-                    className={`${APPLICATION_INPUT_CLASS_NAME} cursor-not-allowed bg-slate-100 text-slate-500`}
-                    placeholder="Calculated after date of birth"
-                  />
-                </FormField>
-                <FormField label="Gender" error={errors.gender}>
-                  <select value={form.gender} onChange={(event) => updateField('gender', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME}>
-                    <option value="">Select gender</option>
-                    <option value="MALE">Male</option>
-                    <option value="FEMALE">Female</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                </FormField>
-                <FormField label="Aadhar No" error={errors.aadhaarNumber}>
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={12}
-                    value={form.aadhaarNumber}
-                    placeholder="Enter your 12-digit Aadhaar number"
-                    onChange={(event) => updateAadhaarNumber(event.target.value)}
-                    className={APPLICATION_INPUT_CLASS_NAME}
-                  />
-                </FormField>
-                <LookupField
-                  label="Category"
-                  error={errors.category}
-                  value={form.category}
-                  onChange={handleCategoryChange}
-                  options={categoryOptions}
-                  isLoading={isMasterLoading}
-                  placeholder="Select category"
-                />
-                <LookupField
-                  label="Religion"
-                  error={errors.religion}
-                  value={form.religion}
-                  onChange={handleReligionChange}
-                  options={religionOptions}
-                  isLoading={isMasterLoading}
-                  placeholder="Select religion"
-                />
-                <LookupField
-                  label="Caste"
-                  error={errors.caste}
-                  value={form.caste}
-                  onChange={handleCasteChange}
-                  options={casteOptions}
-                  isLoading={isMasterLoading || isCasteLoading}
-                  placeholder="Select caste"
-                />
-                <LookupField
-                  label="Sub caste"
-                  error={errors.subCaste}
-                  value={form.subCaste}
-                  onChange={(value) => updateField('subCaste', value)}
-                  options={subCasteOptions}
-                  isLoading={isSubCasteLoading}
-                  placeholder="Select sub caste"
-                />
-
-                <FormField label="Maharashtra domiciled?" error={errors.maharashtraDomiciled}>
-                  <YesNoButtons value={form.maharashtraDomiciled} onChange={(value) => updateField('maharashtraDomiciled', value)} />
-                </FormField>
-                <FormField label="Non-creamy layer?" error={errors.nonCreamyLayer}>
-                  <YesNoButtons value={form.nonCreamyLayer} onChange={(value) => updateField('nonCreamyLayer', value)} />
-                </FormField>
-                <FormField label="Nationality / Citizenship Indian?" error={errors.nationalityIndian}>
-                  <YesNoButtons value={form.nationalityIndian} onChange={(value) => updateField('nationalityIndian', value)} />
-                </FormField>
-                <FormField label="Marital status" error={errors.maritalStatus}>
-                  <select
-                    value={form.maritalStatus}
-                    onChange={(event) => updateField('maritalStatus', event.target.value)}
-                    className={APPLICATION_INPUT_CLASS_NAME}
-                  >
-                    <option value="">Select marital status</option>
-                    <option value="Single">Single</option>
-                    <option value="Married">Married</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </FormField>
-
-                {form.maritalStatus === 'Married' && (
-                  <FormField label="Spouse name" error={errors.husbandsName}>
+                  <FormField label="Aadhar No" error={errors.aadhaarNumber}>
                     <input
-                      value={form.husbandsName}
-                      placeholder="Enter your spouse name"
-                      onChange={(event) => updateField('husbandsName', event.target.value)}
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={12}
+                      value={form.aadhaarNumber}
+                      placeholder="Enter your 12-digit Aadhaar number"
+                      onChange={(event) => updateAadhaarNumber(event.target.value)}
                       className={APPLICATION_INPUT_CLASS_NAME}
                     />
                   </FormField>
-                )}
-
-                <FormField label="Mother's name" error={errors.mothersName}>
-                  <input
-                    value={form.mothersName}
-                    maxLength={40}
-                    placeholder="Enter your mother name"
-                    onChange={(event) => updateField('mothersName', sanitizePersonName(event.target.value))}
-                    className={APPLICATION_INPUT_CLASS_NAME}
+                  <LookupField
+                    label="Category"
+                    error={errors.category}
+                    value={form.category}
+                    onChange={handleCategoryChange}
+                    options={categoryOptions}
+                    isLoading={isMasterLoading}
+                    placeholder="Select category"
                   />
-                </FormField>
-                <FormField label="Father's name" error={errors.fathersName}>
-                  <input
-                    value={form.fathersName}
-                    maxLength={40}
-                    placeholder="Enter your father name"
-                    onChange={(event) => updateField('fathersName', sanitizePersonName(event.target.value))}
-                    className={APPLICATION_INPUT_CLASS_NAME}
+                  <LookupField
+                    label="Religion"
+                    error={errors.religion}
+                    value={form.religion}
+                    onChange={handleReligionChange}
+                    options={religionOptions}
+                    isLoading={isMasterLoading}
+                    placeholder="Select religion"
                   />
-                </FormField>
-              </div>
-            )}
+                  <LookupField
+                    label="Caste"
+                    error={errors.caste}
+                    value={form.caste}
+                    onChange={handleCasteChange}
+                    options={casteOptions}
+                    isLoading={isMasterLoading || isCasteLoading}
+                    placeholder="Select caste"
+                  />
+                  <LookupField
+                    label="Sub caste"
+                    error={errors.subCaste}
+                    value={form.subCaste}
+                    onChange={(value) => updateField('subCaste', value)}
+                    options={subCasteOptions}
+                    isLoading={isSubCasteLoading}
+                    placeholder="Select sub caste"
+                  />
 
-            {currentStep === 2 && (
-              <div className="space-y-8">
-                <div className="grid gap-6 md:grid-cols-2">
-                  <FormField label="Email address" error={errors.email}>
+                  <FormField label="Maharashtra domiciled?" error={errors.maharashtraDomiciled}>
+                    <YesNoButtons value={form.maharashtraDomiciled} onChange={(value) => updateField('maharashtraDomiciled', value)} />
+                  </FormField>
+                  <FormField label="Non-creamy layer?" error={errors.nonCreamyLayer}>
+                    <YesNoButtons value={form.nonCreamyLayer} onChange={(value) => updateField('nonCreamyLayer', value)} />
+                  </FormField>
+                  <FormField label="Nationality / Citizenship Indian?" error={errors.nationalityIndian}>
+                    <YesNoButtons value={form.nationalityIndian} onChange={(value) => updateField('nationalityIndian', value)} />
+                  </FormField>
+                  <FormField label="Marital status" error={errors.maritalStatus}>
+                    <select
+                      value={form.maritalStatus}
+                      onChange={(event) => updateField('maritalStatus', event.target.value)}
+                      className={APPLICATION_INPUT_CLASS_NAME}
+                    >
+                      <option value="">Select marital status</option>
+                      <option value="Single">Single</option>
+                      <option value="Married">Married</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </FormField>
+
+                  {form.maritalStatus === 'Married' && (
+                    <FormField label="Spouse name" error={errors.husbandsName}>
+                      <input
+                        value={form.husbandsName}
+                        placeholder="Enter your spouse name"
+                        onChange={(event) => updateField('husbandsName', event.target.value)}
+                        className={APPLICATION_INPUT_CLASS_NAME}
+                      />
+                    </FormField>
+                  )}
+
+                  <FormField label="Mother's name" error={errors.mothersName}>
                     <input
-                      type="email"
-                      value={autoFilledEmail}
-                      readOnly
-                      className={`${APPLICATION_INPUT_CLASS_NAME} cursor-not-allowed bg-slate-100 text-slate-500`}
+                      value={form.mothersName}
+                      maxLength={40}
+                      placeholder="Enter your mother name"
+                      onChange={(event) => updateField('mothersName', sanitizePersonName(event.target.value))}
+                      className={APPLICATION_INPUT_CLASS_NAME}
                     />
                   </FormField>
-                  <FormField label="Mobile number" error={errors.phone}>
-                    <input type="tel" inputMode="numeric" pattern="[0-9]*" maxLength={10} value={form.phone} onChange={(event) => updatePhoneNumber('phone', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="10-digit number" />
+                  <FormField label="Father's name" error={errors.fathersName}>
+                    <input
+                      value={form.fathersName}
+                      maxLength={40}
+                      placeholder="Enter your father name"
+                      onChange={(event) => updateField('fathersName', sanitizePersonName(event.target.value))}
+                      className={APPLICATION_INPUT_CLASS_NAME}
+                    />
                   </FormField>
-                  <FormField label="Alternate phone" error={errors.alternatePhone}>
-                    <input type="tel" inputMode="numeric" pattern="[0-9]*" maxLength={10} value={form.alternatePhone} onChange={(event) => updatePhoneNumber('alternatePhone', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Optional" />
-                  </FormField>
-                  <FormField label="Pincode" error={errors.pincode}>
-                    <input value={form.pincode} onChange={(event) => updateField('pincode', event.target.value.replace(/\D/g, '').slice(0, 6))} className={APPLICATION_INPUT_CLASS_NAME} />
-                  </FormField>
-                  <FormField label="Address line 1" error={errors.addressLine1}>
-                    <input value={form.addressLine1} onChange={(event) => updateField('addressLine1', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                  </FormField>
-                  <FormField label="Address line 2">
-                    <input value={form.addressLine2} onChange={(event) => updateField('addressLine2', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                  </FormField>
-                  <FormField label="Address line 3">
-                    <input value={form.addressLine3} onChange={(event) => updateField('addressLine3', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
-                  </FormField>
-                  <LookupField
-                    label="Country"
-                    error={errors.country}
-                    value={form.country}
-                    onChange={handleCountryChange}
-                    options={countryOptions}
-                    isLoading={isMasterLoading}
-                    placeholder="Select country"
-                  />
-                  <LookupField
-                    label="State"
-                    error={errors.state}
-                    value={form.state}
-                    onChange={handleStateChange}
-                    options={stateOptions}
-                    isLoading={isStateLoading}
-                    placeholder="Select state"
-                  />
-                  <LookupField
-                    label="District"
-                    error={errors.district}
-                    value={form.district}
-                    onChange={handleDistrictChange}
-                    options={districtOptions}
-                    isLoading={isDistrictLoading}
-                    placeholder="Select district"
-                  />
-                  <LookupField
-                    label="Taluka"
-                    error={errors.taluka}
-                    value={form.taluka}
-                    onChange={(value) => updateField('taluka', value)}
-                    options={talukaOptions}
-                    isLoading={isTalukaLoading}
-                    placeholder="Select taluka"
-                  />
                 </div>
+              )}
 
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">Language known</p>
-                  <div className="mt-3 overflow-hidden rounded-[1.5rem] border border-slate-200">
-                    <div className="grid grid-cols-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      <span>Language</span>
-                      <span>Read</span>
-                      <span>Write</span>
-                      <span>Speak</span>
+              {currentStep === 2 && (
+                <div className="space-y-8">
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <FormField label="Email address" error={errors.email}>
+                      <input
+                        type="email"
+                        value={autoFilledEmail}
+                        readOnly
+                        className={`${APPLICATION_INPUT_CLASS_NAME} cursor-not-allowed bg-slate-100 text-slate-500`}
+                      />
+                    </FormField>
+                    <FormField label="Mobile number" error={errors.phone}>
+                      <input type="tel" inputMode="numeric" pattern="[0-9]*" maxLength={10} value={form.phone} onChange={(event) => updatePhoneNumber('phone', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="10-digit number" />
+                    </FormField>
+                    <FormField label="Alternate phone" error={errors.alternatePhone}>
+                      <input type="tel" inputMode="numeric" pattern="[0-9]*" maxLength={10} value={form.alternatePhone} onChange={(event) => updatePhoneNumber('alternatePhone', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} placeholder="Optional" />
+                    </FormField>
+                    <FormField label="Pincode" error={errors.pincode}>
+                      <input value={form.pincode} onChange={(event) => updateField('pincode', event.target.value.replace(/\D/g, '').slice(0, 6))} className={APPLICATION_INPUT_CLASS_NAME} />
+                    </FormField>
+                    <FormField label="Address line 1" error={errors.addressLine1}>
+                      <input value={form.addressLine1} onChange={(event) => updateField('addressLine1', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                    </FormField>
+                    <FormField label="Address line 2">
+                      <input value={form.addressLine2} onChange={(event) => updateField('addressLine2', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                    </FormField>
+                    <FormField label="Address line 3">
+                      <input value={form.addressLine3} onChange={(event) => updateField('addressLine3', event.target.value)} className={APPLICATION_INPUT_CLASS_NAME} />
+                    </FormField>
+                    <LookupField
+                      label="Country"
+                      error={errors.country}
+                      value={form.country}
+                      onChange={handleCountryChange}
+                      options={countryOptions}
+                      isLoading={isMasterLoading}
+                      placeholder="Select country"
+                    />
+                    <LookupField
+                      label="State"
+                      error={errors.state}
+                      value={form.state}
+                      onChange={handleStateChange}
+                      options={stateOptions}
+                      isLoading={isStateLoading}
+                      placeholder="Select state"
+                    />
+                    <LookupField
+                      label="District"
+                      error={errors.district}
+                      value={form.district}
+                      onChange={handleDistrictChange}
+                      options={districtOptions}
+                      isLoading={isDistrictLoading}
+                      placeholder="Select district"
+                    />
+                    <LookupField
+                      label="Taluka"
+                      error={errors.taluka}
+                      value={form.taluka}
+                      onChange={(value) => updateField('taluka', value)}
+                      options={talukaOptions}
+                      isLoading={isTalukaLoading}
+                      placeholder="Select taluka"
+                    />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">Language known</p>
+                    <div className="mt-3 overflow-hidden rounded-[1.5rem] border border-slate-200">
+                      <div className="grid grid-cols-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        <span>Language</span>
+                        <span>Read</span>
+                        <span>Write</span>
+                        <span>Speak</span>
+                      </div>
+                      {LANGUAGE_NAMES.map((language) => (
+                        <div key={language} className="grid grid-cols-4 items-center border-t border-slate-100 px-4 py-3 text-sm text-slate-700">
+                          <span className="font-semibold capitalize">{language}</span>
+                          {LANGUAGE_ABILITIES.map((ability) => (
+                            <label key={ability} className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={form.languageSkills[language][ability]}
+                                onChange={() => toggleLanguage(language, ability)}
+                                className="h-4 w-4 rounded border-slate-300"
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      ))}
                     </div>
-                    {LANGUAGE_NAMES.map((language) => (
-                      <div key={language} className="grid grid-cols-4 items-center border-t border-slate-100 px-4 py-3 text-sm text-slate-700">
-                        <span className="font-semibold capitalize">{language}</span>
-                        {LANGUAGE_ABILITIES.map((ability) => (
-                          <label key={ability} className="flex items-center">
+                    {errors.languageSkills ? <p className="mt-2 text-sm text-rose-600">{errors.languageSkills}</p> : null}
+                    {saveStep1and2Error ? <p className="mt-2 text-sm text-rose-600">{saveStep1and2Error}</p> : null}
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 3 && (
+                <div className="space-y-5">
+                  <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
+                    <p className="font-semibold text-slate-800">Mandatory education levels</p>
+                    <p className="mt-1">
+                      {mandatoryEducationLevels.length > 0
+                        ? mandatoryEducationLevels.join(', ')
+                        : 'No education level is marked mandatory for this recruitment.'}
+                    </p>
+                  </div>
+
+                  {form.educationEntries.map((entry, index) => {
+                    const isMandatory = mandatoryEducationLevels.includes(entry.level);
+
+                    return (
+                      <div
+                        key={entry.level}
+                        className={`rounded-[1.5rem] border p-5 ${isMandatory ? 'border-amber-300 bg-amber-50/60' : 'border-slate-200 bg-white'
+                          }`}
+                      >
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                          <div>
+                            <h3 className="text-base font-semibold text-slate-900">{entry.level}</h3>
+                            <p className="mt-1 text-sm text-slate-600">
+                              {isMandatory
+                                ? 'This education must be completed before you continue.'
+                                : 'Optional. Fill it only if it applies to you.'}
+                            </p>
+                          </div>
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${isMandatory ? 'bg-amber-200/80 text-amber-900' : 'bg-slate-100 text-slate-500'
+                              }`}
+                          >
+                            {isMandatory ? 'Mandatory' : 'Optional'}
+                          </span>
+                        </div>
+
+                        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                          <label className="block">
+                            <span className="text-sm font-semibold text-slate-800">
+                              Institute / organization{isMandatory ? ' *' : ''}
+                            </span>
                             <input
-                              type="checkbox"
-                              checked={form.languageSkills[language][ability]}
-                              onChange={() => toggleLanguage(language, ability)}
-                              className="h-4 w-4 rounded border-slate-300"
+                              value={entry.institute}
+                              maxLength={MAX_EDUCATION_TEXT_LENGTH}
+                              onChange={(event) => updateEducation(index, 'institute', sanitizeLimitedText(event.target.value, MAX_EDUCATION_TEXT_LENGTH))}
+                              className={APPLICATION_INPUT_CLASS_NAME}
+                              placeholder={isMandatory ? 'Required' : 'Optional'}
                             />
                           </label>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                  {errors.languageSkills ? <p className="mt-2 text-sm text-rose-600">{errors.languageSkills}</p> : null}
-                  {saveStep1and2Error ? <p className="mt-2 text-sm text-rose-600">{saveStep1and2Error}</p> : null}
-                </div>
-              </div>
-            )}
-
-            {currentStep === 3 && (
-              <div className="space-y-5">
-                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
-                  <p className="font-semibold text-slate-800">Mandatory education levels</p>
-                  <p className="mt-1">
-                    {mandatoryEducationLevels.length > 0
-                      ? mandatoryEducationLevels.join(', ')
-                      : 'No education level is marked mandatory for this recruitment.'}
-                  </p>
-                </div>
-
-                {form.educationEntries.map((entry, index) => {
-                  const isMandatory = mandatoryEducationLevels.includes(entry.level);
-
-                  return (
-                    <div
-                      key={entry.level}
-                      className={`rounded-[1.5rem] border p-5 ${isMandatory ? 'border-amber-300 bg-amber-50/60' : 'border-slate-200 bg-white'
-                        }`}
-                    >
-                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div>
-                          <h3 className="text-base font-semibold text-slate-900">{entry.level}</h3>
-                          <p className="mt-1 text-sm text-slate-600">
-                            {isMandatory
-                              ? 'This education must be completed before you continue.'
-                              : 'Optional. Fill it only if it applies to you.'}
-                          </p>
-                        </div>
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${isMandatory ? 'bg-amber-200/80 text-amber-900' : 'bg-slate-100 text-slate-500'
-                            }`}
-                        >
-                          {isMandatory ? 'Mandatory' : 'Optional'}
-                        </span>
-                      </div>
-
-                      <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        <label className="block">
-                          <span className="text-sm font-semibold text-slate-800">
-                            Institute / organization{isMandatory ? ' *' : ''}
-                          </span>
-                          <input
-                            value={entry.institute}
-                            maxLength={MAX_EDUCATION_TEXT_LENGTH}
-                            onChange={(event) => updateEducation(index, 'institute', sanitizeLimitedText(event.target.value, MAX_EDUCATION_TEXT_LENGTH))}
-                            className={APPLICATION_INPUT_CLASS_NAME}
-                            placeholder={isMandatory ? 'Required' : 'Optional'}
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-sm font-semibold text-slate-800">Education Level{isMandatory ? ' *' : ''}</span>
-                          <input
-                            value={entry.educationLevel}
-                            maxLength={MAX_EDUCATION_LEVEL_LENGTH}
-                            onChange={(event) => updateEducation(index, 'educationLevel', sanitizeLimitedText(event.target.value, MAX_EDUCATION_LEVEL_LENGTH))}
-                            className={APPLICATION_INPUT_CLASS_NAME}
-                            placeholder={isMandatory ? 'Required' : 'Optional'}
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-sm font-semibold text-slate-800">
-                            Specialization{isMandatory ? ' *' : ''}
-                          </span>
-                          <input
-                            value={entry.specialization}
-                            maxLength={MAX_EDUCATION_TEXT_LENGTH}
-                            onChange={(event) => updateEducation(index, 'specialization', sanitizeLimitedText(event.target.value, MAX_EDUCATION_TEXT_LENGTH))}
-                            className={APPLICATION_INPUT_CLASS_NAME}
-                            placeholder={isMandatory ? 'Required' : 'Optional'}
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-sm font-semibold text-slate-800">
-                            Percentage / CGPA{isMandatory ? ' *' : ''}
-                          </span>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            pattern="[0-9]*[.]?[0-9]*"
-                            maxLength={MAX_PERCENTAGE_OR_CGPA_LENGTH}
-                            value={entry.score}
-                            onChange={(event) => updateEducation(index, 'score', sanitizePercentageOrCgpa(event.target.value))}
-                            className={APPLICATION_INPUT_CLASS_NAME}
-                            placeholder={isMandatory ? 'Required' : 'Optional'}
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-sm font-semibold text-slate-800">Class / grade{isMandatory ? ' *' : ''}</span>
-                          <input
-                            value={entry.className}
-                            maxLength={MAX_CLASS_NAME_LENGTH}
-                            onChange={(event) => updateEducation(index, 'className', sanitizeLimitedText(event.target.value, MAX_CLASS_NAME_LENGTH))}
-                            className={APPLICATION_INPUT_CLASS_NAME}
-                            placeholder={isMandatory ? 'Required' : 'Optional'}
-                          />
-                        </label>
-                        <FormField label={`Passed month & year${isMandatory ? ' *' : ''}`}>
-                          <input
-                            type="month"
-                            value={entry.passedMonthYear}
-                            onChange={(event) =>
-                              updateEducation(index, 'passedMonthYear', event.target.value)
-                            }
-                            className={APPLICATION_INPUT_CLASS_NAME}
-                          />
-                        </FormField>
-                        {/* <label className="block">
+                          <label className="block">
+                            <span className="text-sm font-semibold text-slate-800">Education Level{isMandatory ? ' *' : ''}</span>
+                            <input
+                              value={entry.educationLevel}
+                              maxLength={MAX_EDUCATION_LEVEL_LENGTH}
+                              onChange={(event) => updateEducation(index, 'educationLevel', sanitizeLimitedText(event.target.value, MAX_EDUCATION_LEVEL_LENGTH))}
+                              className={APPLICATION_INPUT_CLASS_NAME}
+                              placeholder={isMandatory ? 'Required' : 'Optional'}
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="text-sm font-semibold text-slate-800">
+                              Specialization{isMandatory ? ' *' : ''}
+                            </span>
+                            <input
+                              value={entry.specialization}
+                              maxLength={MAX_EDUCATION_TEXT_LENGTH}
+                              onChange={(event) => updateEducation(index, 'specialization', sanitizeLimitedText(event.target.value, MAX_EDUCATION_TEXT_LENGTH))}
+                              className={APPLICATION_INPUT_CLASS_NAME}
+                              placeholder={isMandatory ? 'Required' : 'Optional'}
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="text-sm font-semibold text-slate-800">
+                              Percentage / CGPA{isMandatory ? ' *' : ''}
+                            </span>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              pattern="[0-9]*[.]?[0-9]*"
+                              maxLength={MAX_PERCENTAGE_OR_CGPA_LENGTH}
+                              value={entry.score}
+                              onChange={(event) => updateEducation(index, 'score', sanitizePercentageOrCgpa(event.target.value))}
+                              className={APPLICATION_INPUT_CLASS_NAME}
+                              placeholder={isMandatory ? 'Required' : 'Optional'}
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="text-sm font-semibold text-slate-800">Class / grade{isMandatory ? ' *' : ''}</span>
+                            <input
+                              value={entry.className}
+                              maxLength={MAX_CLASS_NAME_LENGTH}
+                              onChange={(event) => updateEducation(index, 'className', sanitizeLimitedText(event.target.value, MAX_CLASS_NAME_LENGTH))}
+                              className={APPLICATION_INPUT_CLASS_NAME}
+                              placeholder={isMandatory ? 'Required' : 'Optional'}
+                            />
+                          </label>
+                          <FormField label={`Passed month & year${isMandatory ? ' *' : ''}`}>
+                            <input
+                              type="month"
+                              value={entry.passedMonthYear}
+                              onChange={(event) =>
+                                updateEducation(index, 'passedMonthYear', event.target.value)
+                              }
+                              className={APPLICATION_INPUT_CLASS_NAME}
+                            />
+                          </FormField>
+                          {/* <label className="block">
                           <span className="text-sm font-semibold text-slate-800">Passed date{isMandatory ? ' *' : ''}</span>
                           <input
                             type="date"
@@ -1962,649 +1968,647 @@ export default function ApplicationWizard({ initialRecruitment, existingApplicat
                             className={APPLICATION_INPUT_CLASS_NAME}
                           />
                         </label> */}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {errors.educationEntries ? <p className="text-sm text-rose-600">{errors.educationEntries}</p> : null}
+                  {saveStep3Error ? <p className="text-sm text-rose-600">{saveStep3Error}</p> : null}
+                </div>
+              )}
+
+              {currentStep === 4 && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-sm font-semibold text-slate-800">
+                      Experience details (Optional)
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={addExperienceRow}
+                      className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                    >
+                      Add row
+                    </button>
+                  </div>
+
+                  {form.experienceEntries.map((entry, index) => (
+                    <div
+                      key={index}
+                      className="grid gap-4 rounded-[1.5rem] border border-slate-200 p-5 md:grid-cols-2"
+                    >
+                      <FormField label="Organization Name">
+                        <input
+                          value={entry.organization}
+                          onChange={(event) =>
+                            updateExperience(index, 'organization', event.target.value)
+                          }
+                          className={APPLICATION_INPUT_CLASS_NAME}
+                          placeholder="Enter organization name"
+                        />
+                      </FormField>
+
+                      <FormField label="Designation">
+                        <input
+                          value={entry.designation}
+                          onChange={(event) =>
+                            updateExperience(index, 'designation', event.target.value)
+                          }
+                          className={APPLICATION_INPUT_CLASS_NAME}
+                          placeholder="Enter designation"
+                        />
+                      </FormField>
+
+                      <FormField label="Location">
+                        <input
+                          value={entry.location}
+                          onChange={(event) =>
+                            updateExperience(index, 'location', event.target.value)
+                          }
+                          className={APPLICATION_INPUT_CLASS_NAME}
+                          placeholder="Enter location"
+                        />
+                      </FormField>
+
+                      <FormField label="From Date">
+                        <input
+                          type="date"
+                          value={entry.fromDate}
+                          onChange={(event) =>
+                            updateExperience(index, 'fromDate', event.target.value)
+                          }
+                          className={APPLICATION_INPUT_CLASS_NAME}
+                        />
+                      </FormField>
+
+                      <FormField label="To Date">
+                        <input
+                          type="date"
+                          value={entry.toDate}
+                          onChange={(event) =>
+                            updateExperience(index, 'toDate', event.target.value)
+                          }
+                          disabled={entry.isCurrentJob}
+                          className={`${APPLICATION_INPUT_CLASS_NAME} disabled:cursor-not-allowed disabled:bg-slate-100`}
+                        />
+                      </FormField>
+
+                      <FormField label="Current Job">
+                        <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800">
+                          <input
+                            type="checkbox"
+                            checked={entry.isCurrentJob}
+                            onChange={(event) => {
+                              const isCurrentJob = event.target.checked;
+
+                              setForm((prev) => ({
+                                ...prev,
+                                experienceEntries: prev.experienceEntries.map(
+                                  (row, entryIndex) =>
+                                    entryIndex === index
+                                      ? {
+                                        ...row,
+                                        isCurrentJob,
+                                        toDate: isCurrentJob ? '' : row.toDate,
+                                      }
+                                      : row,
+                                ),
+                              }));
+
+                              setErrors((prev) => ({
+                                ...prev,
+                                experienceEntries: undefined,
+                              }));
+                            }}
+                            className="h-4 w-4 rounded border-slate-300"
+                          />
+                          Current job
+                        </label>
+                      </FormField>
+                    </div>
+                  ))}
+
+                  {errors.experienceEntries ? (
+                    <p className="text-sm text-rose-600">
+                      {errors.experienceEntries}
+                    </p>
+                  ) : null}
+
+                  {saveStepExperienceError ? (
+                    <p className="text-sm text-rose-600">
+                      {saveStepExperienceError}
+                    </p>
+                  ) : null}
+                </div>
+              )}
+
+              {currentStep === 5 && (
+                <div className="space-y-8">
+
+                  <div>
+                    <h3 className="mb-4 text-lg font-semibold text-slate-900">
+                      Mandatory Documents
+                    </h3>
+
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <DocumentUploadCard
+                        label="Photo"
+                        required
+                        existingDocument={uploadedDocuments.photo}
+                        file={form.documents.photo}
+                        onChange={(file) => updateDocument('photo', file)}
+                      />
+
+                      <DocumentUploadCard
+                        label="Signature"
+                        required
+                        existingDocument={uploadedDocuments.signature}
+                        file={form.documents.signature}
+                        onChange={(file) => updateDocument('signature', file)}
+                      />
+
+                      <DocumentUploadCard
+                        label="Aadhaar"
+                        required
+                        existingDocument={uploadedDocuments.aadhaar}
+                        file={form.documents.aadhaar}
+                        onChange={(file) => updateDocument('aadhaar', file)}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-2 py-2 text-sm text-amber-800">
+                      Upload all documents marked with * as they are required based on eligibility criteria.
+                    </div>
+                    <h3 className="my-4 text-lg font-semibold text-slate-900">
+                      Educational Documents
+                    </h3>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <DocumentUploadCard
+                        label="SSC Marksheet"
+                        required={isMandatoryDocument('SSC_MARKSHEET')}
+                        file={form.documents.sscMarksheet}
+                        existingDocument={uploadedDocuments.sscMarksheet}
+                        onChange={(file) => updateDocument('sscMarksheet', file)}
+                      />
+
+                      <DocumentUploadCard
+                        label="HSC Marksheet"
+                        file={form.documents.hscMarksheet}
+                        required={isMandatoryDocument('HSC_MARKSHEET')}
+                        existingDocument={uploadedDocuments.hscMarksheet}
+                        onChange={(file) => updateDocument('hscMarksheet', file)}
+                      />
+
+                      <DocumentUploadCard
+                        label="Graduation Marksheet"
+                        file={form.documents.degree}
+                        required={isMandatoryDocument('DEGREE')}
+                        existingDocument={uploadedDocuments.degree}
+                        onChange={(file) => updateDocument('degree', file)}
+                      />
+
+                      <DocumentUploadCard
+                        label="MSCIT Certificate"
+                        file={form.documents.mscitCertificate}
+                        existingDocument={uploadedDocuments.mscitCertificate}
+                        required={isMandatoryDocument('MSCIT_CERTIFICATE')}
+                        onChange={(file) => updateDocument('mscitCertificate', file)}
+                      />
+
+                      <DocumentUploadCard
+                        label="CCC Certificate"
+                        file={form.documents.cccCertificate}
+                        existingDocument={uploadedDocuments.cccCertificate}
+                        required={isMandatoryDocument('CCC_CERTIFICATE')}
+                        onChange={(file) => updateDocument('cccCertificate', file)}
+                      />
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {currentStep === 6 && (
+
+                <div className="max-h-[90vh] overflow-y-auto pr-2 space-y-6">
+                  <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+                    <div className="space-y-6">
+
+                      {/* Recruitment */}
+                      <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                          Recruitment Details
+                        </h3>
+
+                        <ReviewRow
+                          label="Application"
+                          value={`${form.applicationId} | ${form.bankName} | ${form.postName}`}
+                        />
+
+                        <ReviewRow
+                          label="Recruitment"
+                          value={`${form.recruitmentCode} - ${form.recruitmentName}`}
+                        />
+                      </div>
+
+                      {/* Personal Information */}
+                      <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                          Personal Information
+                        </h3>
+
+                        <ReviewRow label="Full Name" value={fullName || 'N/A'} />
+
+                        <ReviewRow
+                          label="Date Of Birth"
+                          value={`${form.dateOfBirth || 'N/A'} | Age: ${form.ageAsOn || 'N/A'}`}
+                        />
+
+                        <ReviewRow
+                          label="Gender"
+                          value={form.gender || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Aadhaar Number"
+                          value={form.aadhaarNumber || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Marital Status"
+                          value={form.maritalStatus || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Spouse Name"
+                          value={form.husbandsName || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Father's Name"
+                          value={form.fathersName || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Mother's Name"
+                          value={form.mothersName || 'N/A'}
+                        />
+                      </div>
+
+                      {/* Category & Reservation */}
+                      <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                          Category & Reservation Details
+                        </h3>
+
+                        <ReviewRow
+                          label="Category"
+                          value={getCategoryName(form.category) || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Religion"
+                          value={getReligionName(form.religion) || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Caste"
+                          value={getCasteName(form.caste) || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Sub Caste"
+                          value={getSubCasteName(form.subCaste) || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Maharashtra Domicile"
+                          value={form.maharashtraDomiciled || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Non Creamy Layer"
+                          value={form.nonCreamyLayer || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Indian National"
+                          value={form.nationalityIndian || 'N/A'}
+                        />
+                      </div>
+
+                      {/* Contact */}
+                      <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                          Contact Information
+                        </h3>
+
+                        <ReviewRow
+                          label="Email"
+                          value={autoFilledEmail || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Mobile"
+                          value={form.phone || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Alternate Mobile"
+                          value={form.alternatePhone || 'N/A'}
+                        />
+
+                        <ReviewRow
+                          label="Address"
+                          value={reviewAddress || 'N/A'}
+                        />
+                      </div>
+
+                      {/* Languages */}
+                      <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                          Languages Known
+                        </h3>
+
+                        <ReviewRow
+                          label="Languages"
+                          value={
+                            LANGUAGE_NAMES
+                              .filter((language) =>
+                                Object.values(
+                                  form.languageSkills[language]
+                                ).some(Boolean)
+                              )
+                              .map((language) => {
+                                const abilities = [];
+
+                                if (form.languageSkills[language].read) {
+                                  abilities.push('Read');
+                                }
+
+                                if (form.languageSkills[language].write) {
+                                  abilities.push('Write');
+                                }
+
+                                if (form.languageSkills[language].speak) {
+                                  abilities.push('Speak');
+                                }
+
+                                return `${language}: ${abilities.join(', ')}`;
+                              })
+                              .join(' | ') || 'N/A'
+                          }
+                        />
+                      </div>
+
+                      {/* Education */}
+                      <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                          Education Details
+                        </h3>
+
+                        {form.educationEntries
+                          .filter(
+                            (entry) =>
+                              entry.institute?.trim() ||
+                              entry.score?.trim() ||
+                              entry.passedMonthYear?.trim()
+                          )
+                          .map((entry) => (
+                            <div
+                              key={entry.level}
+                              className="rounded-xl border border-slate-300 bg-white p-4"
+                            >
+                              <h4 className="font-semibold text-slate-900">
+                                {entry.level}
+                              </h4>
+
+                              <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                                {entry.institute && (
+                                  <p>
+                                    <span className="font-medium">
+                                      Institute:
+                                    </span>{' '}
+                                    {entry.institute}
+                                  </p>
+                                )}
+
+                                {entry.specialization && (
+                                  <p>
+                                    <span className="font-medium">
+                                      Specialization:
+                                    </span>{' '}
+                                    {entry.specialization}
+                                  </p>
+                                )}
+
+                                {entry.score && (
+                                  <p>
+                                    <span className="font-medium">
+                                      Score:
+                                    </span>{' '}
+                                    {entry.score}
+                                  </p>
+                                )}
+
+                                {entry.className && (
+                                  <p>
+                                    <span className="font-medium">
+                                      Class:
+                                    </span>{' '}
+                                    {entry.className}
+                                  </p>
+                                )}
+
+                                {entry.passedMonthYear && (
+                                  <p>
+                                    <span className="font-medium">
+                                      Passed:
+                                    </span>{' '}
+                                    {entry.passedMonthYear}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+
+                      {/* Experience */}
+                      <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                          Experience Details
+                        </h3>
+
+                        {hasExperienceDetails(form.experienceEntries) ? (
+                          form.experienceEntries.map((entry, index) => (
+                            <ReviewRow
+                              key={index}
+                              label={`Experience ${index + 1}`}
+                              value={`${entry.designation || 'N/A'} | ${entry.organization || 'N/A'} | ${entry.location || 'N/A'} | ${entry.fromDate || 'N/A'} - ${entry.isCurrentJob ? 'Current' : entry.toDate || 'N/A'}`}
+                            />
+                          ))
+                        ) : (
+                          <ReviewRow
+                            label="Experience"
+                            value="Fresher"
+                          />
+                        )}
+                      </div>
+
+                      {/* Documents */}
+                      <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-purple-500">
+                          Uploaded Documents
+                        </h3>
+
+                        <ReviewRow
+                          label="Uploaded Documents"
+                          value={uploadedDocs.join(', ') || 'None'}
+                        />
                       </div>
                     </div>
-                  );
-                })}
-                {errors.educationEntries ? <p className="text-sm text-rose-600">{errors.educationEntries}</p> : null}
-                {saveStep3Error ? <p className="text-sm text-rose-600">{saveStep3Error}</p> : null}
-              </div>
-            )}
 
-            {currentStep === 4 && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-sm font-semibold text-slate-800">
-                    Experience details (Optional)
-                  </p>
+                    <div className="rounded-[1.75rem] bg-slate-800 p-6 text-white">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
+                        Final declaration
+                      </p>
 
-                  <button
-                    type="button"
-                    onClick={addExperienceRow}
-                    className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-                  >
-                    Add row
-                  </button>
-                </div>
+                      <p className="mt-4 text-sm leading-7 text-slate-300">
+                        I confirm that all personal details, educational information,
+                        experience details and uploaded documents are correct and match
+                        my original records. I understand that any discrepancy may lead
+                        to rejection of my application.
+                      </p>
 
-                {form.experienceEntries.map((entry, index) => (
-                  <div
-                    key={index}
-                    className="grid gap-4 rounded-[1.5rem] border border-slate-200 p-5 md:grid-cols-2"
-                  >
-                    <FormField label="Organization Name">
-                      <input
-                        value={entry.organization}
-                        onChange={(event) =>
-                          updateExperience(index, 'organization', event.target.value)
-                        }
-                        className={APPLICATION_INPUT_CLASS_NAME}
-                        placeholder="Enter organization name"
-                      />
-                    </FormField>
-
-                    <FormField label="Designation">
-                      <input
-                        value={entry.designation}
-                        onChange={(event) =>
-                          updateExperience(index, 'designation', event.target.value)
-                        }
-                        className={APPLICATION_INPUT_CLASS_NAME}
-                        placeholder="Enter designation"
-                      />
-                    </FormField>
-
-                    <FormField label="Location">
-                      <input
-                        value={entry.location}
-                        onChange={(event) =>
-                          updateExperience(index, 'location', event.target.value)
-                        }
-                        className={APPLICATION_INPUT_CLASS_NAME}
-                        placeholder="Enter location"
-                      />
-                    </FormField>
-
-                    <FormField label="From Date">
-                      <input
-                        type="date"
-                        value={entry.fromDate}
-                        onChange={(event) =>
-                          updateExperience(index, 'fromDate', event.target.value)
-                        }
-                        className={APPLICATION_INPUT_CLASS_NAME}
-                      />
-                    </FormField>
-
-                    <FormField label="To Date">
-                      <input
-                        type="date"
-                        value={entry.toDate}
-                        onChange={(event) =>
-                          updateExperience(index, 'toDate', event.target.value)
-                        }
-                        disabled={entry.isCurrentJob}
-                        className={`${APPLICATION_INPUT_CLASS_NAME} disabled:cursor-not-allowed disabled:bg-slate-100`}
-                      />
-                    </FormField>
-
-                    <FormField label="Current Job">
-                      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800">
+                      <label className="mt-6 flex cursor-pointer items-start gap-3 text-sm leading-6 text-slate-200">
                         <input
                           type="checkbox"
-                          checked={entry.isCurrentJob}
-                          onChange={(event) => {
-                            const isCurrentJob = event.target.checked;
-
-                            setForm((prev) => ({
-                              ...prev,
-                              experienceEntries: prev.experienceEntries.map(
-                                (row, entryIndex) =>
-                                  entryIndex === index
-                                    ? {
-                                      ...row,
-                                      isCurrentJob,
-                                      toDate: isCurrentJob ? '' : row.toDate,
-                                    }
-                                    : row,
-                              ),
-                            }));
-
-                            setErrors((prev) => ({
-                              ...prev,
-                              experienceEntries: undefined,
-                            }));
-                          }}
-                          className="h-4 w-4 rounded border-slate-300"
-                        />
-                        Current job
-                      </label>
-                    </FormField>
-                  </div>
-                ))}
-
-                {errors.experienceEntries ? (
-                  <p className="text-sm text-rose-600">
-                    {errors.experienceEntries}
-                  </p>
-                ) : null}
-
-                {saveStepExperienceError ? (
-                  <p className="text-sm text-rose-600">
-                    {saveStepExperienceError}
-                  </p>
-                ) : null}
-              </div>
-            )}
-
-            {currentStep === 5 && (
-              <div className="space-y-8">
-
-                <div>
-                  <h3 className="mb-4 text-lg font-semibold text-slate-900">
-                    Mandatory Documents
-                  </h3>
-
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <DocumentUploadCard
-                      label="Photo"
-                      required
-                      existingDocument={uploadedDocuments.photo}
-                      file={form.documents.photo}
-                      onChange={(file) => updateDocument('photo', file)}
-                    />
-
-                    <DocumentUploadCard
-                      label="Signature"
-                      required
-                      existingDocument={uploadedDocuments.signature}
-                      file={form.documents.signature}
-                      onChange={(file) => updateDocument('signature', file)}
-                    />
-
-                    <DocumentUploadCard
-                      label="Aadhaar"
-                      required
-                      existingDocument={uploadedDocuments.aadhaar}
-                      file={form.documents.aadhaar}
-                      onChange={(file) => updateDocument('aadhaar', file)}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-2 py-2 text-sm text-amber-800">
-                    Upload all documents marked with * as they are required based on eligibility criteria.
-                  </div>
-                  <h3 className="my-4 text-lg font-semibold text-slate-900">
-                    Educational Documents
-                  </h3>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <DocumentUploadCard
-                      label="SSC Marksheet"
-                      required={isMandatoryDocument('SSC_MARKSHEET')}
-                      file={form.documents.sscMarksheet}
-                      existingDocument={uploadedDocuments.sscMarksheet}
-                      onChange={(file) => updateDocument('sscMarksheet', file)}
-                    />
-
-                    <DocumentUploadCard
-                      label="HSC Marksheet"
-                      file={form.documents.hscMarksheet}
-                      required={isMandatoryDocument('HSC_MARKSHEET')}
-                      existingDocument={uploadedDocuments.hscMarksheet}
-                      onChange={(file) => updateDocument('hscMarksheet', file)}
-                    />
-
-                    <DocumentUploadCard
-                      label="Graduation Marksheet"
-                      file={form.documents.degree}
-                      required={isMandatoryDocument('DEGREE')}
-                      existingDocument={uploadedDocuments.degree}
-                      onChange={(file) => updateDocument('degree', file)}
-                    />
-
-                    <DocumentUploadCard
-                      label="MSCIT Certificate"
-                      file={form.documents.mscitCertificate}
-                      existingDocument={uploadedDocuments.mscitCertificate}
-                      required={isMandatoryDocument('MSCIT_CERTIFICATE')}
-                      onChange={(file) => updateDocument('mscitCertificate', file)}
-                    />
-
-                    <DocumentUploadCard
-                      label="CCC Certificate"
-                      file={form.documents.cccCertificate}
-                      existingDocument={uploadedDocuments.cccCertificate}
-                      required={isMandatoryDocument('CCC_CERTIFICATE')}
-                      onChange={(file) => updateDocument('cccCertificate', file)}
-                    />
-                  </div>
-                </div>
-
-              </div>
-            )}
-
-            {currentStep === 6 && (
-
-              <div className="max-h-[90vh] overflow-y-auto pr-2 space-y-6">
-                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-                  <div className="space-y-6">
-
-                    {/* Recruitment */}
-                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
-                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
-                        Recruitment Details
-                      </h3>
-
-                      <ReviewRow
-                        label="Application"
-                        value={`${form.applicationId} | ${form.bankName} | ${form.postName}`}
-                      />
-
-                      <ReviewRow
-                        label="Recruitment"
-                        value={`${form.recruitmentCode} - ${form.recruitmentName}`}
-                      />
-                    </div>
-
-                    {/* Personal Information */}
-                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
-                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
-                        Personal Information
-                      </h3>
-
-                      <ReviewRow label="Full Name" value={fullName || 'N/A'} />
-
-                      <ReviewRow
-                        label="Date Of Birth"
-                        value={`${form.dateOfBirth || 'N/A'} | Age: ${form.ageAsOn || 'N/A'}`}
-                      />
-
-                      <ReviewRow
-                        label="Gender"
-                        value={form.gender || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Aadhaar Number"
-                        value={form.aadhaarNumber || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Marital Status"
-                        value={form.maritalStatus || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Spouse Name"
-                        value={form.husbandsName || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Father's Name"
-                        value={form.fathersName || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Mother's Name"
-                        value={form.mothersName || 'N/A'}
-                      />
-                    </div>
-
-                    {/* Category & Reservation */}
-                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
-                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
-                        Category & Reservation Details
-                      </h3>
-
-                      <ReviewRow
-                        label="Category"
-                        value={getCategoryName(form.category) || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Religion"
-                        value={getReligionName(form.religion) || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Caste"
-                        value={getCasteName(form.caste) || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Sub Caste"
-                        value={getSubCasteName(form.subCaste) || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Maharashtra Domicile"
-                        value={form.maharashtraDomiciled || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Non Creamy Layer"
-                        value={form.nonCreamyLayer || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Indian National"
-                        value={form.nationalityIndian || 'N/A'}
-                      />
-                    </div>
-
-                    {/* Contact */}
-                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
-                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
-                        Contact Information
-                      </h3>
-
-                      <ReviewRow
-                        label="Email"
-                        value={autoFilledEmail || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Mobile"
-                        value={form.phone || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Alternate Mobile"
-                        value={form.alternatePhone || 'N/A'}
-                      />
-
-                      <ReviewRow
-                        label="Address"
-                        value={reviewAddress || 'N/A'}
-                      />
-                    </div>
-
-                    {/* Languages */}
-                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
-                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
-                        Languages Known
-                      </h3>
-
-                      <ReviewRow
-                        label="Languages"
-                        value={
-                          LANGUAGE_NAMES
-                            .filter((language) =>
-                              Object.values(
-                                form.languageSkills[language]
-                              ).some(Boolean)
+                          checked={form.declarationAccepted}
+                          onChange={(event) =>
+                            updateField(
+                              'declarationAccepted',
+                              event.target.checked
                             )
-                            .map((language) => {
-                              const abilities = [];
-
-                              if (form.languageSkills[language].read) {
-                                abilities.push('Read');
-                              }
-
-                              if (form.languageSkills[language].write) {
-                                abilities.push('Write');
-                              }
-
-                              if (form.languageSkills[language].speak) {
-                                abilities.push('Speak');
-                              }
-
-                              return `${language}: ${abilities.join(', ')}`;
-                            })
-                            .join(' | ') || 'N/A'
-                        }
-                      />
-                    </div>
-
-                    {/* Education */}
-                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
-                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
-                        Education Details
-                      </h3>
-
-                      {form.educationEntries
-                        .filter(
-                          (entry) =>
-                            entry.institute?.trim() ||
-                            entry.score?.trim() ||
-                            entry.passedMonthYear?.trim()
-                        )
-                        .map((entry) => (
-                          <div
-                            key={entry.level}
-                            className="rounded-xl border border-slate-300 bg-white p-4"
-                          >
-                            <h4 className="font-semibold text-slate-900">
-                              {entry.level}
-                            </h4>
-
-                            <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
-                              {entry.institute && (
-                                <p>
-                                  <span className="font-medium">
-                                    Institute:
-                                  </span>{' '}
-                                  {entry.institute}
-                                </p>
-                              )}
-
-                              {entry.specialization && (
-                                <p>
-                                  <span className="font-medium">
-                                    Specialization:
-                                  </span>{' '}
-                                  {entry.specialization}
-                                </p>
-                              )}
-
-                              {entry.score && (
-                                <p>
-                                  <span className="font-medium">
-                                    Score:
-                                  </span>{' '}
-                                  {entry.score}
-                                </p>
-                              )}
-
-                              {entry.className && (
-                                <p>
-                                  <span className="font-medium">
-                                    Class:
-                                  </span>{' '}
-                                  {entry.className}
-                                </p>
-                              )}
-
-                              {entry.passedMonthYear && (
-                                <p>
-                                  <span className="font-medium">
-                                    Passed:
-                                  </span>{' '}
-                                  {entry.passedMonthYear}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-
-                    {/* Experience */}
-                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
-                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
-                        Experience Details
-                      </h3>
-
-                      {hasExperienceDetails(form.experienceEntries) ? (
-                        form.experienceEntries.map((entry, index) => (
-                          <ReviewRow
-                            key={index}
-                            label={`Experience ${index + 1}`}
-                            value={`${entry.designation || 'N/A'} | ${entry.organization || 'N/A'} | ${entry.location || 'N/A'} | ${entry.fromDate || 'N/A'} - ${entry.isCurrentJob ? 'Current' : entry.toDate || 'N/A'}`}
-                          />
-                        ))
-                      ) : (
-                        <ReviewRow
-                          label="Experience"
-                          value="Fresher"
+                          }
+                          className="mt-1 h-4 w-4 rounded border-white/20"
                         />
-                      )}
+
+                        <span>
+                          I have reviewed all details and wish to continue to payment.
+                        </span>
+                      </label>
+
+                      {errors.declarationAccepted ? (
+                        <p className="mt-3 text-sm text-rose-300">
+                          {errors.declarationAccepted}
+                        </p>
+                      ) : null}
                     </div>
+                  </div>
+                </div>
+              )}
 
-                    {/* Documents */}
-                    <div className="rounded-[1.75rem] border border-slate-100 bg-slate-100 p-6">
-                      <h3 className="mb-4 text-lg font-semibold text-purple-500">
-                        Uploaded Documents
-                      </h3>
-
-                      <ReviewRow
-                        label="Uploaded Documents"
-                        value={uploadedDocs.join(', ') || 'None'}
-                      />
+              {currentStep === 7 && (
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+                  <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payment receipt preview</p>
+                    <div className="mt-6 space-y-4">
+                      <ReviewRow label="Process name" value={form.recruitmentName} />
+                      <ReviewRow label="Post name" value={form.postName} />
+                      <ReviewRow label="Amount payable" value={form.paymentAmount ? `Rs. ${form.paymentAmount}` : 'Pending'} />
+                      <ReviewRow label="Payment status" value={form.paymentStatus || 'Pending'} />
+                      {form.paymentMethod ? <ReviewRow label="Payment method" value={form.paymentMethod} /> : null}
                     </div>
                   </div>
 
                   <div className="rounded-[1.75rem] bg-slate-800 p-6 text-white">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
-                      Final declaration
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">Payment</p>
+                    <p className="mt-3 text-4xl font-semibold">{form.paymentAmount ? `Rs. ${form.paymentAmount}` : 'Pending'}</p>
+                    <p className="mt-3 text-sm leading-7 text-slate-300">
+                      This step starts the payment process for your application record. The backend returns BillDesk Web SDK order details that the payment widget will use to complete payment.
                     </p>
-
-                    <p className="mt-4 text-sm leading-7 text-slate-300">
-                      I confirm that all personal details, educational information,
-                      experience details and uploaded documents are correct and match
-                      my original records. I understand that any discrepancy may lead
-                      to rejection of my application.
-                    </p>
-
-                    <label className="mt-6 flex cursor-pointer items-start gap-3 text-sm leading-6 text-slate-200">
-                      <input
-                        type="checkbox"
-                        checked={form.declarationAccepted}
-                        onChange={(event) =>
-                          updateField(
-                            'declarationAccepted',
-                            event.target.checked
-                          )
-                        }
-                        className="mt-1 h-4 w-4 rounded border-white/20"
-                      />
-
-                      <span>
-                        I have reviewed all details and wish to continue to payment.
-                      </span>
-                    </label>
-
-                    {errors.declarationAccepted ? (
-                      <p className="mt-3 text-sm text-rose-300">
-                        {errors.declarationAccepted}
+                    {!isPaymentComplete && paymentError ? <p className="mt-3 text-sm font-semibold text-rose-300">{paymentError}</p> : null}
+                    {!isPaymentComplete && !sdkLoaded && !sdkLoadFailed ? (
+                      <p className="mt-3 text-sm text-slate-300">Loading the BillDesk payment SDK. Please wait before you try again.</p>
+                    ) : null}
+                    {isPaymentComplete ? (
+                      <div className="space-y-4">
+                        <div className="mt-6 w-full rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white text-center">
+                          ✓ Payment Completed Successfully
+                        </div>
+                        <div className="rounded-3xl border border-emerald-500/20 bg-emerald-900/10 p-4 text-sm text-slate-100">
+                          <p><span className="font-semibold">Reference:</span> {form.transactionNumber || 'N/A'}</p>
+                          {form.paymentMethod ? <p><span className="font-semibold">Method:</span> {form.paymentMethod}</p> : null}
+                          {form.paymentDate ? <p><span className="font-semibold">Paid on:</span> {form.paymentDate}</p> : null}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleViewOrDownloadReceipt}
+                          disabled={isLoadingReceipt}
+                          className="w-full rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isLoadingReceipt ? 'Loading receipt...' : 'View / Download Receipt'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleInitiatePayment}
+                        disabled={isProcessingPayment || !sdkEnabled}
+                        className="mt-6 w-full rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isProcessingPayment ? 'Initiating payment...' : 'Pay Now'}
+                      </button>
+                    )}
+                    {!isPaymentComplete && paymentInitiated ? (
+                      <p className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-50 px-4 py-3 text-sm text-slate-700">
+                        BillDesk payment has been initiated. Complete the payment using the BillDesk NEO widget or checkout flow, then return to this page.
                       </p>
                     ) : null}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+              {currentStep === 7 && showReceipt && paymentReceipt ? (
+                <PaymentReceiptPreview
+                  receipt={paymentReceipt}
+                  onDownload={() => printPaymentReceipt(paymentReceipt)}
+                />
+              ) : null}
+            </div>
 
-            {currentStep === 7 && (
-              <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-                <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payment receipt preview</p>
-                  <div className="mt-6 space-y-4">
-                    <ReviewRow label="Process name" value={form.recruitmentName} />
-                    <ReviewRow label="Post name" value={form.postName} />
-                    <ReviewRow label="Amount payable" value={form.paymentAmount ? `Rs. ${form.paymentAmount}` : 'Pending'} />
-                    <ReviewRow label="Payment status" value={form.paymentStatus || 'Pending'} />
-                    {form.paymentMethod ? <ReviewRow label="Payment method" value={form.paymentMethod} /> : null}
-                  </div>
-                </div>
+            {!isReadOnly ? (
+              <div className="mt-10 flex flex-col gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                <button type="button" onClick={goBack} disabled={currentStep === 0} className="inline-flex items-center justify-center rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-900 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40">
+                  Previous step
+                </button>
 
-                <div className="rounded-[1.75rem] bg-slate-800 p-6 text-white">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">Payment</p>
-                  <p className="mt-3 text-4xl font-semibold">{form.paymentAmount ? `Rs. ${form.paymentAmount}` : 'Pending'}</p>
-                  <p className="mt-3 text-sm leading-7 text-slate-300">
-                    This step starts the payment process for your application record. The backend returns BillDesk Web SDK order details that the payment widget will use to complete payment.
-                  </p>
-                  {!isPaymentComplete && paymentError ? <p className="mt-3 text-sm font-semibold text-rose-300">{paymentError}</p> : null}
-                  {!isPaymentComplete && !sdkLoaded && !sdkLoadFailed ? (
-                    <p className="mt-3 text-sm text-slate-300">Loading the BillDesk payment SDK. Please wait before you try again.</p>
-                  ) : null}
-                  {isPaymentComplete ? (
-                    <div className="space-y-4">
-                      <div className="mt-6 w-full rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white text-center">
-                        ✓ Payment Completed Successfully
-                      </div>
-                      <div className="rounded-3xl border border-emerald-500/20 bg-emerald-900/10 p-4 text-sm text-slate-100">
-                        <p><span className="font-semibold">Reference:</span> {form.transactionNumber || 'N/A'}</p>
-                        {form.paymentMethod ? <p><span className="font-semibold">Method:</span> {form.paymentMethod}</p> : null}
-                        {form.paymentDate ? <p><span className="font-semibold">Paid on:</span> {form.paymentDate}</p> : null}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleViewOrDownloadReceipt}
-                        disabled={isLoadingReceipt}
-                        className="w-full rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isLoadingReceipt ? 'Loading receipt...' : 'View / Download Receipt'}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleInitiatePayment}
-                      disabled={isProcessingPayment || !sdkEnabled}
-                      className="mt-6 w-full rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isProcessingPayment ? 'Initiating payment...' : 'Pay Now'}
-                    </button>
-                  )}
-                  {!isPaymentComplete && paymentInitiated ? (
-                    <p className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-50 px-4 py-3 text-sm text-slate-700">
-                      BillDesk payment has been initiated. Complete the payment using the BillDesk NEO widget or checkout flow, then return to this page.
-                    </p>
-                  ) : null}
-                </div>
+                {currentStep < APPLICATION_STEPS.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    disabled={isStartingOrResuming || isSavingStep1and2 || isSavingStep3 || isSavingStepExperience}
+                    className="inline-flex items-center justify-center rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isStartingOrResuming
+                      ? 'Starting...'
+                      : isSavingStep1and2
+                        ? 'Saving...'
+                        : isSavingStep3 || isSavingStepExperience
+                          ? 'Saving...'
+                          : currentStep === 6
+                            ? 'Continue to payment'
+                            : 'Continue to next step'}
+                  </button>
+                ) : null}
               </div>
-            )}
-            {currentStep === 7 && showReceipt && paymentReceipt ? (
-              <PaymentReceiptPreview
-                receipt={paymentReceipt}
-                onDownload={() => printPaymentReceipt(paymentReceipt)}
-              />
             ) : null}
           </div>
-
-          {!isReadOnly ? (
-          <div className="mt-10 flex flex-col gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <button type="button" onClick={goBack} disabled={currentStep === 0} className="inline-flex items-center justify-center rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-900 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40">
-              Previous step
-            </button>
-
-            {currentStep < APPLICATION_STEPS.length - 1 ? (
-              <button
-                type="button"
-                onClick={goNext}
-                disabled={isStartingOrResuming || isSavingStep1and2 || isSavingStep3 || isSavingStepExperience}
-                className="inline-flex items-center justify-center rounded-full bg-[#fcd62e] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isStartingOrResuming
-                  ? 'Starting...'
-                  : isSavingStep1and2
-                    ? 'Saving...'
-                    : isSavingStep3 || isSavingStepExperience
-                      ? 'Saving...'
-                      : currentStep === 6
-                        ? 'Continue to payment'
-                        : 'Continue to next step'}
-              </button>
-            ) : null}
-          </div>
-          ) : null}
-        </div>
         ) : null}
       </div>
     </section>
   );
 }
-
-
