@@ -14,12 +14,14 @@ import type { Book } from '@/types/eBook'
 import { useAuth } from '@/lib/useAuth'
 import { initiateBookPayment } from '@/actions/api/application.actions'
 import { useCart } from '@/lib/cart'
+import { useBookOwnership } from '@/lib/book-ownership'
 
 export default function BookDetailPage() {
   const params = useParams()
   const slug = params?.slug as string | undefined
   const router = useRouter()
   const { status } = useAuth()
+  const { purchasedBookIds, isLoading: isOwnershipLoading } = useBookOwnership(status === 'authenticated')
   const { add: addCartItem } = useCart()
   const [book, setBook] = useState<Book | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -28,6 +30,7 @@ export default function BookDetailPage() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [cartMessage, setCartMessage] = useState<string | null>(null)
+  const isOwned = book ? purchasedBookIds.has(book.bookId) : false
 
   const extractString = (value: unknown, keys: string[]): string | undefined => {
     if (!value || typeof value !== 'object') return undefined
@@ -82,6 +85,10 @@ export default function BookDetailPage() {
 
   const addToCart = () => {
     if (!book) return
+    if (isOwned) {
+      setCartMessage('You already own this book.')
+      return
+    }
     if (status !== 'authenticated') {
       window.sessionStorage.setItem('pending-book-action', JSON.stringify({ action: 'cart', bookId: book.bookId }))
       router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`)
@@ -167,14 +174,14 @@ export default function BookDetailPage() {
               </div>
 
               <div className="space-y-4">
-                <div className="text-sm text-slate-500">{book.categoryName}</div>
+                <div className="flex items-center gap-2 text-sm text-slate-500"><span>{book.categoryName}</span>{isOwned ? <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">खरेदी केले ✓</span> : null}</div>
                 <h1 className="text-3xl font-bold text-slate-800">{book.title}</h1>
                 <div className="text-lg text-slate-600">{book.authorName}</div>
 
                 <div className="grid gap-4 rounded-lg border bg-white p-4 sm:grid-cols-3">
                   <div>
                     <p className="text-xs uppercase text-slate-500">Price</p>
-                    <p className="mt-2 text-2xl font-semibold">₹{book.price.toLocaleString('en-IN')}</p>
+                    <p className="mt-2 text-2xl font-semibold">{isOwned ? 'खरेदी केले ✓' : `₹${book.price.toLocaleString('en-IN')}`}</p>
                   </div>
                   <div>
                     <p className="text-xs uppercase text-slate-500">Format</p>
@@ -182,22 +189,22 @@ export default function BookDetailPage() {
                   </div>
                   <div>
                     <p className="text-xs uppercase text-slate-500">Status</p>
-                    <p className="mt-2 text-lg font-semibold">{book.isOwned ? 'Owned' : 'Available'}</p>
+                    <p className="mt-2 text-lg font-semibold">{isOwned ? 'Owned' : 'Available'}</p>
                   </div>
                 </div>
 
                 <p className="text-base text-slate-700">{book.description ?? book.shortSummary ?? 'No description available.'}</p>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  {!book.isOwned ? <>
+                  {!isOwned ? <>
                     <button type="button" disabled={isProcessingPayment} onClick={() => void startPayment()} className="inline-flex items-center justify-center rounded-full bg-[#7A2E92] px-6 py-3 text-white disabled:opacity-60">
                       {isProcessingPayment ? 'Starting payment…' : 'Buy Now'}
                     </button>
                     <input aria-label="Coupon code (optional)" value={couponCode} onChange={(event) => setCouponCode(event.target.value)} placeholder="Coupon code (optional)" className="rounded-full border px-4 py-3 text-sm" />
-                    <button type="button" onClick={addToCart} className="group inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#7A2E92]/30 bg-white px-6 py-3 font-semibold text-[#7A2E92] shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#7A2E92] hover:bg-[#7A2E92] hover:text-white hover:shadow-lg active:translate-y-0">
+                    <button type="button" onClick={addToCart} disabled={isOwnershipLoading} className="group inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#7A2E92]/30 bg-white px-6 py-3 font-semibold text-[#7A2E92] shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#7A2E92] hover:bg-[#7A2E92] hover:text-white hover:shadow-lg active:translate-y-0 disabled:opacity-60">
                       <ShoppingCart className="h-4 w-4 transition-transform group-hover:scale-110" /> Add to cart
                     </button>
-                  </> : <button type="button" className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-6 py-3 text-white">Read Now</button>}
+                  </> : <button type="button" onClick={() => router.push(`/reader/${book.bookId}`)} className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-6 py-3 font-semibold text-white"><span aria-hidden="true">📖</span> वाचा</button>}
                 </div>
                 {paymentError ? <p className="text-sm text-red-600">{paymentError}</p> : null}
                 {cartMessage ? <p className="text-sm text-emerald-700">{cartMessage}</p> : null}

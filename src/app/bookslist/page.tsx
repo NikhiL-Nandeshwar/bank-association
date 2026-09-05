@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { BookOpen, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -9,17 +9,22 @@ import { Input } from '@/components/ui/input'
 import useSWR from 'swr'
 import { Card, CardContent } from '@/components/ui/card'
 import { BookCover } from '@/components/common/BookCover'
-import { booksFetcher } from '@/lib/ebook'
+import { booksFetcher, BOOK_OWNERSHIP_REFRESH_KEY } from '@/lib/ebook'
+import { useAuth } from '@/lib/useAuth'
+import { useBookOwnership } from '@/lib/book-ownership'
 
 const PAGE_SIZE = 10
 
 export default function BooksPage() {
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
+  const { status } = useAuth()
+  const { purchasedBookIds, mutate: mutateOwnership } = useBookOwnership(status === 'authenticated')
   const {
     data,
     isLoading,
     error,
+    mutate,
   } = useSWR(
     ['books', page],
     ([, currentPage]) => booksFetcher(currentPage, PAGE_SIZE),
@@ -27,6 +32,13 @@ export default function BooksPage() {
       revalidateOnFocus: false,
     }
   )
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.sessionStorage.getItem(BOOK_OWNERSHIP_REFRESH_KEY) !== '1') return
+    window.sessionStorage.removeItem(BOOK_OWNERSHIP_REFRESH_KEY)
+    void mutate()
+    void mutateOwnership()
+  }, [mutate, mutateOwnership])
 
   const books = data?.items ?? []
   const totalBooks = data?.totalCount ?? books.length
@@ -123,7 +135,7 @@ export default function BooksPage() {
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               {filteredBooks.length > 0 ? (
                 filteredBooks.map((book) => (
-                  <Link key={book.bookId} href={`/books/${book.slug}`}>
+                  <Link key={book.bookId} href={purchasedBookIds.has(book.bookId) ? `/reader/${book.bookId}` : `/books/${book.slug}`}>
                     <Card className="group overflow-hidden rounded-3xl border-[#7A2E92]/20 bg-white shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
 
                       <div className="relative h-80 overflow-hidden bg-linear-to-b from-slate-100 to-slate-200">
@@ -152,7 +164,7 @@ export default function BooksPage() {
                           {book.authorName}
                         </div>
 
-                        <div className="flex items-center justify-between pt-2">
+                        {purchasedBookIds.has(book.bookId) ? <div className="flex items-center justify-between gap-2 pt-2"><Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">खरेदी केले ✓</Badge><span className="flex items-center gap-1 text-sm font-semibold text-emerald-700"><BookOpen className="h-4 w-4" /> वाचा</span></div> : <div className="flex items-center justify-between pt-2">
                           <div className="text-xl font-bold text-[#7A2E92]">
                             ₹{book.price.toLocaleString('en-IN')}
                           </div>
@@ -161,7 +173,7 @@ export default function BooksPage() {
                             <BookOpen className="h-4 w-4" />
                             पहा
                           </div>
-                        </div>
+                        </div>}
                       </CardContent>
 
                     </Card>

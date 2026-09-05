@@ -12,6 +12,5 @@ export interface Book {
   price: number
   isFeatured: boolean
   isActive: boolean
-  isOwned: boolean
   totalPurchases: number
 }

@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { getApplicationPaymentStatus } from '@/actions/api/application.actions';
+import { getApplicationPaymentStatus, getPaymentReceipt } from '@/actions/api/application.actions';
 import { ROUTES } from '@/constants/routes.constants';
 import { saveReceiptMerchantOrderId } from '@/utils/paymentReceipt';
+import { BOOK_OWNERSHIP_REFRESH_KEY } from '@/lib/ebook';
+import { PaymentReceiptPreview, printPaymentReceipt } from '@/components/recruitment/helper/applicationStepsHelper';
+import type { PaymentReceipt } from '@/types/api.types';
 
 const SESSION_KEYS = {
   merchantOrderId: 'billdesk_application_merchant_order_id',
@@ -49,6 +52,9 @@ export default function PaymentCallbackPage() {
   const [paymentAmount, setPaymentAmount] = useState<string | null>(null);
   const [receiptReference, setReceiptReference] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [paymentReceipt, setPaymentReceipt] = useState<PaymentReceipt | null>(null);
+  const [isLoadingReceipt, setIsLoadingReceipt] = useState(false);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
 
   const queryParams = useMemo(() => {
     if (typeof window === 'undefined') {
@@ -100,6 +106,7 @@ export default function PaymentCallbackPage() {
       if (paymentStatus === 'SUCCESS') {
         if (typeof window !== 'undefined') {
           if (isApplicationModule) window.sessionStorage.setItem(SESSION_KEYS.refreshApplication, '1');
+          if (isBookModule) window.sessionStorage.setItem(BOOK_OWNERSHIP_REFRESH_KEY, '1');
           const applicationId = window.sessionStorage.getItem(SESSION_KEYS.applicationId);
 
           if (merchantOrderId && applicationId) {
@@ -157,6 +164,21 @@ export default function PaymentCallbackPage() {
   };
 
   const goToBooks = () => router.push('/bookslist');
+
+  const handleViewReceipt = async () => {
+    if (!merchantOrderId || isLoadingReceipt) return;
+    setIsLoadingReceipt(true);
+    setReceiptError(null);
+    try {
+      const response = await getPaymentReceipt(merchantOrderId);
+      setPaymentReceipt(response.data);
+    } catch (error) {
+      console.error('Payment receipt loading failed', error);
+      setReceiptError('Unable to load the receipt right now. Please try again.');
+    } finally {
+      setIsLoadingReceipt(false);
+    }
+  };
 
   const renderAction = () => {
     if (status === 'success') {
@@ -241,6 +263,15 @@ export default function PaymentCallbackPage() {
           </div>
           {renderStatus()}
           <div>{renderAction()}</div>
+          {status === 'success' ? (
+            <div className="space-y-3">
+              <button type="button" onClick={() => void handleViewReceipt()} disabled={isLoadingReceipt} className="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60">
+                {isLoadingReceipt ? 'Loading receipt...' : 'View Receipt'}
+              </button>
+              {receiptError ? <p className="text-sm text-red-600">{receiptError}</p> : null}
+            </div>
+          ) : null}
+          {paymentReceipt ? <PaymentReceiptPreview receipt={paymentReceipt} onDownload={() => printPaymentReceipt(paymentReceipt)} /> : null}
           <div className="rounded-2xl bg-slate-50 p-5 text-sm text-slate-600">
             {status === 'success' ? (
               <>

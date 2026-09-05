@@ -5,17 +5,22 @@ import { BookOpen, Search } from 'lucide-react';
 import { BookCover } from './BookCover';
 import useSWR from 'swr';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Input } from '../ui/input';
 import { Card, CardContent } from '../ui/card';
-import { booksFetcher } from '@/lib/ebook';
+import { booksFetcher, BOOK_OWNERSHIP_REFRESH_KEY } from '@/lib/ebook';
+import { useAuth } from '@/lib/useAuth';
+import { useBookOwnership } from '@/lib/book-ownership';
 
 export function LatestBooks() {
     const [page, setPage] = useState(1)
+    const { status } = useAuth();
+    const { purchasedBookIds, mutate: mutateOwnership } = useBookOwnership(status === 'authenticated');
     const {
         data,
         isLoading,
         error,
+        mutate,
     } = useSWR(
         ['books', page],
         ([_, currentPage]) => booksFetcher(currentPage),
@@ -23,6 +28,13 @@ export function LatestBooks() {
             revalidateOnFocus: false,
         }
     )
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || window.sessionStorage.getItem(BOOK_OWNERSHIP_REFRESH_KEY) !== '1') return;
+        window.sessionStorage.removeItem(BOOK_OWNERSHIP_REFRESH_KEY);
+        void mutate();
+        void mutateOwnership();
+    }, [mutate, mutateOwnership]);
 
     const [searchTerm, setSearchTerm] = useState('');
     const books = data?.items || []
@@ -121,7 +133,7 @@ export function LatestBooks() {
                         ) : (
 
                             filteredBooks.map((book) => (
-                                <Link key={book.bookId} href={`/books/${book.slug}`}>
+                                <Link key={book.bookId} href={purchasedBookIds.has(book.bookId) ? `/reader/${book.bookId}` : `/books/${book.slug}`}>
                                     <Card className="group overflow-hidden rounded-3xl border-[#7A2E92]/20 bg-white shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
                                         <div className="relative h-80 overflow-hidden bg-linear-to-b from-slate-100 to-slate-200">
                                             <BookCover
@@ -149,7 +161,7 @@ export function LatestBooks() {
                                                 {book.authorName}
                                             </div>
 
-                                            <div className="flex items-center justify-between pt-2">
+                                            {purchasedBookIds.has(book.bookId) ? <div className="flex items-center justify-between gap-2 pt-2"><span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">खरेदी केले ✓</span><span className="flex items-center gap-1 text-sm font-semibold text-emerald-700"><BookOpen className="h-4 w-4" /> वाचा</span></div> : <div className="flex items-center justify-between pt-2">
                                                 <div className="text-xl font-bold text-[#7A2E92]">
                                                     ₹{book.price.toLocaleString('en-IN')}
                                                 </div>
@@ -158,7 +170,7 @@ export function LatestBooks() {
                                                     <BookOpen className="h-4 w-4" />
                                                     पहा
                                                 </div>
-                                            </div>
+                                            </div>}
                                         </CardContent>
 
                                     </Card>

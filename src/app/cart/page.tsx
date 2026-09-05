@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookCover } from '@/components/common/BookCover';
 import { useCart } from '@/lib/cart';
@@ -9,11 +9,14 @@ import type { Book } from '@/types/eBook';
 import { useAuth } from '@/lib/useAuth';
 import { initiateBulkBookPayment } from '@/actions/api/application.actions';
 import { toast } from 'sonner';
+import { useBookOwnership } from '@/lib/book-ownership';
 
 export default function CartPage() {
   const router = useRouter();
   const { status } = useAuth();
   const { bookIds, count, remove } = useCart();
+  const { purchasedBookIds, isLoading: isOwnershipLoading } = useBookOwnership(status === 'authenticated');
+  const purchasableBookIds = useMemo(() => bookIds.filter((bookId) => !purchasedBookIds.has(bookId)), [bookIds, purchasedBookIds]);
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
@@ -23,9 +26,9 @@ export default function CartPage() {
   useEffect(() => {
     if (status !== 'authenticated') return;
     void booksFetcher(1, 1000).then((result) => {
-      setBooks((result.items || []).filter((book) => bookIds.includes(book.bookId)));
+      setBooks((result.items || []).filter((book) => purchasableBookIds.includes(book.bookId)));
     }).finally(() => setLoading(false));
-  }, [status, bookIds]);
+  }, [status, bookIds, purchasableBookIds]);
 
   const total = books.reduce((sum, book) => sum + Number(book.price || 0), 0);
   const extractString = (value: unknown, keys: string[]): string | undefined => {
@@ -45,7 +48,7 @@ export default function CartPage() {
     setIsProcessingPayment(true);
     try {
       if (typeof window.loadBillDeskSdk !== 'function') throw new Error('Payment service is still loading. Please try again.');
-      const response = await initiateBulkBookPayment(bookIds, couponCode);
+      const response = await initiateBulkBookPayment(purchasableBookIds, couponCode);
       const data = response.data;
       console.debug('[Book payment] InitiateBulkBook response:', response);
       const bdOrderId = extractString(data, ['bdOrderId', 'bdorderid']);
@@ -67,8 +70,8 @@ export default function CartPage() {
     if (typeof document === 'undefined' || document.getElementById('billdesk-sdk-module')) return;
     const script = document.createElement('script'); script.id = 'billdesk-sdk-module'; script.type = 'module'; script.src = 'https://pay.billdesk.com/websdk/shared/billdesksdk.esm.js'; script.async = true; document.head.appendChild(script);
   }, []);
-  if (status === 'loading' || loading) return <main className="mx-auto max-w-5xl p-8">Loading cart…</main>;
-  if (!bookIds.length) return <main className="mx-auto max-w-5xl p-8"><h1 className="text-3xl font-bold">Your Cart</h1><p className="mt-6 text-slate-600">Your cart is empty.</p></main>;
+  if (status === 'loading' || loading || isOwnershipLoading) return <main className="mx-auto max-w-5xl p-8">Loading cart…</main>;
+  if (!purchasableBookIds.length) return <main className="mx-auto max-w-5xl p-8"><h1 className="text-3xl font-bold">Your Cart</h1><p className="mt-6 text-slate-600">Your cart is empty.</p></main>;
 
   return <main className="mx-auto max-w-5xl space-y-6 p-6 sm:p-8">
     <h1 className="text-3xl font-bold text-slate-900">Your Cart</h1>
