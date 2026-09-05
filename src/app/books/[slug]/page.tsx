@@ -36,7 +36,7 @@ export default function BookDetailPage() {
     return typeof record.data === 'object' ? extractString(record.data, keys) : undefined
   }
 
-  const startPayment = async () => {
+  const startPayment = async (couponCodeOverride?: string) => {
     if (!book) return
     if (status !== 'authenticated') {
       window.sessionStorage.setItem('pending-book-action', JSON.stringify({ action: 'buy', bookId: book.bookId }))
@@ -46,15 +46,19 @@ export default function BookDetailPage() {
     setPaymentError(null)
     setIsProcessingPayment(true)
     try {
-      const response = await initiateBookPayment(book.bookId, couponCode)
+      const response = await initiateBookPayment(book.bookId, couponCodeOverride ?? couponCode)
       const data = response.data
       const bdOrderId = extractString(data, ['bdOrderId', 'bdorderid'])
       const authToken = extractString(data, ['authToken', 'auth_token'])
-      const merchantOrderId = extractString(data, ['merchantOrderId', 'merchantorderid', 'merchant_order_id', 'orderId'])
-      if (!bdOrderId || !authToken || typeof window.loadBillDeskSdk !== 'function') {
+      const gatewayOrderId = extractString(data, ['gatewayOrderId', 'gatewayorderid', 'gateway_order_id'])
+      console.debug('[Book payment] InitiateBook response:', response)
+      console.debug('[Book payment] gatewayOrderId before sessionStorage:', gatewayOrderId)
+      if (!bdOrderId || !authToken || !gatewayOrderId || typeof window.loadBillDeskSdk !== 'function') {
         throw new Error('The payment service did not return a complete BillDesk order. Please try again.')
       }
-      if (merchantOrderId) window.sessionStorage.setItem('billdesk_book_merchant_order_id', merchantOrderId)
+      window.sessionStorage.setItem('billdesk_book_merchant_order_id', gatewayOrderId)
+      console.debug('[Book payment] gatewayOrderId after sessionStorage:', window.sessionStorage.getItem('billdesk_book_merchant_order_id'))
+      console.debug('[Book payment] before launching BillDesk:', { bdOrderId, gatewayOrderId })
       window.loadBillDeskSdk({
         flowConfig: {
           merchantId: 'KOPBASSOV2',
@@ -96,10 +100,10 @@ export default function BookDetailPage() {
     const raw = window.sessionStorage.getItem('pending-book-action')
     if (!raw) return
     try {
-      const pending = JSON.parse(raw) as { action?: string; bookId?: number }
+      const pending = JSON.parse(raw) as { action?: string; bookId?: number; couponCode?: string }
       if (pending.action === 'buy' && pending.bookId === book.bookId) {
         window.sessionStorage.removeItem('pending-book-action')
-        void startPayment()
+        void startPayment(pending.couponCode)
       } else if (pending.action === 'cart' && pending.bookId === book.bookId) {
         window.sessionStorage.removeItem('pending-book-action')
         addToCart()
@@ -186,7 +190,7 @@ export default function BookDetailPage() {
 
                 <div className="flex flex-wrap items-center gap-3">
                   {!book.isOwned ? <>
-                    <button type="button" disabled={isProcessingPayment} onClick={startPayment} className="inline-flex items-center justify-center rounded-full bg-[#7A2E92] px-6 py-3 text-white disabled:opacity-60">
+                    <button type="button" disabled={isProcessingPayment} onClick={() => void startPayment()} className="inline-flex items-center justify-center rounded-full bg-[#7A2E92] px-6 py-3 text-white disabled:opacity-60">
                       {isProcessingPayment ? 'Starting payment…' : 'Buy Now'}
                     </button>
                     <input aria-label="Coupon code (optional)" value={couponCode} onChange={(event) => setCouponCode(event.target.value)} placeholder="Coupon code (optional)" className="rounded-full border px-4 py-3 text-sm" />

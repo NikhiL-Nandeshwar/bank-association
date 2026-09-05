@@ -85,6 +85,7 @@ export const API_ENDPOINTS = {
   payment: {
     initiateApplication: 'Payment/InitiateApplication',
     initiateBook: 'Payment/InitiateBook',
+    initiateBulkBook: 'Payment/InitiateBulkBook',
     status: 'Payment/Status',
     receipt: 'Payment/GetReceipt',
   },

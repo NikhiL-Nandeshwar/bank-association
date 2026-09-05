@@ -73,6 +73,15 @@ export async function initiateBookPayment(bookId: number, couponCode?: string) {
   });
 }
 
+export async function initiateBulkBookPayment(bookIds: number[], couponCode?: string) {
+  const uniqueBookIds = Array.from(new Set(bookIds.filter((bookId) => Number.isInteger(bookId) && bookId > 0)));
+  if (!uniqueBookIds.length) throw new Error('Your cart is empty.');
+  return apiRequest<unknown>(API_ENDPOINTS.payment.initiateBulkBook, {
+    method: 'POST',
+    body: { bookIds: uniqueBookIds, couponCode: couponCode?.trim() || '' },
+  });
+}
+
 export async function getApplicationPaymentStatus(merchantOrderId: string) {
   return apiRequest<unknown>(
     `${API_ENDPOINTS.payment.status}?merchantOrderId=${encodeURIComponent(merchantOrderId)}`,

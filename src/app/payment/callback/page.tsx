@@ -64,6 +64,7 @@ export default function PaymentCallbackPage() {
   const merchantOrderId = useMemo(() => readStoredMerchantOrderId(moduleParam ?? undefined), [moduleParam]);
 
   const verifyPayment = async () => {
+    console.debug('[Book payment callback] module/order at load:', { module: moduleParam, merchantOrderId });
     if (!merchantOrderId || (!isApplicationModule && !isBookModule)) {
       setStatus('unknown');
       setMessage(
