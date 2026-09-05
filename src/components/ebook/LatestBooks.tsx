@@ -77,7 +77,7 @@ export function LatestBooks() {
                                 placeholder="पुस्तकाचे नाव शोधा..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="h-13 rounded-xl border-[#7A2E92]/30 bg-white pl-10"
+                                className="h-13 rounded-xl border-[#7A2E92]/30 bg-white pl-10 text-[17px]!"
                             />
                         </div>
 
@@ -141,11 +141,11 @@ export function LatestBooks() {
                                                 alt={book.title}
                                             />
 
-                                            {book.isFeatured && (
+                                            {/* {book.isFeatured && (
                                                 <div className="absolute left-3 top-3 rounded-full bg-[#7A2E92] px-3 py-1 text-xs font-medium text-white">
                                                     लोकप्रिय
                                                 </div>
-                                            )}
+                                            )} */}
                                         </div>
 
                                         <CardContent className="space-y-3 p-5">

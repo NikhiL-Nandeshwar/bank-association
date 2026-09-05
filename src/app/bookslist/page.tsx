@@ -118,7 +118,7 @@ export default function BooksPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="पुस्तकाचे नाव शोधा..."
-                className="h-12 rounded-full pl-11 border-[#7A2E92]/30"
+                className="h-12 rounded-full pl-11 border-[#7A2E92]/30 text-[17px]!"
               />
             </div>
           </div>
@@ -144,11 +144,11 @@ export default function BooksPage() {
                           alt={book.title}
                         />
 
-                        {book.isFeatured && (
+                        {/* {book.isFeatured && (
                           <div className="absolute left-3 top-3 rounded-full bg-[#7A2E92] px-3 py-1 text-xs font-medium text-white">
                             लोकप्रिय
                           </div>
-                        )}
+                        )} */}
                       </div>
 
                       <CardContent className="space-y-3 p-5">
