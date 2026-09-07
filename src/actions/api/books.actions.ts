@@ -93,3 +93,10 @@ export function toggleBookActive(bookId: number) {
     method: 'PATCH',
   });
 }
+
+export function getUserBooks(page = 1, pageSize = 12) {
+  return apiRequest<ApiPagedResult<Book>>(
+    `${API_ENDPOINTS.book.getUserAll}?page=${page}&pageSize=${pageSize}`,
+    { method: 'GET' }
+  );
+}

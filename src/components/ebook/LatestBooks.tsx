@@ -14,7 +14,8 @@ import { useBookOwnership } from '@/lib/book-ownership';
 
 export function LatestBooks() {
     const [page, setPage] = useState(1)
-    const { status } = useAuth();
+    const { status, user } = useAuth();
+    const isAdmin = user?.role?.toLowerCase().includes('admin') ?? false;
     const { purchasedBookIds, mutate: mutateOwnership } = useBookOwnership(status === 'authenticated');
     const {
         data,
@@ -22,8 +23,8 @@ export function LatestBooks() {
         error,
         mutate,
     } = useSWR(
-        ['books', page],
-        ([_, currentPage]) => booksFetcher(currentPage),
+        status === 'loading' ? null : ['books', page, isAdmin],
+        ([_, currentPage, admin]) => booksFetcher(currentPage, 12, { isAdmin: admin }),
         {
             revalidateOnFocus: false,
         }

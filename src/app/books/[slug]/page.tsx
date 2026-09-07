@@ -29,7 +29,8 @@ export default function BookDetailPage() {
   const rawSlug = params?.slug
   const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug
   const router = useRouter()
-  const { status } = useAuth()
+  const { status, user } = useAuth()
+  const isAdmin = user?.role?.toLowerCase().includes('admin') ?? false
   const { purchasedBookIds, isLoading: isOwnershipLoading } = useBookOwnership(status === 'authenticated')
   const { add: addCartItem } = useCart()
   const [book, setBook] = useState<Book | null>(null)
@@ -130,12 +131,12 @@ export default function BookDetailPage() {
   }, [status, book])
 
   useEffect(() => {
-    if (!slug) return
+    if (!slug || status === 'loading') return
 
     const load = async () => {
       setIsLoading(true)
       try {
-        const data = await booksFetcher(1, 1000)
+        const data = await booksFetcher(1, 1000, { isAdmin })
         const normalizedSlug = slug ? normalizeRouteSlug(slug) : ''
         const found = (data?.items ?? []).find((b: Book) => {
           const normalizedBookSlug = b.slug.normalize('NFC')
@@ -166,7 +167,7 @@ export default function BookDetailPage() {
     }
 
     void load()
-  }, [slug])
+  }, [slug, status, isAdmin])
 
   useEffect(() => {
     if (typeof document === 'undefined' || document.getElementById('billdesk-sdk-module')) return

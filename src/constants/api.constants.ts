@@ -99,6 +99,7 @@ export const API_ENDPOINTS = {
     update: 'Book/Update',
     delete: (bookId: number) => `Book/Delete/${bookId}`,
     getAll: 'Book/GetAll',
+    getUserAll: 'Book/UserGetAll',
     toggleActive: (bookId: number) => `Book/Toggle?id=${bookId}`,
   },
 } as const;

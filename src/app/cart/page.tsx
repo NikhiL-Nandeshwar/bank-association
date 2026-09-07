@@ -13,7 +13,8 @@ import { useBookOwnership } from '@/lib/book-ownership';
 
 export default function CartPage() {
   const router = useRouter();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
+  const isAdmin = user?.role?.toLowerCase().includes('admin') ?? false;
   const { bookIds, count, remove } = useCart();
   const { purchasedBookIds, isLoading: isOwnershipLoading } = useBookOwnership(status === 'authenticated');
   const purchasableBookIds = useMemo(() => bookIds.filter((bookId) => !purchasedBookIds.has(bookId)), [bookIds, purchasedBookIds]);
@@ -25,10 +26,10 @@ export default function CartPage() {
 
   useEffect(() => {
     if (status !== 'authenticated') return;
-    void booksFetcher(1, 1000).then((result) => {
+    void booksFetcher(1, 1000, { isAdmin }).then((result) => {
       setBooks((result.items || []).filter((book) => purchasableBookIds.includes(book.bookId)));
     }).finally(() => setLoading(false));
-  }, [status, bookIds, purchasableBookIds]);
+  }, [status, isAdmin, bookIds, purchasableBookIds]);
 
   const total = books.reduce((sum, book) => sum + Number(book.price || 0), 0);
   const extractString = (value: unknown, keys: string[]): string | undefined => {

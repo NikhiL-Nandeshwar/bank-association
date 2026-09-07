@@ -7,7 +7,7 @@ import { ROUTES } from '@/constants/routes.constants';
 import { forwardRef, useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { AdminBank, AdminRecruitment, AdminNews } from '@/types/adminDashboard';
 import { formatDate } from '@/utils/adminDashboardHelper';
-import { fetchBanksService, fetchRecruitmentsService, fetchNewsService, createBookService, deleteBankService, deleteCategoryService, deleteAuthorService, toggleBookActiveService, deleteRecruitmentService, deleteNewsService, fetchBooksService } from '@/actions/api/admin.actions';
+import { fetchBanksService, fetchRecruitmentsService, fetchNewsService, createBookService, deleteBankService, deleteCategoryService, deleteAuthorService, toggleBookActiveService, deleteRecruitmentService, deleteNewsService, fetchBooksService, fetchActiveBooksService } from '@/actions/api/admin.actions';
 import { getCategories } from '@/actions/api/category.actions';
 import { getAuthors } from '@/actions/api/author.actions';
 import { useBankForm } from '@/hooks/useBankForm';
@@ -77,6 +77,7 @@ export default function AdminDashboardPage() {
     const [categories, setCategories] = useState<any[]>([]);
     const [authors, setAuthors] = useState<any[]>([]);
     const [books, setBooks] = useState<any[]>([]);
+    const [activeBooksCount, setActiveBooksCount] = useState(0);
     const [editingBook, setEditingBook] = useState<any | null>(null);
     const [deleteDialog, setDeleteDialog] = useState<{
         isOpen: boolean;
@@ -129,8 +130,9 @@ export default function AdminDashboardPage() {
 
     async function loadBooks() {
         try {
-            const data = await fetchBooksService();
+            const [data, activeBooks] = await Promise.all([fetchBooksService(), fetchActiveBooksService()]);
             setBooks(data);
+            setActiveBooksCount(activeBooks.length);
         } catch {
             toast.error('Failed to load books');
         }
@@ -442,7 +444,7 @@ export default function AdminDashboardPage() {
                                     <span className="h-px flex-1 bg-slate-200" />
                                 </div>
                                 <div className="grid gap-4 md:grid-cols-3">
-                                    <DashboardCard title="Books added" value={books.length} detail="Books available in the e-book library." />
+                                    <DashboardCard title="Books added" value={activeBooksCount} detail="Books available in the e-book library." />
                                     <DashboardCard title="Authors added" value={authors.length} detail="Author records linked to the library." />
                                     <DashboardCard title="Categories added" value={categories.length} detail="Categories used to organize e-books." />
                                 </div>

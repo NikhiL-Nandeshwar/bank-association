@@ -8,6 +8,7 @@ import { createAuthor, updateAuthor, deleteAuthor } from './author.actions';
 import {
   createBook,
   getBooks,
+  getUserBooks,
   updateBook,
   deleteBook,
   toggleBookActive,
@@ -39,6 +40,11 @@ export async function fetchNewsService() {
 
 export async function fetchBooksService(page = 1, pageSize = 50) {
     const response = await getBooks(page, pageSize);
+    return Array.isArray(response.data) ? response.data : response.data.items;
+}
+
+export async function fetchActiveBooksService(page = 1, pageSize = 50) {
+    const response = await getUserBooks(page, pageSize);
     return Array.isArray(response.data) ? response.data : response.data.items;
 }
 

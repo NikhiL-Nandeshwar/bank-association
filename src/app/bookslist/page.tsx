@@ -18,7 +18,8 @@ const PAGE_SIZE = 10
 export default function BooksPage() {
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
-  const { status } = useAuth()
+  const { status, user } = useAuth()
+  const isAdmin = user?.role?.toLowerCase().includes('admin') ?? false
   const { purchasedBookIds, mutate: mutateOwnership } = useBookOwnership(status === 'authenticated')
   const {
     data,
@@ -26,8 +27,8 @@ export default function BooksPage() {
     error,
     mutate,
   } = useSWR(
-    ['books', page],
-    ([, currentPage]) => booksFetcher(currentPage, PAGE_SIZE),
+    status === 'loading' ? null : ['books', page, isAdmin],
+    ([, currentPage, admin]) => booksFetcher(currentPage, PAGE_SIZE, { isAdmin: admin }),
     {
       revalidateOnFocus: false,
     }
