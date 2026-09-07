@@ -248,6 +248,7 @@ export default function AdminDashboardPage() {
     }
 
     function handleEditBook(item: any) {
+        console.debug('[Book edit] raw API/list book:', item);
         setActiveSection('books');
         const normalizeName = (value: unknown) => String(value ?? '').trim().toLowerCase();
         const category = categories.find((entry) =>
@@ -779,7 +780,7 @@ export default function AdminDashboardPage() {
                                     editingBook={editingBook ?? undefined}
                                     onSaved={(book) => {
                                         if (editingBook) {
-                                            setBooks((prev) => prev.map((item) => (item.bookId === book.bookId ? book : item)));
+                                            setBooks((prev) => prev.map((item) => (item.bookId === editingBook.bookId ? { ...item, ...book } : item)));
                                         } else {
                                             setBooks((prev) => [book, ...prev]);
                                             setMasterView('list');

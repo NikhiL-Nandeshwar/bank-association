@@ -85,9 +85,7 @@ export default function BookForm({ categories, authors, editingBook, onSaved, on
 
     const getFileUrl = (book: any, type: 'pdf' | 'cover'): string => {
       const record = book?.data && typeof book.data === 'object' ? book.data : book;
-      const candidates = type === 'pdf'
-        ? [record?.bookPdfUrl, record?.pdfUrl, record?.pdfFileUrl, record?.pdfPath, record?.newPdfFile]
-        : [record?.coverImageUrl, record?.coverUrl, record?.coverFileUrl, record?.coverPath, record?.newCoverFile];
+      const candidates = type === 'pdf' ? [record?.bookPdfUrl] : [record?.coverImageUrl];
       return candidates.find((value): value is string => typeof value === 'string' && value.trim().length > 0)?.trim() ?? '';
     };
     // Keep existing files as backend references. They are only replaced when
