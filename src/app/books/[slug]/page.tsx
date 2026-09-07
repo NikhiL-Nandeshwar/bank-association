@@ -16,9 +16,18 @@ import { initiateBookPayment } from '@/actions/api/application.actions'
 import { useCart } from '@/lib/cart'
 import { useBookOwnership } from '@/lib/book-ownership'
 
+function normalizeRouteSlug(value: string) {
+  try {
+    return decodeURIComponent(value).normalize('NFC')
+  } catch {
+    return value.normalize('NFC')
+  }
+}
+
 export default function BookDetailPage() {
   const params = useParams()
-  const slug = params?.slug as string | undefined
+  const rawSlug = params?.slug
+  const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug
   const router = useRouter()
   const { status } = useAuth()
   const { purchasedBookIds, isLoading: isOwnershipLoading } = useBookOwnership(status === 'authenticated')
@@ -127,7 +136,23 @@ export default function BookDetailPage() {
       setIsLoading(true)
       try {
         const data = await booksFetcher(1, 1000)
-        const found = (data?.items ?? []).find((b: Book) => b.slug === slug)
+        const normalizedSlug = slug ? normalizeRouteSlug(slug) : ''
+        const found = (data?.items ?? []).find((b: Book) => {
+          const normalizedBookSlug = b.slug.normalize('NFC')
+          const matches = normalizedSlug === normalizedBookSlug
+          if (matches || process.env.NODE_ENV !== 'production') {
+            console.debug('[Book slug lookup]', {
+              paramsSlug: slug,
+              apiSlug: b.slug,
+              paramsSlugJson: JSON.stringify(slug),
+              apiSlugJson: JSON.stringify(b.slug),
+              exactMatch: slug === b.slug,
+              nfcMatch: normalizedSlug === normalizedBookSlug,
+              nfdMatch: normalizedSlug.normalize('NFD') === b.slug.normalize('NFD'),
+            })
+          }
+          return matches
+        })
         if (!found) {
           setError('पुस्तक सापडले नाही')
         } else {
