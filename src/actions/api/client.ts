@@ -171,6 +171,28 @@ export async function apiRequest<T>(
     payload = null;
   }
 
+  if (path.includes('Author/Delete')) {
+    console.debug('[Author delete response]', {
+      url: buildUrl(path),
+      method: requestOptions.method ?? 'GET',
+      requestBody: body,
+      status: response.status,
+      statusText: response.statusText,
+      payload,
+    });
+  }
+
+  if (response.status === 204) {
+    return {
+      success: true,
+      statusCode: 204,
+      message: 'Success.',
+      data: undefined as T,
+      errors: null,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   if (
     response.status === 401 &&
     !isRetry &&
@@ -196,6 +218,14 @@ export async function apiRequest<T>(
   }
 
   if (!response.ok || !payload?.success) {
+    console.error('[API request failed]', {
+      url: buildUrl(path),
+      method: requestOptions.method ?? 'GET',
+      requestBody: path.includes('Author/Delete') ? body : undefined,
+      status: response.status,
+      statusText: response.statusText,
+      payload,
+    });
     throw new ApiError(
       payload?.message || 'Request failed. Please try again.',
       payload?.statusCode || response.status,

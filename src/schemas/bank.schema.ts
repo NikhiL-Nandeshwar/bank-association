@@ -18,6 +18,7 @@ export const createBankSchema = z.object({
   contactEmail: z.string().trim().email('Enter a valid contact email.'),
   contactPhone: phoneSchema,
   logoUrl: optionalUrlSchema,
+  isActive: z.boolean().optional(),
 });
 
 export const updateBankSchema = createBankSchema.extend({

@@ -11,6 +11,7 @@ export const emptyCategoryForm = {
   description: '',
   thumbnailUrl: '',
   sortOrder: 0,
+  isActive: true,
 };
 
 export function useCategoryForm(categories: any[], setCategories: any, onUpdateSuccess?: () => void) {
@@ -78,6 +79,7 @@ export function useCategoryForm(categories: any[], setCategories: any, onUpdateS
       description: item.description ?? '',
       thumbnailUrl: item.thumbnailUrl ?? '',
       sortOrder: item.sortOrder ?? 0,
+      isActive: item.isActive ?? true,
     });
     setErrors({});
   };

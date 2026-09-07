@@ -52,6 +52,7 @@ export const createVacancySchema = z
       .optional()
       .or(z.literal('')),
     noticePdfFileName: z.string().trim().optional(),
+    isActive: z.boolean().optional(),
     eligibilityCriteria: z.array(eligibilityCriteriaSchema).optional(),
   })
   .refine((value) => value.applicationEndDate >= value.applicationStartDate, {

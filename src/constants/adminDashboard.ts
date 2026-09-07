@@ -6,6 +6,7 @@ export const emptyBankForm = {
   contactEmail: '',
   contactPhone: '',
   logoUrl: '',
+  isActive: true,
 };
 
 export const emptyRecruitmentForm = {
@@ -26,6 +27,7 @@ export const emptyRecruitmentForm = {
   isNCLRequired: false,
   noticePdfUrl: '',
   noticePdfFileName: '',
+  isActive: true,
   eligibilityCriteria: [] as Array<{
     criteriaType: string;
     criteriaValue: string;

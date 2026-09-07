@@ -7,7 +7,7 @@ import { ROUTES } from '@/constants/routes.constants';
 import { forwardRef, useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { AdminBank, AdminRecruitment, AdminNews } from '@/types/adminDashboard';
 import { formatDate } from '@/utils/adminDashboardHelper';
-import { fetchBanksService, fetchRecruitmentsService, fetchNewsService, createBookService, deleteBankService, deleteCategoryService, deleteAuthorService, toggleBookActiveService, deleteRecruitmentService, deleteNewsService, fetchBooksService, fetchActiveBooksService } from '@/actions/api/admin.actions';
+import { fetchBanksService, fetchRecruitmentsService, fetchNewsService, createBookService, deleteBankService, toggleCategoryActiveService, toggleAuthorActiveService, toggleBookActiveService, deleteRecruitmentService, deleteNewsService, fetchBooksService, fetchActiveBooksService } from '@/actions/api/admin.actions';
 import { getCategories } from '@/actions/api/category.actions';
 import { getAuthors } from '@/actions/api/author.actions';
 import { useBankForm } from '@/hooks/useBankForm';
@@ -74,6 +74,8 @@ export default function AdminDashboardPage() {
     const [banks, setBanks] = useState<AdminBank[]>([]);
     const [bankStatusFilter, setBankStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
     const [bookStatusFilter, setBookStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
+    const [categoryStatusFilter, setCategoryStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
+    const [authorStatusFilter, setAuthorStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
     const [categories, setCategories] = useState<any[]>([]);
     const [authors, setAuthors] = useState<any[]>([]);
     const [books, setBooks] = useState<any[]>([]);
@@ -189,15 +191,17 @@ export default function AdminDashboardPage() {
         bank.startEdit(item);
     }
 
-    async function handleDeleteCategory(categoryId: number, categoryName: string) {
+    async function handleToggleCategoryActive(item: any) {
+        const action = item.isActive ? 'Deactivate' : 'Activate';
         openDeleteDialog(
-            'Delete category',
-            `Are you sure you want to delete ${categoryName}? This action cannot be undone.`,
+            `${action} category`,
+            `Are you sure you want to ${action.toLowerCase()} ${item.categoryName}?`,
             async () => {
-                await deleteCategoryService(categoryId);
-                setCategories((prev) => prev.filter((item) => item.categoryId !== categoryId));
-                toast.success('Category deleted successfully.');
-            }
+                await toggleCategoryActiveService(item.categoryId);
+                setCategories((prev) => prev.map((entry) => entry.categoryId === item.categoryId ? { ...entry, isActive: !entry.isActive } : entry));
+                toast.success(`Category ${action.toLowerCase()}d successfully.`);
+            },
+            action
         );
     }
 
@@ -207,15 +211,17 @@ export default function AdminDashboardPage() {
         categoryForm.startEdit(item);
     }
 
-    async function handleDeleteAuthor(authorId: number, authorName: string) {
+    async function handleToggleAuthorActive(item: any) {
+        const action = item.isActive ? 'Deactivate' : 'Activate';
         openDeleteDialog(
-            'Delete author',
-            `Are you sure you want to delete ${authorName}? This action cannot be undone.`,
+            `${action} author`,
+            `Are you sure you want to ${action.toLowerCase()} ${item.authorName}?`,
             async () => {
-                await deleteAuthorService(authorId);
-                setAuthors((prev) => prev.filter((item) => item.authorId !== authorId));
-                toast.success('Author deleted successfully.');
-            }
+                await toggleAuthorActiveService(item.authorId);
+                setAuthors((prev) => prev.map((entry) => entry.authorId === item.authorId ? { ...entry, isActive: !entry.isActive } : entry));
+                toast.success(`Author ${action.toLowerCase()}d successfully.`);
+            },
+            action
         );
     }
 
@@ -613,7 +619,7 @@ export default function AdminDashboardPage() {
                             <div className={`${masterView === 'list' ? 'min-w-0' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm`}>
                                 <div className="mb-4 flex items-center justify-between gap-4">
                                     <h3 className="text-lg font-semibold">Recently added categories</h3>
-                                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{categories.length} total</span>
+                                    <div className="flex items-center gap-3"><select value={categoryStatusFilter} onChange={(e) => setCategoryStatusFilter(e.target.value as typeof categoryStatusFilter)} className="rounded-md border px-3 py-2 text-sm"><option value="active">Currently Active</option><option value="inactive">Deactivated</option><option value="all">All categories</option></select><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{categories.filter((item) => categoryStatusFilter === 'all' || (categoryStatusFilter === 'active' ? item.isActive : !item.isActive)).length} shown</span></div>
                                 </div>
                                 <MasterTableScroll className="max-h-[520px] overflow-x-scroll overflow-y-auto">
                                     <table className="min-w-[680px] w-full text-sm">
@@ -625,7 +631,7 @@ export default function AdminDashboardPage() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {categories.map((item) => (
+                                            {categories.filter((item) => categoryStatusFilter === 'all' || (categoryStatusFilter === 'active' ? item.isActive : !item.isActive)).map((item) => (
                                                 <tr key={item.categoryId} className="border-t">
                                                     <td className="px-3 py-3 font-semibold text-slate-900">{item.categoryName}</td>
                                                     <td className="px-3 py-3 text-slate-600">{item.description || '—'}</td>
@@ -640,16 +646,16 @@ export default function AdminDashboardPage() {
                                                             </button>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => handleDeleteCategory(item.categoryId, item.categoryName)}
-                                                                className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                                                onClick={() => handleToggleCategoryActive(item)}
+                                                                className={item.isActive ? 'rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50' : 'rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50'}
                                                             >
-                                                                Delete
+                                                                {item.isActive ? 'Deactivate' : 'Activate'}
                                                             </button>
                                                         </div>
                                                     </td>
                                                 </tr>
                                             ))}
-                                            {categories.length === 0 ? (
+                                            {categories.filter((item) => categoryStatusFilter === 'all' || (categoryStatusFilter === 'active' ? item.isActive : !item.isActive)).length === 0 ? (
                                                 <tr>
                                                     <td colSpan={3} className="px-3 py-6 text-center text-slate-500">No categories added yet.</td>
                                                 </tr>
@@ -702,7 +708,7 @@ export default function AdminDashboardPage() {
                             <div className={`${masterView === 'list' ? 'min-w-0' : 'hidden'} rounded-lg border border-slate-200 bg-white p-6 shadow-sm`}>
                                 <div className="mb-4 flex items-center justify-between gap-4">
                                     <h3 className="text-lg font-semibold">Recently added authors</h3>
-                                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{authors.length} total</span>
+                                    <div className="flex items-center gap-3"><select value={authorStatusFilter} onChange={(e) => setAuthorStatusFilter(e.target.value as typeof authorStatusFilter)} className="rounded-md border px-3 py-2 text-sm"><option value="active">Currently Active</option><option value="inactive">Deactivated</option><option value="all">All authors</option></select><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{authors.filter((item) => authorStatusFilter === 'all' || (authorStatusFilter === 'active' ? item.isActive : !item.isActive)).length} shown</span></div>
                                 </div>
                                 <MasterTableScroll className="max-h-[520px] overflow-x-scroll overflow-y-auto">
                                     <table className="min-w-[680px] w-full text-sm">
@@ -714,7 +720,7 @@ export default function AdminDashboardPage() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {authors.map((item) => (
+                                            {authors.filter((item) => authorStatusFilter === 'all' || (authorStatusFilter === 'active' ? item.isActive : !item.isActive)).map((item) => (
                                                 <tr key={item.authorId} className="border-t">
                                                     <td className="px-3 py-3 font-semibold text-slate-900">{item.authorName}</td>
                                                     <td className="px-3 py-3 text-slate-600">{item.bio || '—'}</td>
@@ -729,16 +735,16 @@ export default function AdminDashboardPage() {
                                                             </button>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => handleDeleteAuthor(item.authorId, item.authorName)}
-                                                                className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                                                onClick={() => handleToggleAuthorActive(item)}
+                                                                className={item.isActive ? 'rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50' : 'rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50'}
                                                             >
-                                                                Delete
+                                                                {item.isActive ? 'Deactivate' : 'Activate'}
                                                             </button>
                                                         </div>
                                                     </td>
                                                 </tr>
                                             ))}
-                                            {authors.length === 0 ? (
+                                            {authors.filter((item) => authorStatusFilter === 'all' || (authorStatusFilter === 'active' ? item.isActive : !item.isActive)).length === 0 ? (
                                                 <tr>
                                                     <td colSpan={3} className="px-3 py-6 text-center text-slate-500">No authors added yet.</td>
                                                 </tr>

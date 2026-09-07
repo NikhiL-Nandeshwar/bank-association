@@ -17,6 +17,7 @@ export type BookFormPayload = {
   tagsRaw: string;
   pdfFile?: File | null;
   coverFile?: File | null;
+  isActive?: boolean;
 };
 
 export type UpdateBookPayload = BookFormPayload & {
@@ -31,7 +32,7 @@ export function buildBookFormData(
 
   if (options?.bookId != null && options.bookId !== '') {
     formData.append('BookId', String(options.bookId));
-    formData.append('IsActive', 'true');
+    formData.append('IsActive', String(payload.isActive ?? true));
   }
 
   formData.append('CategoryId', String(payload.categoryId));

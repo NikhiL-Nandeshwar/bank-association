@@ -3,8 +3,8 @@ import { createVacancy, getVacancies, updateVacancy, deleteVacancy } from "./vac
 import { formatApiBank, formatApiRecruitment, getBankItems, getVacancyItems } from "@/utils/adminDashboardHelper";
 import { createBank, getBanks, updateBank, deleteBank } from "./bank.actions";
 import { createNews, updateNews, getNews, deleteNews } from "./news.actions";
-import { createCategory, updateCategory, deleteCategory } from './category.actions';
-import { createAuthor, updateAuthor, deleteAuthor } from './author.actions';
+import { createCategory, updateCategory, deleteCategory, toggleCategoryActive } from './category.actions';
+import { createAuthor, updateAuthor, deleteAuthor, toggleAuthorActive } from './author.actions';
 import {
   createBook,
   getBooks,
@@ -74,6 +74,10 @@ export async function deleteCategoryService(categoryId: number) {
     return deleteCategory(categoryId);
 }
 
+export async function toggleCategoryActiveService(categoryId: number) {
+    return toggleCategoryActive(categoryId);
+}
+
 export async function createAuthorService(payload: any) {
     const response = await createAuthor(payload);
     return response.data;
@@ -85,6 +89,10 @@ export async function updateAuthorService(payload: any) {
 
 export async function deleteAuthorService(authorId: number) {
     return deleteAuthor(authorId);
+}
+
+export async function toggleAuthorActiveService(authorId: number) {
+    return toggleAuthorActive(authorId);
 }
 
 export async function createBookService(payload: BookFormPayload) {

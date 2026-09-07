@@ -55,7 +55,7 @@ export const API_ENDPOINTS = {
     getAll: 'Category/GetAll',
     getById: (id: number) => `Category/GetById/${id}`,
     getDropdown: 'Category/Dropdown',
-    toggleActive: (id: number) => `Category/Toggle/${id}`,
+    toggleActive: (id: number) => `Category/Toggle?id=${id}`,
   },
   author: {
     create: 'Author/Create',
@@ -64,7 +64,7 @@ export const API_ENDPOINTS = {
     getAll: 'Author/GetAll',
     getById: (id: number) => `Author/GetById/${id}`,
     getDropdown: 'Author/Dropdown',
-    toggleActive: (id: number) => `Author/Toggle/${id}`,
+    toggleActive: (id: number) => `Author/Toggle?id=${id}`,
   },
   news: {
     create: 'news/create',

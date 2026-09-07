@@ -5,6 +5,7 @@ export const createCategorySchema = z.object({
   description: z.string().trim().optional(),
   thumbnailUrl: z.string().trim().optional(),
   sortOrder: z.number().int().nonnegative().optional(),
+  isActive: z.boolean().optional(),
 });
 
 export type CreateCategoryRequest = z.infer<typeof createCategorySchema>;

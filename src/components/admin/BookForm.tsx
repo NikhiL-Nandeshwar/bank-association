@@ -1,10 +1,9 @@
 'use client'
-import { FormEvent, useEffect, useState, useRef, type Dispatch, type SetStateAction } from 'react';
+import { FormEvent, useEffect, useState, useRef } from 'react';
 import { createBookService, updateBookService } from '@/actions/api/admin.actions';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/utils/api-error';
 import { fixPdfUrl } from '@/lib/utils';
-import { getAuthToken } from '@/lib/auth-storage';
 
 type BookFormValues = {
   categoryId: string;
@@ -49,9 +48,8 @@ export default function BookForm({ categories, authors, editingBook, onSaved, on
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoadingExistingFiles, setIsLoadingExistingFiles] = useState(false);
-  const [existingPdfUrl, setExistingPdfUrl] = useState('');
-  const [existingCoverUrl, setExistingCoverUrl] = useState('');
+  const [existingBookPdfUrl, setExistingBookPdfUrl] = useState('');
+  const [existingCoverImageUrl, setExistingCoverImageUrl] = useState('');
   const pdfRef = useRef<HTMLInputElement | null>(null);
   const coverRef = useRef<HTMLInputElement | null>(null);
 
@@ -60,9 +58,8 @@ export default function BookForm({ categories, authors, editingBook, onSaved, on
       setForm(initialForm);
       setPdfFile(null);
       setCoverFile(null);
-      setIsLoadingExistingFiles(false);
-      setExistingPdfUrl('');
-      setExistingCoverUrl('');
+      setExistingBookPdfUrl('');
+      setExistingCoverImageUrl('');
       if (pdfRef.current) pdfRef.current.value = '';
       if (coverRef.current) coverRef.current.value = '';
       return;
@@ -86,64 +83,32 @@ export default function BookForm({ categories, authors, editingBook, onSaved, on
     if (pdfRef.current) pdfRef.current.value = '';
     if (coverRef.current) coverRef.current.value = '';
 
-    const controller = new AbortController();
-    const getFileUrl = (book: any, type: 'pdf' | 'cover') => type === 'pdf'
-      ? book?.bookPdfUrl ?? book?.pdfUrl ?? book?.pdfFileUrl ?? book?.pdfPath ?? book?.newPdfFile ?? ''
-      : book?.coverImageUrl ?? book?.coverUrl ?? book?.coverFileUrl ?? book?.coverPath ?? book?.newCoverFile ?? '';
-    const loadExistingFile = async (
-      url: string,
-      fallbackName: string,
-      setFile: Dispatch<SetStateAction<File | null>>,
-    ) => {
-      if (!url) return;
-
-      const authToken = getAuthToken();
-      const response = await fetch(fixPdfUrl(url), {
-        signal: controller.signal,
-        credentials: 'include',
-        headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
-      });
-      if (!response.ok) throw new Error(`Unable to load ${fallbackName}`);
-
-      const fileName = decodeURIComponent(url.split('?')[0].split('/').pop() || fallbackName);
-      const file = new File([await response.blob()], fileName, {
-        type: response.headers.get('content-type') || undefined,
-      });
-      setFile((current) => current ?? file);
+    const getFileUrl = (book: any, type: 'pdf' | 'cover'): string => {
+      const record = book?.data && typeof book.data === 'object' ? book.data : book;
+      const candidates = type === 'pdf'
+        ? [record?.bookPdfUrl, record?.pdfUrl, record?.pdfFileUrl, record?.pdfPath, record?.newPdfFile]
+        : [record?.coverImageUrl, record?.coverUrl, record?.coverFileUrl, record?.coverPath, record?.newCoverFile];
+      return candidates.find((value): value is string => typeof value === 'string' && value.trim().length > 0)?.trim() ?? '';
     };
-
-    const loadExistingFiles = async () => {
-      setIsLoadingExistingFiles(true);
-      try {
-        const pdfUrl = getFileUrl(editingBook, 'pdf');
-        const coverUrl = getFileUrl(editingBook, 'cover');
-        setExistingPdfUrl(pdfUrl);
-        setExistingCoverUrl(coverUrl);
-
-        if (!pdfUrl && !coverUrl) {
-          throw new Error('This book does not include file URLs.');
-        }
-
-        await Promise.all([
-          loadExistingFile(pdfUrl, 'current-book.pdf', setPdfFile),
-          loadExistingFile(coverUrl, 'current-cover-image', setCoverFile),
-        ]);
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          console.error('Failed to load existing book files', error);
-          toast.error('Unable to load the existing book files. Please select replacement files before updating.');
-        }
-      } finally {
-        if (!controller.signal.aborted) setIsLoadingExistingFiles(false);
-      }
-    };
-
-    void loadExistingFiles();
-    return () => controller.abort();
+    // Keep existing files as backend references. They are only replaced when
+    // the administrator explicitly selects a new file.
+    setExistingBookPdfUrl(getFileUrl(editingBook, 'pdf'));
+    setExistingCoverImageUrl(getFileUrl(editingBook, 'cover'));
+    console.debug('[Book edit] selected book:', editingBook);
+    console.debug('[Book edit] existing PDF URL:', getFileUrl(editingBook, 'pdf'));
+    console.debug('[Book edit] existing cover URL:', getFileUrl(editingBook, 'cover'));
   }, [editingBook]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    const hasPdf = Boolean(pdfFile || existingBookPdfUrl);
+    const hasCover = Boolean(coverFile || existingCoverImageUrl);
+    console.debug('[Book edit] validation:', { hasPdf, hasCover, existingBookPdfUrl, existingCoverImageUrl, pdfFile, coverFile });
+    if (!hasPdf || !hasCover) {
+      toast.error(`A ${!hasPdf ? 'PDF' : 'cover image'} is required.`);
+      return;
+    }
 
     const payload = {
       categoryId: form.categoryId,
@@ -164,7 +129,7 @@ export default function BookForm({ categories, authors, editingBook, onSaved, on
     try {
       setIsSaving(true);
       const data = editingBook
-        ? await updateBookService({ ...payload, bookId: editingBook.bookId })
+        ? await updateBookService({ ...payload, isActive: editingBook.isActive ?? true, bookId: editingBook.bookId })
         : await createBookService(payload);
       toast.success(editingBook ? 'Book updated' : 'Book created');
       onSaved?.(data);
@@ -277,8 +242,8 @@ export default function BookForm({ categories, authors, editingBook, onSaved, on
               <button type="button" onClick={() => { setPdfFile(null); if (pdfRef.current) pdfRef.current.value = ''; }} className="text-sm text-rose-600">Remove</button>
             ) : null}
           </div>
-          {existingPdfUrl ? (
-            <a href={fixPdfUrl(existingPdfUrl)} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-medium text-sky-700 hover:underline">
+          {existingBookPdfUrl ? (
+            <a href={fixPdfUrl(existingBookPdfUrl)} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm font-medium text-sky-700 hover:underline">
               View attached PDF
             </a>
           ) : null}
@@ -296,10 +261,10 @@ export default function BookForm({ categories, authors, editingBook, onSaved, on
               <button type="button" onClick={() => { setCoverFile(null); if (coverRef.current) coverRef.current.value = ''; }} className="text-sm text-rose-600">Remove</button>
             ) : null}
           </div>
-          {existingCoverUrl ? (
+          {existingCoverImageUrl ? (
             <div className="mt-2 flex items-center gap-3">
-              <img src={fixPdfUrl(existingCoverUrl)} alt="Current book cover" className="h-12 w-9 rounded border border-slate-200 object-cover" />
-              <a href={fixPdfUrl(existingCoverUrl)} target="_blank" rel="noreferrer" className="text-sm font-medium text-sky-700 hover:underline">
+              <img src={fixPdfUrl(existingCoverImageUrl)} alt="Current book cover" className="h-12 w-9 rounded border border-slate-200 object-cover" />
+              <a href={fixPdfUrl(existingCoverImageUrl)} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-sky-700 hover:underline">
                 View attached cover image
               </a>
             </div>
@@ -308,7 +273,7 @@ export default function BookForm({ categories, authors, editingBook, onSaved, on
       </div>
 
       <div>
-        <button type="submit" disabled={isSaving || isLoadingExistingFiles} className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{isSaving ? 'Saving...' : isLoadingExistingFiles ? 'Loading...' : editingBook ? 'Update book' : 'Create book'}</button>
+        <button type="submit" disabled={isSaving} className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{isSaving ? 'Saving...' : editingBook ? 'Update book' : 'Create book'}</button>
       </div>
     </form>
   );

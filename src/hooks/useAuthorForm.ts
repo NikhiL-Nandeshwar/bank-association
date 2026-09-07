@@ -10,6 +10,7 @@ export const emptyAuthorForm = {
   authorName: '',
   bio: '',
   photoUrl: '',
+  isActive: true,
 };
 
 export interface CreateAuthorResponse {
@@ -79,6 +80,7 @@ export function useAuthorForm(authors: any[], setAuthors: any, onUpdateSuccess?:
       authorName: item.authorName ?? '',
       bio: item.bio ?? '',
       photoUrl: item.photoUrl ?? '',
+      isActive: item.isActive ?? true,
     });
     setErrors({});
   };

@@ -29,6 +29,7 @@ export function useBankForm(banks: AdminBank[], setBanks: any) {
             contactEmail: item.contactEmail ?? '',
             contactPhone: item.contactPhone ?? '',
             logoUrl: item.logoUrl ?? '',
+            isActive: item.isActive ?? true,
         });
         setErrors({});
     };

@@ -36,6 +36,6 @@ export function deleteAuthor(authorId: number) {
 
 export function toggleAuthorActive(authorId: number) {
   return apiRequest(API_ENDPOINTS.author.toggleActive(authorId), {
-    method: 'POST',
+    method: 'PATCH',
   });
 }

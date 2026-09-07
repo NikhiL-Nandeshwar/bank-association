@@ -120,6 +120,7 @@ export function useRecruitmentForm(loadRecruitments: () => Promise<void>) {
       noticePdfUrl: item.noticePdfUrl,
       noticePdfFileName: item.noticePdfFileName,
       eligibilityCriteria: item.eligibilityCriteria ?? [],
+      isActive: item.isActive ?? true,
     });
   };
 
