@@ -561,7 +561,13 @@ export default function AdminDashboardPage() {
                                             disabled={bank.isSaving}
                                             className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
                                         >
-                                            {bank.isSaving ? 'Saving...' : bank.editingId ? 'Update bank' : 'Save bank'}
+                                            {bank.isSaving
+                                                ? bank.editingId
+                                                    ? 'Updating...'
+                                                    : 'Saving...'
+                                                : bank.editingId
+                                                    ? 'Update bank'
+                                                    : 'Save bank'}
                                         </button>
                                     </div>
                                 </form>
@@ -592,28 +598,39 @@ export default function AdminDashboardPage() {
                                     }}
                                     className="space-y-4"
                                 >
-                                    <AdminInput label="Category name" value={categoryForm.form.categoryName} onChange={(v) => categoryForm.setForm((p:any) => ({ ...p, categoryName: v }))} error={categoryForm.errors.categoryName} />
+                                    <AdminInput label="Category name" value={categoryForm.form.categoryName} onChange={(v) => categoryForm.setForm((p: any) => ({ ...p, categoryName: v }))} error={categoryForm.errors.categoryName} />
 
-                                    <AdminInput label="Description" value={categoryForm.form.description} onChange={(v) => categoryForm.setForm((p:any) => ({ ...p, description: v }))} />
+                                    <AdminInput label="Description" value={categoryForm.form.description} onChange={(v) => categoryForm.setForm((p: any) => ({ ...p, description: v }))} />
 
-                                    <AdminInput label="Thumbnail URL" value={categoryForm.form.thumbnailUrl} onChange={(v) => categoryForm.setForm((p:any) => ({ ...p, thumbnailUrl: v }))} />
+                                    <AdminInput label="Thumbnail URL" value={categoryForm.form.thumbnailUrl} onChange={(v) => categoryForm.setForm((p: any) => ({ ...p, thumbnailUrl: v }))} />
 
                                     <div className="space-y-3">
-                                    {categoryForm.editingId && (
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                categoryForm.cancelEdit();
-                                                setMasterView('list');
-                                            }}
-                                            className="w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                                        >
-                                            Cancel edit
-                                        </button>
-                                    )}
+                                        {categoryForm.editingId && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    categoryForm.cancelEdit();
+                                                    setMasterView('list');
+                                                }}
+                                                className="w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                            >
+                                                Cancel edit
+                                            </button>
+                                        )}
 
-                                    <button type="submit" disabled={categoryForm.isSaving} className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{categoryForm.isSaving ? 'Saving...' : categoryForm.editingId ? 'Update category' : 'Save category'}</button>
-                                </div>
+                                        <button
+                                            type="submit"
+                                            disabled={categoryForm.isSaving}
+                                            className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                                        >
+                                            {categoryForm.isSaving
+                                                ? categoryForm.editingId
+                                                    ? 'Updating...'
+                                                    : 'Saving...'
+                                                : categoryForm.editingId
+                                                    ? 'Update category'
+                                                    : 'Save category'}
+                                        </button>                                    </div>
                                 </form>
                             </div>
 
@@ -681,11 +698,11 @@ export default function AdminDashboardPage() {
                                     }}
                                     className="space-y-4"
                                 >
-                                    <AdminInput label="Author name" value={authorForm.form.authorName} onChange={(v) => authorForm.setForm((p:any) => ({ ...p, authorName: v }))} error={authorForm.errors.authorName} />
+                                    <AdminInput label="Author name" value={authorForm.form.authorName} onChange={(v) => authorForm.setForm((p: any) => ({ ...p, authorName: v }))} error={authorForm.errors.authorName} />
 
-                                    <AdminInput label="Bio" value={authorForm.form.bio} onChange={(v) => authorForm.setForm((p:any) => ({ ...p, bio: v }))} />
+                                    <AdminInput label="Bio" value={authorForm.form.bio} onChange={(v) => authorForm.setForm((p: any) => ({ ...p, bio: v }))} />
 
-                                    <AdminInput label="Photo URL" value={authorForm.form.photoUrl} onChange={(v) => authorForm.setForm((p:any) => ({ ...p, photoUrl: v }))} />
+                                    <AdminInput label="Photo URL" value={authorForm.form.photoUrl} onChange={(v) => authorForm.setForm((p: any) => ({ ...p, photoUrl: v }))} />
 
                                     <div className="space-y-3">
                                         {authorForm.editingId && (
@@ -701,8 +718,19 @@ export default function AdminDashboardPage() {
                                             </button>
                                         )}
 
-                                        <button type="submit" disabled={authorForm.isSaving} className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{authorForm.isSaving ? 'Saving...' : authorForm.editingId ? 'Update author' : 'Save author'}</button>
-                                    </div>
+                                        <button
+                                            type="submit"
+                                            disabled={authorForm.isSaving}
+                                            className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                                        >
+                                            {authorForm.isSaving
+                                                ? authorForm.editingId
+                                                    ? 'Updating...'
+                                                    : 'Saving...'
+                                                : authorForm.editingId
+                                                    ? 'Update author'
+                                                    : 'Save author'}
+                                        </button>                                    </div>
                                 </form>
                             </div>
 
@@ -1358,16 +1386,16 @@ export default function AdminDashboardPage() {
                             </div>
 
                             <div className={masterView === 'list' ? 'min-w-0' : 'hidden'}>
-                            <RecentlyAddedRecruitments
-                                recruitments={recruitments}
-                                onEdit={(item) => {
-                                    setActiveSection('recruitments');
-                                    setMasterView('form');
-                                    recruitment.startEdit(item);
-                                }}
-                                onUpload={(item) => actions.setUploadId(item.id)}
-                                onToggleActive={handleToggleRecruitmentActive}
-                            />
+                                <RecentlyAddedRecruitments
+                                    recruitments={recruitments}
+                                    onEdit={(item) => {
+                                        setActiveSection('recruitments');
+                                        setMasterView('form');
+                                        recruitment.startEdit(item);
+                                    }}
+                                    onUpload={(item) => actions.setUploadId(item.id)}
+                                    onToggleActive={handleToggleRecruitmentActive}
+                                />
                             </div>
                         </div>
                     ) : null}
@@ -1446,15 +1474,15 @@ export default function AdminDashboardPage() {
                             </div>
 
                             <div className={masterView === 'list' ? 'min-w-0' : 'hidden'}>
-                            <RecentlyAddedNews
-                                news={news}
-                                onEdit={(item) => {
-                                    setActiveSection('news');
-                                    setMasterView('form');
-                                    newsForm.startEdit(item);
-                                }}
-                                onDelete={(item) => handleDeleteNews(item.id, item.newsEng || item.newsMrt || '')}
-                            />
+                                <RecentlyAddedNews
+                                    news={news}
+                                    onEdit={(item) => {
+                                        setActiveSection('news');
+                                        setMasterView('form');
+                                        newsForm.startEdit(item);
+                                    }}
+                                    onDelete={(item) => handleDeleteNews(item.id, item.newsEng || item.newsMrt || '')}
+                                />
                             </div>
                         </div>
                     ) : null}

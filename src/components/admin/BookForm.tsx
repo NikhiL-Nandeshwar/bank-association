@@ -271,8 +271,19 @@ export default function BookForm({ categories, authors, editingBook, onSaved, on
       </div>
 
       <div>
-        <button type="submit" disabled={isSaving} className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{isSaving ? 'Saving...' : editingBook ? 'Update book' : 'Create book'}</button>
-      </div>
+        <button
+          type="submit"
+          disabled={isSaving}
+          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+        >
+          {isSaving
+            ? editingBook
+              ? 'Updating...'
+              : 'Saving...'
+            : editingBook
+              ? 'Update book'
+              : 'Create book'}
+        </button>      </div>
     </form>
   );
 }
